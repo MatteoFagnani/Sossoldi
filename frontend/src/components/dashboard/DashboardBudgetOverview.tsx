@@ -5,15 +5,23 @@ import { ProgressBar } from '../UI';
 
 interface DashboardBudgetOverviewProps {
     budgets: DashboardOverview['budgetStatuses'];
+    isAnnualView?: boolean;
 }
 
-export default function DashboardBudgetOverview({ budgets }: DashboardBudgetOverviewProps) {
+export default function DashboardBudgetOverview({ budgets, isAnnualView = false }: DashboardBudgetOverviewProps) {
     const navigate = useNavigate();
 
     return (
         <div className="bg-white border border-gray-200 rounded-2xl p-6">
             <div className="flex items-center justify-between mb-4">
-                <h2 className="text-sm font-semibold text-gray-900">Budget del mese</h2>
+                <div>
+                    <h2 className="text-sm font-semibold text-gray-900">
+                        {isAnnualView ? 'Budget — media mensile' : 'Budget del mese'}
+                    </h2>
+                    {isAnnualView && (
+                        <p className="text-xs text-gray-400 mt-0.5">Spesa media per categoria nell'anno</p>
+                    )}
+                </div>
                 <button
                     onClick={() => navigate('/budgets')}
                     className="flex items-center gap-1 text-xs text-gray-900 hover:text-black font-medium transition-colors"
@@ -32,7 +40,9 @@ export default function DashboardBudgetOverview({ budgets }: DashboardBudgetOver
                                     <div className="flex items-center gap-2">
                                         <span className="text-sm font-medium text-gray-700">{bs.categoryName}</span>
                                         {bs.percentageUsed >= 95 && (
-                                            <span className="text-xs text-red-500 font-medium">Quasi esaurito</span>
+                                            <span className="text-xs text-red-500 font-medium">
+                                                {isAnnualView ? 'Sopra budget' : 'Quasi esaurito'}
+                                            </span>
                                         )}
                                     </div>
                                     <span className="text-xs font-semibold" style={{ color }}>{Math.round(pct)}%</span>
@@ -48,4 +58,3 @@ export default function DashboardBudgetOverview({ budgets }: DashboardBudgetOver
         </div>
     );
 }
-

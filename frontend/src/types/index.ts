@@ -60,6 +60,8 @@ export interface ReportDto {
     totalExpense: number;
     netBalance: number;
     dataPoints: Record<string, number>;
+    incomeDataPoints: Record<string, number>;
+    expenseDataPoints: Record<string, number>;
 }
 
 export interface DashboardOverview {

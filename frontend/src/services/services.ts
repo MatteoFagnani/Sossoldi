@@ -31,6 +31,7 @@ export const transactionCategoryMappingService = {
     async getAll(): Promise<TransactionCategoryMapping[]> { return (await api.get('/transaction-category-mappings')).data; },
     async save(data: TransactionCategoryMapping): Promise<TransactionCategoryMapping> { return (await api.put('/transaction-category-mappings', data)).data; },
 };
+
 export const automationRuleService = {
     async getAll(): Promise<AutomationRule[]> { return (await api.get('/automation-rules')).data; },
     async create(data: object): Promise<AutomationRule> { return (await api.post('/automation-rules', data)).data; },
@@ -48,5 +49,11 @@ export const budgetService = {
 };
 
 export const dashboardService = {
-    async getOverview(): Promise<DashboardOverview> { return (await api.get('/dashboard')).data; },
+    async getOverview(month?: number, year?: number): Promise<DashboardOverview> {
+        const params = new URLSearchParams();
+        if (month !== undefined) params.append('month', String(month));
+        if (year !== undefined) params.append('year', String(year));
+        const query = params.toString();
+        return (await api.get(`/dashboard${query ? `?${query}` : ''}`)).data;
+    },
 };

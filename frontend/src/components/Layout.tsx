@@ -1,47 +1,59 @@
+import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Tags, ArrowLeftRight, Zap, Target, LogOut, User } from 'lucide-react';
+import { LayoutDashboard, Tags, ArrowLeftRight, Zap, Target, ChevronsLeft, ChevronsRight } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Panoramica' },
+    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/transactions', icon: ArrowLeftRight, label: 'Transazioni' },
     { to: '/budgets', icon: Target, label: 'Budget' },
     { to: '/categories', icon: Tags, label: 'Categorie' },
     { to: '/automations', icon: Zap, label: 'Automazioni' },
-    { to: '/profile', icon: User, label: 'Profilo' },
 ];
 
+const pageTitles: Record<string, string> = {
+    '/profile': 'Profilo',
+};
+
 export default function Layout({ children }: { children: React.ReactNode }) {
-    const { user, logout } = useAuthStore();
+    const { user } = useAuthStore();
     const navigate = useNavigate();
     const location = useLocation();
+    const [collapsed, setCollapsed] = useState(false);
 
-    const handleLogout = () => {
-        logout();
-        navigate('/login');
-    };
-
-    const currentPage = navItems.find((i) => i.to === location.pathname)?.label ?? 'Panoramica';
+    const currentPage = navItems.find((i) => i.to === location.pathname)?.label ?? pageTitles[location.pathname] ?? 'Dashboard';
+    const userInitial = user?.username?.charAt(0).toUpperCase() ?? '?';
 
     return (
         <div className="flex h-screen bg-gray-50 text-gray-900">
 
             {/* Sidebar */}
-            <aside className="w-64 flex-shrink-0 flex flex-col bg-white border-r border-gray-200">
+            <aside className={`${collapsed ? 'w-20' : 'w-64'} flex-shrink-0 flex flex-col bg-white border-r border-gray-200 transition-all duration-200`}>
 
                 {/* Brand */}
-                <div
-                    className="flex items-center gap-3 px-6 py-5 border-b border-gray-100 cursor-pointer"
-                    onClick={() => navigate('/')}
-                >
-                    <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
-                        <img 
-                            src="/app-icon.svg" 
-                            alt="Logo" 
-                            className="w-full h-full object-contain rounded-lg" 
-                        />
-                    </div>
-                    <span className="text-base font-semibold text-gray-900">Sossoldi</span>
+                <div className={`flex border-b border-gray-100 ${collapsed ? 'flex-col items-center gap-2 px-3 py-4' : 'items-center justify-between gap-3 px-4 py-5'}`}>
+                    <button
+                        onClick={() => navigate('/')}
+                        className="flex items-center gap-3 min-w-0"
+                        title="Sossoldi"
+                    >
+                        <span className="w-10 h-10 flex items-center justify-center flex-shrink-0">
+                            <img
+                                src="/app-icon.svg"
+                                alt="Logo"
+                                className="w-full h-full object-contain rounded-lg"
+                            />
+                        </span>
+                        {!collapsed && <span className="text-base font-semibold text-gray-900 truncate">Sossoldi</span>}
+                    </button>
+                    <button
+                        onClick={() => setCollapsed(!collapsed)}
+                        className="p-2 rounded-lg text-gray-400 hover:text-gray-900 hover:bg-gray-100 transition-colors"
+                        aria-label={collapsed ? 'Espandi sidebar' : 'Comprimi sidebar'}
+                        title={collapsed ? 'Espandi sidebar' : 'Comprimi sidebar'}
+                    >
+                        {collapsed ? <ChevronsRight size={16} /> : <ChevronsLeft size={16} />}
+                    </button>
                 </div>
 
                 {/* Nav */}
@@ -51,48 +63,35 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             key={to}
                             to={to}
                             end={to === '/'}
+                            title={collapsed ? label : undefined}
                             className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive
+                                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${collapsed ? 'justify-center' : ''} ${isActive
                                     ? 'bg-gray-100 text-gray-900'
                                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                                 }`
                             }
                         >
-                            <Icon size={17} />
-                            {label}
+                            <Icon size={17} className="flex-shrink-0" />
+                            {!collapsed && <span>{label}</span>}
                         </NavLink>
                     ))}
                 </nav>
-
-                {/* User */}
-                <div className="px-3 py-4 border-t border-gray-100">
-                    <NavLink 
-                        to="/profile"
-                        className={({ isActive }) => 
-                            `flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-colors ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`
-                        }
-                    >
-                        <div className="w-7 h-7 rounded-lg bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-900 flex-shrink-0">
-                            {user?.username.charAt(0).toUpperCase()}
-                        </div>
-                        <p className="text-sm font-medium text-gray-700 truncate">{user?.username}</p>
-                    </NavLink>
-                    <button
-                        onClick={handleLogout}
-                        className="w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors"
-                    >
-                        <LogOut size={16} />
-                        Esci
-                    </button>
-                </div>
             </aside>
 
             {/* Main */}
             <main className="flex-1 flex flex-col min-w-0">
 
                 {/* Header */}
-                <header className="h-14 flex items-center px-8 bg-white border-b border-gray-200 flex-shrink-0">
+                <header className="h-14 flex items-center justify-between px-8 bg-white border-b border-gray-200 flex-shrink-0">
                     <h1 className="text-base font-semibold text-gray-900">{currentPage}</h1>
+                    <button
+                        onClick={() => navigate('/profile')}
+                        className="w-9 h-9 rounded-full bg-gray-900 text-white text-sm font-semibold flex items-center justify-center hover:bg-black transition-colors"
+                        aria-label="Apri profilo"
+                        title={user?.username ?? 'Profilo'}
+                    >
+                        {userInitial}
+                    </button>
                 </header>
 
                 {/* Content */}
@@ -105,4 +104,5 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
     );
 }
+
 

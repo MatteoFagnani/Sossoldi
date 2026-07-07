@@ -17,4 +17,6 @@ public class ReportDto {
     private Double totalExpense;
     private Double netBalance;
     private Map<String, Double> dataPoints; // E.g. CategoryName -> Amount OR Month -> Amount
+    private Map<String, Double> incomeDataPoints;
+    private Map<String, Double> expenseDataPoints;
 }

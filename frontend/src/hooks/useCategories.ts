@@ -21,7 +21,7 @@ export function useCategories() {
         }
     }, []);
 
-    const saveCategory = async (id: number | null, data: { name: string; type: TransactionType; color: string }) => {
+    const saveCategory = async (id: number | null, data: { name: string; type: TransactionType; color: string; parentId?: number | null }) => {
         setSaving(true);
         setError('');
         try {
@@ -63,3 +63,4 @@ export function useCategories() {
         deleteCategory,
     };
 }
+

@@ -17,6 +17,8 @@ export interface Category {
     name: string;
     type: TransactionType;
     color: string;
+    parentId?: number | null;
+    parentName?: string | null;
 }
 
 export interface Transaction {
@@ -74,3 +76,4 @@ export interface DashboardOverview {
     yearlyReport: ReportDto;
     categoryReport: ReportDto;
 }
+

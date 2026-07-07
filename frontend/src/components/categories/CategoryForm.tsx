@@ -4,10 +4,11 @@ import type { Category, TransactionType } from '../../types';
 
 interface CategoryFormProps {
     editing: Category | null;
-    initialData: { name: string; type: TransactionType; color: string };
+    categories: Category[];
+    initialData: { name: string; type: TransactionType; color: string; parentId?: number | null };
     saving: boolean;
     error: string;
-    onSave: (form: { name: string; type: TransactionType; color: string }) => void;
+    onSave: (form: { name: string; type: TransactionType; color: string; parentId?: number | null }) => void;
     onClose: () => void;
 }
 
@@ -15,16 +16,20 @@ const DEFAULT_COLORS = ['#111827', '#06b6d4', '#10b981', '#f43f5e', '#3b82f6', '
 const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all';
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
 
-export default function CategoryForm({ editing, initialData, saving, error, onSave, onClose }: CategoryFormProps) {
+export default function CategoryForm({ editing, categories, initialData, saving, error, onSave, onClose }: CategoryFormProps) {
     const [form, setForm] = useState(initialData);
 
     useEffect(() => {
         setForm(initialData);
     }, [initialData]);
 
+    const macroCategories = categories.filter((category) =>
+        category.type === form.type && !category.parentId && category.id !== editing?.id
+    );
+
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();
-        onSave(form);
+        onSave({ ...form, parentId: form.parentId || null });
     };
 
     return (
@@ -68,7 +73,7 @@ export default function CategoryForm({ editing, initialData, saving, error, onSa
                                     <button
                                         key={t}
                                         type="button"
-                                        onClick={() => setForm({ ...form, type: t })}
+                                        onClick={() => setForm({ ...form, type: t, parentId: null })}
                                         className={`py-2.5 rounded-xl border text-sm font-medium transition-colors ${form.type === t
                                             ? 'bg-gray-900 border-gray-900 text-white'
                                             : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
@@ -78,6 +83,20 @@ export default function CategoryForm({ editing, initialData, saving, error, onSa
                                     </button>
                                 ))}
                             </div>
+                        </div>
+
+                        <div>
+                            <label className={labelClass}>Macro categoria</label>
+                            <select
+                                value={form.parentId ?? ''}
+                                onChange={(e) => setForm({ ...form, parentId: e.target.value ? Number(e.target.value) : null })}
+                                className={inputClass}
+                            >
+                                <option value="">Nessuna, questa e una macro categoria</option>
+                                {macroCategories.map((category) => (
+                                    <option key={category.id} value={category.id}>{category.name}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
@@ -117,4 +136,3 @@ export default function CategoryForm({ editing, initialData, saving, error, onSa
         </div>
     );
 }
-

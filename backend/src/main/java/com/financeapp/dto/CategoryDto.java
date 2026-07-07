@@ -17,4 +17,8 @@ public class CategoryDto {
 
     @NotBlank(message = "Category color is required")
     private String color;
+
+    private Long parentId;
+
+    private String parentName;
 }

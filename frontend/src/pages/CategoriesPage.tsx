@@ -12,7 +12,7 @@ export default function CategoriesPage() {
 
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Category | null>(null);
-    const [formData, setFormData] = useState({ name: '', type: 'EXPENSE' as TransactionType, color: DEFAULT_COLORS[0] });
+    const [formData, setFormData] = useState({ name: '', type: 'EXPENSE' as TransactionType, color: DEFAULT_COLORS[0], parentId: null as number | null });
 
     useEffect(() => {
         loadCategories();
@@ -20,19 +20,19 @@ export default function CategoriesPage() {
 
     const openNew = () => {
         setEditing(null);
-        setFormData({ name: '', type: 'EXPENSE', color: DEFAULT_COLORS[0] });
+        setFormData({ name: '', type: 'EXPENSE', color: DEFAULT_COLORS[0], parentId: null });
         setError('');
         setShowForm(true);
     };
 
     const openEdit = (cat: Category) => {
         setEditing(cat);
-        setFormData({ name: cat.name, type: cat.type, color: cat.color });
+        setFormData({ name: cat.name, type: cat.type, color: cat.color, parentId: cat.parentId ?? null });
         setError('');
         setShowForm(true);
     };
 
-    const handleSave = async (form: { name: string; type: TransactionType; color: string }) => {
+    const handleSave = async (form: { name: string; type: TransactionType; color: string; parentId?: number | null }) => {
         const success = await saveCategory(editing ? editing.id : null, form);
         if (success) {
             setShowForm(false);
@@ -69,6 +69,7 @@ export default function CategoriesPage() {
             {showForm && (
                 <CategoryForm
                     editing={editing}
+                    categories={categories}
                     initialData={formData}
                     saving={saving}
                     error={error}
@@ -79,3 +80,4 @@ export default function CategoriesPage() {
         </div>
     );
 }
+

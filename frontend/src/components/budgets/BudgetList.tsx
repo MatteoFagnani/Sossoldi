@@ -21,7 +21,7 @@ export default function BudgetList({ budgets, loading, month, year, onAdd, onEdi
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
-                <div className="w-8 h-8 border-2 border-gray-200 border-t-violet-600 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
             </div>
         );
     }
@@ -33,7 +33,7 @@ export default function BudgetList({ budgets, loading, month, year, onAdd, onEdi
                 <p className="text-xs text-gray-400 mb-4">Imposta un budget per tenere sotto controllo le tue spese</p>
                 <button
                     onClick={onAdd}
-                    className="text-sm text-violet-600 hover:text-violet-700 font-medium transition-colors"
+                    className="text-sm text-gray-900 hover:text-black font-medium transition-colors"
                 >
                     Crea il primo budget
                 </button>
@@ -99,3 +99,4 @@ export default function BudgetList({ budgets, loading, month, year, onAdd, onEdi
         </div>
     );
 }
+

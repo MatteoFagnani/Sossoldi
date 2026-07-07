@@ -11,7 +11,7 @@ export default function DashboardPage() {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-[500px]">
-                <div className="w-8 h-8 border-2 border-gray-200 border-t-violet-600 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
             </div>
         );
     }
@@ -39,7 +39,7 @@ export default function DashboardPage() {
                     sub={balance >= 0 ? 'In positivo' : 'In negativo'}
                     up={balance >= 0}
                     icon={<Wallet size={16} />}
-                    color="#7c3aed"
+                    color="#111827"
                 />
                 <StatCard
                     label="Entrate totali"

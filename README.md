@@ -1,9 +1,5 @@
 # FinanceTracker
 
-[![Deploy Status](https://img.shields.io/badge/Deploy-Live-success)](https://financetracker-frontend-4t02.onrender.com/)
-
-**Link dell'applicazione live:** [https://financetracker-frontend-4t02.onrender.com/](https://financetracker-frontend-4t02.onrender.com/)
-
 Un'applicazione web completa per la gestione delle finanze personali, con tracciamento di entrate e uscite, gestione budget e report dettagliati.
 
 ## Panoramica
@@ -11,8 +7,6 @@ Un'applicazione web completa per la gestione delle finanze personali, con tracci
 FinanceTracker è una piattaforma moderna per la gestione del risparmio personale. L'applicazione permette agli utenti di monitorare i propri flussi di cassa, categorizzare le transazioni, impostare budget mensili e visualizzare l'andamento finanziario tramite grafici interattivi. 
 
 Include un sistema di **seeding automatico** delle categorie standard e offre una completa **gestione del profilo utente** per garantire sicurezza e privacy. È progettata per essere robusta, sicura e pronta per l'uso in produzione.
-
-![Schematica_architettura.png](Schematica_architettura.png)
 
 ## Architettura
 

@@ -3,7 +3,7 @@ import { Plus, Pencil, Trash2, Zap, ChevronDown, X, Loader2, Calendar, Tag } fro
 import { automationRuleService, categoryService } from '../services/services';
 import type { AutomationRule, Category, TransactionType } from '../types';
 
-const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all';
+const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all';
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
 
 export default function AutomationsPage() {
@@ -91,7 +91,7 @@ export default function AutomationsPage() {
                 <div />
                 <button
                     onClick={openNew}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-medium rounded-xl transition-colors"
                 >
                     <Plus size={16} /> Nuova automazione
                 </button>
@@ -100,12 +100,12 @@ export default function AutomationsPage() {
             {/* Content */}
             {loading ? (
                 <div className="flex items-center justify-center py-20">
-                    <div className="w-8 h-8 border-2 border-gray-200 border-t-violet-600 rounded-full animate-spin" />
+                    <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
                 </div>
             ) : rules.length === 0 ? (
                 <div className="border-2 border-dashed border-gray-200 rounded-2xl py-16 text-center">
-                    <div className="w-10 h-10 bg-violet-50 rounded-xl flex items-center justify-center mx-auto mb-3">
-                        <Zap size={20} className="text-violet-500" />
+                    <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center mx-auto mb-3">
+                        <Zap size={20} className="text-gray-700" />
                     </div>
                     <p className="text-sm font-medium text-gray-700 mb-1">Nessuna automazione attiva</p>
                     <p className="text-xs text-gray-400 mb-4 max-w-xs mx-auto">
@@ -113,7 +113,7 @@ export default function AutomationsPage() {
                     </p>
                     <button
                         onClick={openNew}
-                        className="text-sm text-violet-600 hover:text-violet-700 font-medium transition-colors"
+                        className="text-sm text-gray-900 hover:text-black font-medium transition-colors"
                     >
                         Crea la prima automazione
                     </button>
@@ -140,12 +140,12 @@ export default function AutomationsPage() {
                             </div>
 
                             <div className="flex items-start gap-3 mb-4">
-                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${rule.type === 'INCOME' ? 'bg-emerald-50 text-emerald-600' : 'bg-violet-50 text-violet-600'}`}>
+                                <div className={`w-9 h-9 rounded-xl flex items-center justify-center flex-shrink-0 ${rule.type === 'INCOME' ? 'bg-emerald-50 text-emerald-600' : 'bg-gray-100 text-gray-900'}`}>
                                     <Zap size={16} />
                                 </div>
                                 <div className="flex-1 min-w-0">
                                     <p className="text-sm font-semibold text-gray-800 truncate pr-10">{rule.name}</p>
-                                    <span className={`text-xs font-medium ${rule.type === 'INCOME' ? 'text-emerald-600' : 'text-violet-600'}`}>
+                                    <span className={`text-xs font-medium ${rule.type === 'INCOME' ? 'text-emerald-600' : 'text-gray-900'}`}>
                                         {rule.type === 'INCOME' ? 'Entrata' : 'Uscita'}
                                     </span>
                                 </div>
@@ -304,7 +304,7 @@ export default function AutomationsPage() {
                                     <button
                                         type="submit"
                                         disabled={saving}
-                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-colors"
+                                        className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-900 hover:bg-black disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-colors"
                                     >
                                         {saving ? <Loader2 size={15} className="animate-spin" /> : (editing ? 'Salva modifiche' : 'Crea automazione')}
                                     </button>

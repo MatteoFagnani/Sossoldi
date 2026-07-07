@@ -68,7 +68,7 @@ export default function BudgetsPage() {
                         <select
                             value={month}
                             onChange={(e) => setMonth(Number(e.target.value))}
-                            className="appearance-none bg-white border border-gray-300 rounded-xl pl-3.5 pr-8 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent cursor-pointer"
+                            className="appearance-none bg-white border border-gray-300 rounded-xl pl-3.5 pr-8 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer"
                         >
                             {SHORT_MONTHS.map((m, i) => (
                                 <option key={m} value={i + 1}>{m}</option>
@@ -81,7 +81,7 @@ export default function BudgetsPage() {
                         <select
                             value={year}
                             onChange={(e) => setYear(Number(e.target.value))}
-                            className="appearance-none bg-white border border-gray-300 rounded-xl pl-3.5 pr-8 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent cursor-pointer"
+                            className="appearance-none bg-white border border-gray-300 rounded-xl pl-3.5 pr-8 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer"
                         >
                             {[2024, 2025, 2026, 2027].map(y => (
                                 <option key={y} value={y}>{y}</option>
@@ -93,7 +93,7 @@ export default function BudgetsPage() {
 
                 <button
                     onClick={openNew}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-medium rounded-xl transition-colors"
                 >
                     <Plus size={16} /> Nuovo budget
                 </button>

@@ -7,10 +7,10 @@
   --card: rgba(10, 10, 20, 0.4);
   --card-hover: rgba(15, 15, 30, 0.6);
   --border: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(124, 92, 252, 0.2);
+  --border-glow: rgba(17, 24, 39, 0.2);
 
-  --accent: #7c5cfc;
-  --accent-glow: rgba(124, 92, 252, 0.4);
+  --accent: #111827;
+  --accent-glow: rgba(17, 24, 39, 0.35);
   --cyan: #00f5ff;
   --emerald: #10b981;
   --rose: #f43f5e;
@@ -38,9 +38,9 @@ body {
   min-height: 100vh;
   overflow-x: hidden;
   background-image:
-    radial-gradient(at 0% 0%, rgba(124, 92, 252, 0.1) 0px, transparent 50%),
+    radial-gradient(at 0% 0%, rgba(17, 24, 39, 0.08) 0px, transparent 50%),
     radial-gradient(at 100% 0%, rgba(0, 245, 255, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(124, 92, 252, 0.05) 0px, transparent 50%),
+    radial-gradient(at 100% 100%, rgba(17, 24, 39, 0.05) 0px, transparent 50%),
     radial-gradient(at 0% 100%, rgba(244, 63, 94, 0.05) 0px, transparent 50%);
   background-attachment: fixed;
 }
@@ -117,8 +117,8 @@ h6,
   text-shadow: 0 0 10px rgba(0, 245, 255, 0.4);
 }
 
-.glow-text-violet {
-  text-shadow: 0 0 10px rgba(124, 92, 252, 0.4);
+.glow-text-gray {
+  text-shadow: 0 0 10px rgba(17, 24, 39, 0.35);
 }
 
 /* Custom chart tooltips */
@@ -130,3 +130,4 @@ h6,
   padding: 12px;
   box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
 }
+

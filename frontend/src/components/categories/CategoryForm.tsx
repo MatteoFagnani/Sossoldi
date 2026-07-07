@@ -11,8 +11,8 @@ interface CategoryFormProps {
     onClose: () => void;
 }
 
-const DEFAULT_COLORS = ['#7c3aed', '#06b6d4', '#10b981', '#f43f5e', '#3b82f6', '#ec4899', '#64748b', '#f59e0b'];
-const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all';
+const DEFAULT_COLORS = ['#111827', '#06b6d4', '#10b981', '#f43f5e', '#3b82f6', '#ec4899', '#64748b', '#f59e0b'];
+const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all';
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
 
 export default function CategoryForm({ editing, initialData, saving, error, onSave, onClose }: CategoryFormProps) {
@@ -70,7 +70,7 @@ export default function CategoryForm({ editing, initialData, saving, error, onSa
                                         type="button"
                                         onClick={() => setForm({ ...form, type: t })}
                                         className={`py-2.5 rounded-xl border text-sm font-medium transition-colors ${form.type === t
-                                            ? 'bg-violet-600 border-violet-600 text-white'
+                                            ? 'bg-gray-900 border-gray-900 text-white'
                                             : 'bg-white border-gray-300 text-gray-600 hover:border-gray-400'
                                             }`}
                                     >
@@ -106,7 +106,7 @@ export default function CategoryForm({ editing, initialData, saving, error, onSa
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-colors"
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-900 hover:bg-black disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-colors"
                             >
                                 {saving ? <Loader2 size={15} className="animate-spin" /> : (editing ? 'Salva' : 'Crea categoria')}
                             </button>
@@ -117,3 +117,4 @@ export default function CategoryForm({ editing, initialData, saving, error, onSa
         </div>
     );
 }
+

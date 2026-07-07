@@ -15,13 +15,13 @@ export default function CategoryList({ categories, loading, onAdd, onEdit, onDel
 
     const sections = [
         { label: 'Entrate', items: income, type: 'INCOME' as const, accent: '#10b981' },
-        { label: 'Uscite', items: expense, type: 'EXPENSE' as const, accent: '#7c3aed' },
+        { label: 'Uscite', items: expense, type: 'EXPENSE' as const, accent: '#111827' },
     ];
 
     if (loading) {
         return (
             <div className="flex items-center justify-center py-20">
-                <div className="w-8 h-8 border-2 border-gray-200 border-t-violet-600 rounded-full animate-spin" />
+                <div className="w-8 h-8 border-2 border-gray-200 border-t-gray-900 rounded-full animate-spin" />
             </div>
         );
     }
@@ -41,7 +41,7 @@ export default function CategoryList({ categories, loading, onAdd, onEdit, onDel
                             <p className="text-sm text-gray-400 mb-3">Nessuna categoria</p>
                             <button
                                 onClick={onAdd}
-                                className="text-sm text-violet-600 hover:text-violet-700 font-medium transition-colors"
+                                className="text-sm text-gray-900 hover:text-black font-medium transition-colors"
                             >
                                 Aggiungine una
                             </button>
@@ -62,7 +62,7 @@ export default function CategoryList({ categories, loading, onAdd, onEdit, onDel
                                         </div>
                                         <span
                                             className="text-xs font-medium px-2 py-0.5 rounded-full"
-                                            style={{ backgroundColor: `${type === 'INCOME' ? '#10b981' : '#7c3aed'}10`, color: type === 'INCOME' ? '#10b981' : '#7c3aed' }}
+                                            style={{ backgroundColor: `${type === 'INCOME' ? '#10b981' : '#111827'}10`, color: type === 'INCOME' ? '#10b981' : '#111827' }}
                                         >
                                             {type === 'INCOME' ? 'Entrata' : 'Uscita'}
                                         </span>
@@ -97,3 +97,4 @@ export default function CategoryList({ categories, loading, onAdd, onEdit, onDel
         </div>
     );
 }
+

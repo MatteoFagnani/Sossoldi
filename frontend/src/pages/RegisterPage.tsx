@@ -42,12 +42,12 @@ export default function RegisterPage() {
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 mb-4">
                         <img 
-                            src="/finance_logo.jpg" 
+                            src="/app-icon.svg" 
                             alt="Logo" 
                             className="w-full h-full object-contain rounded-xl" 
                         />
                     </div>
-                    <h1 className="text-xl font-semibold text-gray-900">Finance Tracker</h1>
+                    <h1 className="text-xl font-semibold text-gray-900">Sossoldi</h1>
                     <p className="text-sm text-gray-500 mt-1">Crea il tuo account</p>
                 </div>
 
@@ -72,7 +72,7 @@ export default function RegisterPage() {
                                 onChange={(e) => setForm({ ...form, username: e.target.value })}
                                 required
                                 placeholder="Scegli un username"
-                                className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                                className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                             />
                         </div>
 
@@ -86,7 +86,7 @@ export default function RegisterPage() {
                                 onChange={(e) => setForm({ ...form, email: e.target.value })}
                                 required
                                 placeholder="nome@email.com"
-                                className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                                className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                             />
                         </div>
 
@@ -102,7 +102,7 @@ export default function RegisterPage() {
                                     required
                                     minLength={6}
                                     placeholder="Minimo 6 caratteri"
-                                    className="w-full px-3.5 py-2.5 pr-10 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                                    className="w-full px-3.5 py-2.5 pr-10 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                                 />
                                 <button
                                     type="button"
@@ -117,7 +117,7 @@ export default function RegisterPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-900 hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors"
                         >
                             {loading ? <Loader2 size={16} className="animate-spin" /> : 'Crea account'}
                         </button>
@@ -129,7 +129,7 @@ export default function RegisterPage() {
                 {/* Footer link */}
                 <p className="text-center text-sm text-gray-500 mt-6">
                     Hai già un account?{' '}
-                    <Link to="/login" className="text-violet-600 hover:text-violet-700 font-medium transition-colors">
+                    <Link to="/login" className="text-gray-900 hover:text-black font-medium transition-colors">
                         Accedi
                     </Link>
                 </p>
@@ -138,3 +138,4 @@ export default function RegisterPage() {
         </div>
     );
 }
+

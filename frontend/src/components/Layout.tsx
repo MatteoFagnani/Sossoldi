@@ -36,12 +36,12 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 >
                     <div className="w-10 h-10 flex items-center justify-center flex-shrink-0">
                         <img 
-                            src="/finance_logo.jpg" 
+                            src="/app-icon.svg" 
                             alt="Logo" 
                             className="w-full h-full object-contain rounded-lg" 
                         />
                     </div>
-                    <span className="text-base font-semibold text-gray-900">Finance Tracker</span>
+                    <span className="text-base font-semibold text-gray-900">Sossoldi</span>
                 </div>
 
                 {/* Nav */}
@@ -53,7 +53,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                             end={to === '/'}
                             className={({ isActive }) =>
                                 `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${isActive
-                                    ? 'bg-violet-50 text-violet-700'
+                                    ? 'bg-gray-100 text-gray-900'
                                     : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
                                 }`
                             }
@@ -69,10 +69,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <NavLink 
                         to="/profile"
                         className={({ isActive }) => 
-                            `flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-colors ${isActive ? 'bg-violet-50' : 'hover:bg-gray-50'}`
+                            `flex items-center gap-3 px-3 py-2.5 rounded-xl mb-1 transition-colors ${isActive ? 'bg-gray-100' : 'hover:bg-gray-50'}`
                         }
                     >
-                        <div className="w-7 h-7 rounded-lg bg-violet-100 flex items-center justify-center text-xs font-bold text-violet-700 flex-shrink-0">
+                        <div className="w-7 h-7 rounded-lg bg-gray-200 flex items-center justify-center text-xs font-bold text-gray-900 flex-shrink-0">
                             {user?.username.charAt(0).toUpperCase()}
                         </div>
                         <p className="text-sm font-medium text-gray-700 truncate">{user?.username}</p>
@@ -105,3 +105,4 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
     );
 }
+

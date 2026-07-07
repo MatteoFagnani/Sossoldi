@@ -82,7 +82,7 @@ export default function ProfilePage() {
         }
     };
 
-    const inputClass = "w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-violet-500/20 focus:border-violet-500 outline-none transition-all text-sm";
+    const inputClass = "w-full px-4 py-2.5 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-gray-900/20 focus:border-gray-900 outline-none transition-all text-sm";
     const labelClass = "block text-xs font-medium text-gray-500 mb-1.5 ml-1";
 
     return (
@@ -91,7 +91,7 @@ export default function ProfilePage() {
                 {/* Informazioni Profilo */}
                 <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
                     <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-violet-50 text-violet-600 rounded-lg">
+                        <div className="p-2 bg-gray-100 text-gray-900 rounded-lg">
                             <Icons.User size={20} />
                         </div>
                         <h2 className="text-lg font-semibold text-gray-800">Informazioni Personali</h2>
@@ -129,7 +129,7 @@ export default function ProfilePage() {
                         <button
                             type="submit"
                             disabled={profileLoading}
-                            className="w-full py-3 bg-violet-600 hover:bg-violet-700 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
+                            className="w-full py-3 bg-gray-900 hover:bg-black text-white font-medium rounded-xl transition-colors disabled:opacity-50"
                         >
                             {profileLoading ? 'Aggiornamento...' : 'Salva Modifiche'}
                         </button>
@@ -253,3 +253,4 @@ export default function ProfilePage() {
         </div>
     );
 }
+

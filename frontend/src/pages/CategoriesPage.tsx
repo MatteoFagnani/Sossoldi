@@ -5,7 +5,7 @@ import CategoryList from '../components/categories/CategoryList';
 import CategoryForm from '../components/categories/CategoryForm';
 import { useCategories } from '../hooks/useCategories';
 
-const DEFAULT_COLORS = ['#7c3aed', '#06b6d4', '#10b981', '#f43f5e', '#3b82f6', '#ec4899', '#64748b', '#f59e0b'];
+const DEFAULT_COLORS = ['#111827', '#06b6d4', '#10b981', '#f43f5e', '#3b82f6', '#ec4899', '#64748b', '#f59e0b'];
 
 export default function CategoriesPage() {
     const { categories, loading, saving, error, setError, loadCategories, saveCategory, deleteCategory } = useCategories();
@@ -51,7 +51,7 @@ export default function CategoriesPage() {
                 <div />
                 <button
                     onClick={openNew}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-violet-600 hover:bg-violet-700 text-white text-sm font-medium rounded-xl transition-colors"
+                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-medium rounded-xl transition-colors"
                 >
                     <Plus size={16} /> Nuova categoria
                 </button>

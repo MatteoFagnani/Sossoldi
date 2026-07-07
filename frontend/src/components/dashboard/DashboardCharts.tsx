@@ -12,7 +12,7 @@ interface DashboardChartsProps {
     data: DashboardOverview;
 }
 
-const PIE_COLORS = ['#7c3aed', '#06b6d4', '#10b981', '#f43f5e', '#f59e0b', '#8b5cf6'];
+const PIE_COLORS = ['#111827', '#06b6d4', '#10b981', '#f43f5e', '#f59e0b', '#4b5563'];
 
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
     if (!active || !payload?.length) return null;
@@ -68,14 +68,14 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
                     <div className="flex bg-gray-100 p-1 rounded-xl">
                         <button
                             onClick={() => setViewType('MONTH')}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${viewType === 'MONTH' ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${viewType === 'MONTH' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             Mese
                         </button>
                         <button
                             onClick={() => setViewType('YEAR')}
-                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${viewType === 'YEAR' ? 'bg-white text-violet-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                            className={`px-3 py-1.5 text-xs font-semibold rounded-lg transition-all ${viewType === 'YEAR' ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
                                 }`}
                         >
                             Anno
@@ -88,15 +88,15 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
                             <AreaChart data={chartData} margin={{ top: 4, right: 4, left: -20, bottom: 0 }}>
                                 <defs>
                                     <linearGradient id="netGradient" x1="0" y1="0" x2="0" y2="1">
-                                        <stop offset="5%" stopColor="#7c3aed" stopOpacity={0.12} />
-                                        <stop offset="95%" stopColor="#7c3aed" stopOpacity={0} />
+                                        <stop offset="5%" stopColor="#111827" stopOpacity={0.12} />
+                                        <stop offset="95%" stopColor="#111827" stopOpacity={0} />
                                     </linearGradient>
                                 </defs>
                                 <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                                 <XAxis dataKey="date" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                 <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                                 <Tooltip content={<CustomTooltip />} />
-                                <Area type="monotone" dataKey="balance" stroke="#7c3aed" strokeWidth={2} fill="url(#netGradient)" dot={false} />
+                                <Area type="monotone" dataKey="balance" stroke="#111827" strokeWidth={2} fill="url(#netGradient)" dot={false} />
                             </AreaChart>
                         </ResponsiveContainer>
                     ) : (
@@ -141,3 +141,4 @@ export default function DashboardCharts({ data }: DashboardChartsProps) {
         </div>
     );
 }
+

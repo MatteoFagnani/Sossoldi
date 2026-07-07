@@ -39,12 +39,12 @@ export default function LoginPage() {
                 <div className="text-center mb-8">
                     <div className="inline-flex items-center justify-center w-16 h-16 mb-4">
                         <img 
-                            src="/finance_logo.jpg" 
+                            src="/app-icon.svg" 
                             alt="Logo" 
                             className="w-full h-full object-contain rounded-xl" 
                         />
                     </div>
-                    <h1 className="text-xl font-semibold text-gray-900">Finance Tracker</h1>
+                    <h1 className="text-xl font-semibold text-gray-900">Sossoldi</h1>
                     <p className="text-sm text-gray-500 mt-1">Accedi al tuo account</p>
                 </div>
 
@@ -69,7 +69,7 @@ export default function LoginPage() {
                                 onChange={(e) => setUsername(e.target.value)}
                                 required
                                 placeholder="Il tuo username"
-                                className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                                className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                             />
                         </div>
 
@@ -84,7 +84,7 @@ export default function LoginPage() {
                                     onChange={(e) => setPassword(e.target.value)}
                                     required
                                     placeholder="••••••••"
-                                    className="w-full px-3.5 py-2.5 pr-10 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all"
+                                    className="w-full px-3.5 py-2.5 pr-10 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all"
                                 />
                                 <button
                                     type="button"
@@ -99,7 +99,7 @@ export default function LoginPage() {
                         <button
                             type="submit"
                             disabled={loading}
-                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors"
+                            className="w-full flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-900 hover:bg-black disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm font-medium rounded-xl transition-colors"
                         >
                             {loading ? <Loader2 size={16} className="animate-spin" /> : 'Accedi'}
                         </button>
@@ -111,7 +111,7 @@ export default function LoginPage() {
                 {/* Footer link */}
                 <p className="text-center text-sm text-gray-500 mt-6">
                     Non hai un account?{' '}
-                    <Link to="/register" className="text-violet-600 hover:text-violet-700 font-medium transition-colors">
+                    <Link to="/register" className="text-gray-900 hover:text-black font-medium transition-colors">
                         Registrati
                     </Link>
                 </p>
@@ -120,3 +120,4 @@ export default function LoginPage() {
         </div>
     );
 }
+

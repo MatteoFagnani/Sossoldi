@@ -12,7 +12,7 @@ interface TransactionFormProps {
     onClose: () => void;
 }
 
-const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:border-transparent transition-all';
+const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all';
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
 
 export default function TransactionForm({ editing, categories, initialData, saving, error, onSave, onClose }: TransactionFormProps) {
@@ -118,7 +118,7 @@ export default function TransactionForm({ editing, categories, initialData, savi
                             <button
                                 type="submit"
                                 disabled={saving}
-                                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-violet-600 hover:bg-violet-700 disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-colors"
+                                className="flex-1 flex items-center justify-center gap-2 py-2.5 px-4 bg-gray-900 hover:bg-black disabled:opacity-60 text-white text-sm font-medium rounded-xl transition-colors"
                             >
                                 {saving ? <Loader2 size={15} className="animate-spin" /> : (editing ? 'Salva modifiche' : 'Aggiungi')}
                             </button>
@@ -129,3 +129,4 @@ export default function TransactionForm({ editing, categories, initialData, savi
         </div>
     );
 }
+

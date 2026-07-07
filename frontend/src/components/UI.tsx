@@ -25,7 +25,7 @@ export const Btn: React.FC<{
     disabled?: boolean;
 }> = ({ children, variant = 'primary', onClick, className = '', style = {}, type = 'button', disabled = false }) => {
     const variants = {
-        primary: 'bg-violet-600 hover:bg-violet-700 text-white',
+        primary: 'bg-gray-900 hover:bg-black text-white',
         ghost: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300',
         danger: 'bg-red-500 hover:bg-red-600 text-white',
     };
@@ -50,7 +50,7 @@ export const Chip: React.FC<{
     const styles = {
         income: 'text-emerald-700 bg-emerald-50',
         expense: 'text-red-600 bg-red-50',
-        auto: 'text-violet-700 bg-violet-50',
+        auto: 'text-gray-900 bg-gray-100',
     };
 
     const labels = {
@@ -70,7 +70,7 @@ export const ProgressBar: React.FC<{
     pct: number;
     color?: string;
     height?: number;
-}> = ({ pct, color = '#7c3aed', height = 6 }) => (
+}> = ({ pct, color = '#111827', height = 6 }) => (
     <div
         className="w-full bg-gray-100 rounded-full overflow-hidden"
         style={{ height }}

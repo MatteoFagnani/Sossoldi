@@ -17,7 +17,6 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
-import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -56,8 +55,7 @@ public class SecurityConfiguration {
                                 "http://localhost:5173",
                                 "http://localhost:3000",
                                 "http://127.0.0.1:5173",
-                                "http://127.0.0.1:3000",
-                                "https://*.onrender.com"
+                                "http://127.0.0.1:3000"
                 ));
                 configuration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
                 configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type"));

@@ -16,7 +16,7 @@ export default function DashboardRecentTransactions({ transactions }: DashboardR
                 <h2 className="text-sm font-semibold text-gray-900">Transazioni recenti</h2>
                 <button
                     onClick={() => navigate('/transactions')}
-                    className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 font-medium transition-colors"
+                    className="flex items-center gap-1 text-xs text-gray-900 hover:text-black font-medium transition-colors"
                 >
                     Vedi tutte <ChevronRight size={13} />
                 </button>
@@ -27,7 +27,7 @@ export default function DashboardRecentTransactions({ transactions }: DashboardR
                         <div key={tx.id} className="flex items-center gap-3 py-2.5 border-b border-gray-50 last:border-0">
                             <div
                                 className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
-                                style={{ backgroundColor: `${tx.categoryColor || '#7c3aed'}15`, color: tx.categoryColor || '#7c3aed' }}
+                                style={{ backgroundColor: `${tx.categoryColor || '#111827'}15`, color: tx.categoryColor || '#111827' }}
                             >
                                 {tx.categoryName?.charAt(0).toUpperCase()}
                             </div>
@@ -47,3 +47,4 @@ export default function DashboardRecentTransactions({ transactions }: DashboardR
         </div>
     );
 }
+

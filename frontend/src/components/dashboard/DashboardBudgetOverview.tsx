@@ -16,7 +16,7 @@ export default function DashboardBudgetOverview({ budgets }: DashboardBudgetOver
                 <h2 className="text-sm font-semibold text-gray-900">Budget del mese</h2>
                 <button
                     onClick={() => navigate('/budgets')}
-                    className="flex items-center gap-1 text-xs text-violet-600 hover:text-violet-700 font-medium transition-colors"
+                    className="flex items-center gap-1 text-xs text-gray-900 hover:text-black font-medium transition-colors"
                 >
                     Vedi tutti <ChevronRight size={13} />
                 </button>
@@ -48,3 +48,4 @@ export default function DashboardBudgetOverview({ budgets }: DashboardBudgetOver
         </div>
     );
 }
+

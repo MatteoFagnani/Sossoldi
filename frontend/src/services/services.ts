@@ -1,5 +1,5 @@
 import api from './api';
-import type { AuthResponse, Category, Transaction, AutomationRule, Budget, BudgetStatus, DashboardOverview } from '../types';
+import type { AuthResponse, Category, Transaction, TransactionCategoryMapping, AutomationRule, Budget, BudgetStatus, DashboardOverview } from '../types';
 
 export const authService = {
     async register(username: string, email: string, password: string): Promise<AuthResponse> {
@@ -27,6 +27,10 @@ export const transactionService = {
     async remove(id: number): Promise<void> { return (await api.delete(`/transactions/${id}`)).data; },
 };
 
+export const transactionCategoryMappingService = {
+    async getAll(): Promise<TransactionCategoryMapping[]> { return (await api.get('/transaction-category-mappings')).data; },
+    async save(data: TransactionCategoryMapping): Promise<TransactionCategoryMapping> { return (await api.put('/transaction-category-mappings', data)).data; },
+};
 export const automationRuleService = {
     async getAll(): Promise<AutomationRule[]> { return (await api.get('/automation-rules')).data; },
     async create(data: object): Promise<AutomationRule> { return (await api.post('/automation-rules', data)).data; },

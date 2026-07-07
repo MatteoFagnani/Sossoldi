@@ -31,6 +31,15 @@ export interface Transaction {
     automatic: boolean;
 }
 
+export interface TransactionCategoryMapping {
+    id?: number;
+    type: TransactionType;
+    matchKey: string;
+    description: string;
+    categoryId: number;
+    categoryName?: string;
+}
+
 export interface AutomationRule {
     id: number;
     name: string;

@@ -6,8 +6,6 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
-import com.financeapp.model.AutomationRule;
 
 @Repository
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
@@ -20,6 +18,4 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Transaction> findByAccountIdOrderByDateDesc(Long accountId);
 
     List<Transaction> findByUserIdAndAccountIsNull(Long userId);
-
-    Optional<Transaction> findFirstByAutomationRuleAndDateBetween(AutomationRule automationRule, LocalDate startDate, LocalDate endDate);
 }

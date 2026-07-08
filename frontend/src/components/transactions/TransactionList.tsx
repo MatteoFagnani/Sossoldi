@@ -58,9 +58,6 @@ export default function TransactionList({ transactions, loading, onEdit, onDelet
                                     </div>
                                     <div>
                                         <p className="text-sm font-medium text-gray-800">{tx.description || tx.categoryName}</p>
-                                        {tx.automatic && (
-                                            <span className="text-xs text-gray-900 font-medium">Automatica</span>
-                                        )}
                                     </div>
                                 </div>
                             </td>

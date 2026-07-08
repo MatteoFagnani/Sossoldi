@@ -30,8 +30,4 @@ public class TransactionDto {
 
     private Long accountId;
     private String accountName;
-
-    private boolean automatic;
-
-    private Long automationId;
 }

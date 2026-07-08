@@ -8,6 +8,7 @@ import com.financeapp.model.Transaction;
 import com.financeapp.model.TransactionType;
 import com.financeapp.model.User;
 import com.financeapp.repository.AccountRepository;
+import com.financeapp.repository.AccountTransferRepository;
 import com.financeapp.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
@@ -21,6 +22,7 @@ public class AccountService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
+    private final AccountTransferRepository transferRepository;
 
     public void seedDefaultAccounts(User user) {
         defaultAccountFor(user);
@@ -28,7 +30,7 @@ public class AccountService {
     }
 
     public List<AccountDto> getAccounts(User user) {
-        defaultAccountFor(user);
+        seedDefaultAccounts(user);
         return accountRepository.findByUserIdOrderByArchivedAscNameAsc(user.getId()).stream()
                 .map(this::toDto)
                 .toList();
@@ -107,8 +109,12 @@ public class AccountService {
     }
 
     private double currentBalance(Account account) {
-        return account.getInitialBalance() + transactionRepository.findByAccountIdOrderByDateDesc(account.getId()).stream()
+        double transactionTotal = transactionRepository.findByAccountIdOrderByDateDesc(account.getId()).stream()
                 .mapToDouble(transaction -> transaction.getType() == TransactionType.INCOME ? transaction.getAmount() : -transaction.getAmount())
                 .sum();
+        double transferTotal = transferRepository.findByFromAccountIdOrToAccountId(account.getId(), account.getId()).stream()
+                .mapToDouble(transfer -> transfer.getToAccount().getId().equals(account.getId()) ? transfer.getAmount() : -transfer.getAmount())
+                .sum();
+        return account.getInitialBalance() + transactionTotal + transferTotal;
     }
 }

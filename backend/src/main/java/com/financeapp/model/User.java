@@ -44,9 +44,6 @@ public class User implements UserDetails {
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Budget> budgets;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<AutomationRule> automationRules;
-
     @Column(name = "failed_login_attempts")
     private Integer failedLoginAttempts;
 

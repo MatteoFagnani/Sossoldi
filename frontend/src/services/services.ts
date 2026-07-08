@@ -1,5 +1,5 @@
 import api from './api';
-import type { AuthResponse, Account, Category, Transaction, TransactionCategoryMapping, AutomationRule, Budget, BudgetStatus, DashboardOverview } from '../types';
+import type { AuthResponse, Account, AccountTransfer, Category, Transaction, TransactionCategoryMapping, Budget, BudgetStatus, DashboardOverview } from '../types';
 
 export const authService = {
     async register(username: string, email: string, password: string): Promise<AuthResponse> {
@@ -16,6 +16,12 @@ export const accountService = {
     async getAll(): Promise<Account[]> { return (await api.get('/accounts')).data; },
     async create(data: object): Promise<Account> { return (await api.post('/accounts', data)).data; },
     async update(id: number, data: object): Promise<Account> { return (await api.put(`/accounts/${id}`, data)).data; },
+};
+
+export const accountTransferService = {
+    async getAll(): Promise<AccountTransfer[]> { return (await api.get('/account-transfers')).data; },
+    async create(data: object): Promise<AccountTransfer> { return (await api.post('/account-transfers', data)).data; },
+    async remove(id: number): Promise<void> { return (await api.delete(`/account-transfers/${id}`)).data; },
 };
 
 export const categoryService = {
@@ -38,12 +44,6 @@ export const transactionCategoryMappingService = {
     async save(data: TransactionCategoryMapping): Promise<TransactionCategoryMapping> { return (await api.put('/transaction-category-mappings', data)).data; },
 };
 
-export const automationRuleService = {
-    async getAll(): Promise<AutomationRule[]> { return (await api.get('/automation-rules')).data; },
-    async create(data: object): Promise<AutomationRule> { return (await api.post('/automation-rules', data)).data; },
-    async update(id: number, data: object): Promise<AutomationRule> { return (await api.put(`/automation-rules/${id}`, data)).data; },
-    async remove(id: number): Promise<void> { return (await api.delete(`/automation-rules/${id}`)).data; },
-};
 
 export const budgetService = {
     async getByMonth(month: number, year: number): Promise<BudgetStatus[]> {

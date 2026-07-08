@@ -6,7 +6,6 @@ import RegisterPage from './pages/RegisterPage';
 import DashboardPage from './pages/DashboardPage';
 import CategoriesPage from './pages/CategoriesPage';
 import TransactionsPage from './pages/TransactionsPage';
-import AutomationsPage from './pages/AutomationsPage';
 import BudgetsPage from './pages/BudgetsPage';
 import WealthPage from './pages/WealthPage';
 import ProfilePage from './pages/ProfilePage';
@@ -37,7 +36,6 @@ export default function App() {
                   <Route path="categories" element={<CategoriesPage />} />
                   <Route path="transactions" element={<TransactionsPage />} />
                   <Route path="wealth" element={<WealthPage />} />
-                  <Route path="automations" element={<AutomationsPage />} />
                   <Route path="budgets" element={<BudgetsPage />} />
                   <Route path="profile" element={<ProfilePage />} />
                 </Routes>

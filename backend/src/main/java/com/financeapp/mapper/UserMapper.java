@@ -13,6 +13,5 @@ public interface UserMapper {
     @Mapping(target = "categories", ignore = true)
     @Mapping(target = "transactions", ignore = true)
     @Mapping(target = "budgets", ignore = true)
-    @Mapping(target = "automationRules", ignore = true)
     User toEntity(UserDto dto);
 }

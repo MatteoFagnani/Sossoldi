@@ -22,6 +22,17 @@ export interface Account {
     archived: boolean;
 }
 
+export interface AccountTransfer {
+    id: number;
+    amount: number;
+    date: string;
+    description?: string;
+    fromAccountId: number;
+    fromAccountName: string;
+    toAccountId: number;
+    toAccountName: string;
+}
+
 export interface Category {
     id: number;
     name: string;
@@ -42,7 +53,6 @@ export interface Transaction {
     categoryColor: string;
     accountId?: number | null;
     accountName?: string | null;
-    automatic: boolean;
 }
 
 export interface TransactionCategoryMapping {
@@ -54,16 +64,6 @@ export interface TransactionCategoryMapping {
     categoryName?: string;
 }
 
-export interface AutomationRule {
-    id: number;
-    name: string;
-    type: TransactionType;
-    categoryId: number;
-    categoryName: string;
-    executionDay: number;
-    monthlyAmount?: number;
-    annualAmount?: number;
-}
 
 export type { Budget, BudgetStatus, BudgetUpdateRequest } from './budget';
 import type { BudgetStatus } from './budget';

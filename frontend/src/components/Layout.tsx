@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Tags, ArrowLeftRight, Zap, Target, ChevronsLeft, Wallet } from 'lucide-react';
+import { LayoutDashboard, Tags, ArrowLeftRight, Target, ChevronsLeft, Wallet } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 const navItems = [
@@ -9,7 +9,6 @@ const navItems = [
     { to: '/wealth', icon: Wallet, label: 'Patrimonio' },
     { to: '/budgets', icon: Target, label: 'Budget' },
     { to: '/categories', icon: Tags, label: 'Categorie' },
-    { to: '/automations', icon: Zap, label: 'Automazioni' },
 ];
 
 const pageTitles: Record<string, string> = {

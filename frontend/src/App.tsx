@@ -8,6 +8,7 @@ import CategoriesPage from './pages/CategoriesPage';
 import TransactionsPage from './pages/TransactionsPage';
 import BudgetsPage from './pages/BudgetsPage';
 import WealthPage from './pages/WealthPage';
+import InvestmentsPage from './pages/InvestmentsPage';
 import ProfilePage from './pages/ProfilePage';
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -36,6 +37,7 @@ export default function App() {
                   <Route path="categories" element={<CategoriesPage />} />
                   <Route path="transactions" element={<TransactionsPage />} />
                   <Route path="wealth" element={<WealthPage />} />
+                  <Route path="investments" element={<InvestmentsPage />} />
                   <Route path="budgets" element={<BudgetsPage />} />
                   <Route path="profile" element={<ProfilePage />} />
                 </Routes>

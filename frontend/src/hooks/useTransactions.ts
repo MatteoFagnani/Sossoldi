@@ -1,25 +1,28 @@
 import { useState, useCallback } from 'react';
 import { transactionService, categoryService, accountService } from '../services/services';
-import type { Transaction, Category, Account } from '../types';
+import type { Transaction, Category, Account, AccountMovement } from '../types';
 
 export function useTransactions() {
     const [transactions, setTransactions] = useState<Transaction[]>([]);
+    const [movements, setMovements] = useState<AccountMovement[]>([]);
     const [categories, setCategories] = useState<Category[]>([]);
     const [accounts, setAccounts] = useState<Account[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
 
-    const loadData = useCallback(async () => {
+    const loadData = useCallback(async (accountId?: string) => {
         setLoading(true);
         setError('');
         try {
-            const [txs, cats, accs] = await Promise.all([
+            const [txs, movementData, cats, accs] = await Promise.all([
                 transactionService.getAll(),
+                transactionService.getMovements(accountId || undefined),
                 categoryService.getAll(),
                 accountService.getAll(),
             ]);
             setTransactions([...txs].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()));
+            setMovements(movementData);
             setCategories(cats);
             setAccounts(accs);
         } catch {
@@ -31,7 +34,8 @@ export function useTransactions() {
 
     const saveTransaction = async (
         id: number | null,
-        data: { amount: string | number; date: string; description: string; categoryId: string | number; accountId?: string | number }
+        data: { amount: string | number; date: string; description: string; categoryId: string | number; accountId?: string | number },
+        accountFilter?: string
     ) => {
         setSaving(true);
         setError('');
@@ -47,7 +51,7 @@ export function useTransactions() {
             } else {
                 await transactionService.create(payload);
             }
-            await loadData();
+            await loadData(accountFilter);
             return true;
         } catch (err: unknown) {
             const resData = (err as { response?: { data?: Record<string, string> } })?.response?.data;
@@ -58,10 +62,10 @@ export function useTransactions() {
         }
     };
 
-    const deleteTransaction = async (id: number) => {
+    const deleteTransaction = async (id: number, accountFilter?: string) => {
         try {
             await transactionService.remove(id);
-            await loadData();
+            await loadData(accountFilter);
             return true;
         } catch {
             setError('Impossibile eliminare la transazione.');
@@ -71,6 +75,7 @@ export function useTransactions() {
 
     return {
         transactions,
+        movements,
         categories,
         accounts,
         loading,

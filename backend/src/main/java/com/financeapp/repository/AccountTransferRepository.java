@@ -7,5 +7,6 @@ import java.util.List;
 
 public interface AccountTransferRepository extends JpaRepository<AccountTransfer, Long> {
     List<AccountTransfer> findByUserIdOrderByDateDescIdDesc(Long userId);
+    List<AccountTransfer> findByUserIdAndFromAccountIdOrUserIdAndToAccountIdOrderByDateDescIdDesc(Long fromUserId, Long fromAccountId, Long toUserId, Long toAccountId);
     List<AccountTransfer> findByFromAccountIdOrToAccountId(Long fromAccountId, Long toAccountId);
 }

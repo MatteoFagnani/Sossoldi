@@ -1,5 +1,5 @@
 import api from './api';
-import type { AuthResponse, Account, AccountTransfer, Category, Transaction, TransactionCategoryMapping, Budget, BudgetStatus, DashboardOverview } from '../types';
+import type { AuthResponse, Account, AccountMovement, AccountTransfer, Category, Investment, Transaction, TransactionCategoryMapping, Budget, BudgetStatus, DashboardOverview } from '../types';
 
 export const authService = {
     async register(username: string, email: string, password: string): Promise<AuthResponse> {
@@ -24,6 +24,13 @@ export const accountTransferService = {
     async remove(id: number): Promise<void> { return (await api.delete(`/account-transfers/${id}`)).data; },
 };
 
+export const investmentService = {
+    async getAll(): Promise<Investment[]> { return (await api.get('/investments')).data; },
+    async create(data: object): Promise<Investment> { return (await api.post('/investments', data)).data; },
+    async update(id: number, data: object): Promise<Investment> { return (await api.put(`/investments/${id}`, data)).data; },
+    async remove(id: number): Promise<void> { return (await api.delete(`/investments/${id}`)).data; },
+};
+
 export const categoryService = {
     async getAll(): Promise<Category[]> { return (await api.get('/categories')).data; },
     async getByType(type: string): Promise<Category[]> { return (await api.get(`/categories/type/${type}`)).data; },
@@ -34,6 +41,7 @@ export const categoryService = {
 
 export const transactionService = {
     async getAll(): Promise<Transaction[]> { return (await api.get('/transactions')).data; },
+    async getMovements(accountId?: number | string): Promise<AccountMovement[]> { return (await api.get('/transactions/movements', { params: accountId ? { accountId } : undefined })).data; },
     async create(data: object): Promise<Transaction> { return (await api.post('/transactions', data)).data; },
     async update(id: number, data: object): Promise<Transaction> { return (await api.put(`/transactions/${id}`, data)).data; },
     async remove(id: number): Promise<void> { return (await api.delete(`/transactions/${id}`)).data; },

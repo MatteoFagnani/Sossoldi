@@ -11,7 +11,9 @@ export interface AuthResponse {
 }
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
+export type MovementType = TransactionType | 'TRANSFER';
 export type AccountType = 'CHECKING' | 'SAVINGS' | 'CASH' | 'CARD' | 'INVESTMENT' | 'OTHER';
+export type InvestmentType = 'ETF' | 'STOCK' | 'FUND' | 'CRYPTO' | 'PENSION' | 'BOND' | 'OTHER';
 
 export interface Account {
     id: number;
@@ -31,6 +33,22 @@ export interface AccountTransfer {
     fromAccountName: string;
     toAccountId: number;
     toAccountName: string;
+}
+
+export interface Investment {
+    id: number;
+    name: string;
+    type: InvestmentType;
+    ticker?: string;
+    currentValue: number;
+    investedCapital: number;
+    recurringAmount?: number | null;
+    recurringDay?: number | null;
+    pacActive: boolean;
+    lastUpdateDate?: string;
+    gainLoss: number;
+    gainLossPercent: number;
+    allocationPercent: number;
 }
 
 export interface Category {
@@ -53,6 +71,26 @@ export interface Transaction {
     categoryColor: string;
     accountId?: number | null;
     accountName?: string | null;
+}
+
+export interface AccountMovement {
+    id: number;
+    source: 'TRANSACTION' | 'TRANSFER';
+    type: MovementType;
+    amount: number;
+    signedAmount: number;
+    date: string;
+    description?: string;
+    categoryId?: number | null;
+    categoryName?: string | null;
+    categoryColor?: string | null;
+    accountId?: number | null;
+    accountName?: string | null;
+    fromAccountId?: number | null;
+    fromAccountName?: string | null;
+    toAccountId?: number | null;
+    toAccountName?: string | null;
+    transferDirection?: 'IN' | 'OUT' | 'NEUTRAL' | null;
 }
 
 export interface TransactionCategoryMapping {

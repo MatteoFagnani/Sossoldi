@@ -1,5 +1,6 @@
 package com.financeapp.controller;
 
+import com.financeapp.dto.AccountMovementDto;
 import com.financeapp.dto.TransactionDto;
 import com.financeapp.service.TransactionService;
 import jakarta.validation.Valid;
@@ -21,6 +22,11 @@ public class TransactionController extends BaseController {
     @GetMapping
     public ResponseEntity<List<TransactionDto>> getAllTransactions(Authentication authentication) {
         return ResponseEntity.ok(transactionService.getAllTransactions(getCurrentUser(authentication)));
+    }
+
+    @GetMapping("/movements")
+    public ResponseEntity<List<AccountMovementDto>> getMovements(Authentication authentication, @RequestParam(required = false) Long accountId) {
+        return ResponseEntity.ok(transactionService.getMovements(getCurrentUser(authentication), accountId));
     }
 
     @GetMapping("/{id}")

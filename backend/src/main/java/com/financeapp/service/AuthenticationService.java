@@ -28,6 +28,7 @@ public class AuthenticationService {
     private final AuthenticationManager authenticationManager;
     private final UserMapper userMapper;
     private final CategoryService categoryService;
+    private final AccountService accountService;
     private final LoginAttemptService loginAttemptService;
     private final AuthenticationAttemptPersistenceService authenticationAttemptPersistenceService;
 
@@ -48,6 +49,7 @@ public class AuthenticationService {
 
         var savedUser = repository.save(user);
         categoryService.seedDefaultCategories(savedUser);
+        accountService.seedDefaultAccounts(savedUser);
 
         var jwtToken = jwtService.generateToken(savedUser);
 

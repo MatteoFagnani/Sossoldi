@@ -1,5 +1,5 @@
 import api from './api';
-import type { AuthResponse, Category, Transaction, TransactionCategoryMapping, AutomationRule, Budget, BudgetStatus, DashboardOverview } from '../types';
+import type { AuthResponse, Account, Category, Transaction, TransactionCategoryMapping, AutomationRule, Budget, BudgetStatus, DashboardOverview } from '../types';
 
 export const authService = {
     async register(username: string, email: string, password: string): Promise<AuthResponse> {
@@ -10,6 +10,12 @@ export const authService = {
         const response = await api.post<AuthResponse>('/auth/authenticate', { username, password });
         return response.data;
     },
+};
+
+export const accountService = {
+    async getAll(): Promise<Account[]> { return (await api.get('/accounts')).data; },
+    async create(data: object): Promise<Account> { return (await api.post('/accounts', data)).data; },
+    async update(id: number, data: object): Promise<Account> { return (await api.put(`/accounts/${id}`, data)).data; },
 };
 
 export const categoryService = {

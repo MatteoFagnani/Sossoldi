@@ -37,6 +37,7 @@ export default function TransactionList({ transactions, loading, onEdit, onDelet
                         <th className="text-left text-xs font-medium text-gray-400 px-5 py-3.5 hidden md:table-cell">Data</th>
                         <th className="text-left text-xs font-medium text-gray-400 px-5 py-3.5">Descrizione</th>
                         <th className="text-left text-xs font-medium text-gray-400 px-5 py-3.5 hidden md:table-cell">Categoria</th>
+                        <th className="text-left text-xs font-medium text-gray-400 px-5 py-3.5 hidden lg:table-cell">Conto</th>
                         <th className="text-right text-xs font-medium text-gray-400 px-5 py-3.5">Importo</th>
                         <th className="px-5 py-3.5 w-20" />
                     </tr>
@@ -70,6 +71,9 @@ export default function TransactionList({ transactions, loading, onEdit, onDelet
                                 >
                                     {tx.categoryName}
                                 </span>
+                            </td>
+                            <td className="px-5 py-4 hidden lg:table-cell">
+                                <span className="text-xs text-gray-500">{tx.accountName || 'Conto principale'}</span>
                             </td>
                             <td className="px-5 py-4 text-right">
                                 <span className={`text-sm font-semibold ${tx.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'}`}>

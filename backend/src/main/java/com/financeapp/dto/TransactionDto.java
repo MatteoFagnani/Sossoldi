@@ -28,6 +28,9 @@ public class TransactionDto {
     private String categoryName;
     private String categoryColor;
 
+    private Long accountId;
+    private String accountName;
+
     private boolean automatic;
 
     private Long automationId;

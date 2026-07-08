@@ -4,9 +4,11 @@ import com.financeapp.dto.CategoryDto;
 import com.financeapp.exception.ResourceNotFoundException;
 import com.financeapp.mapper.CategoryMapper;
 import com.financeapp.model.Category;
+import com.financeapp.model.TransactionCategoryMapping;
 import com.financeapp.model.TransactionType;
 import com.financeapp.model.User;
 import com.financeapp.repository.CategoryRepository;
+import com.financeapp.repository.TransactionCategoryMappingRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -19,6 +21,7 @@ import java.util.stream.Collectors;
 public class CategoryService {
 
     private final CategoryRepository categoryRepository;
+    private final TransactionCategoryMappingRepository mappingRepository;
     private final CategoryMapper categoryMapper;
 
     public void seedDefaultCategories(User user) {
@@ -101,15 +104,101 @@ public class CategoryService {
         seedSub(investments, "Vendite investimenti", "#1e40af", user);
 
         Category otherIncome = seedMacro("Altro", TransactionType.INCOME, "#94a3b8", user);
-        seedSub(otherIncome, "Entrate varie", "#64748b", user);
+        Category miscIncome = seedSub(otherIncome, "Entrate varie", "#64748b", user);
+
+        seedDefaultMappings(user, food, restaurants, home, transport, shopping, health, leisure, travel, education, transfers, otherExpense, work, gifts, investments, miscIncome);
+    }
+
+    private void seedDefaultMappings(User user, Category food, Category restaurants, Category home, Category transport, Category shopping, Category health, Category leisure, Category travel, Category education, Category transfers, Category otherExpense, Category work, Category gifts, Category investments, Category miscIncome) {
+        Category supermarket = child(food, "Supermercato");
+        seedKeywords(user, supermarket, "esselunga", "conad", "coop", "carrefour", "lidl", "eurospin", "aldi", "pam", "iper", "md", "crai", "tigros", "bennet", "mercato");
+        seedKeywords(user, child(food, "Discount"), "discount", "d piu", "prix");
+        seedKeywords(user, child(food, "Macelleria e pescheria"), "macelleria", "pescheria", "carni", "ittico");
+
+        seedKeywords(user, child(restaurants, "Bar e caffe"), "bar", "caffe", "caffetteria", "starbucks", "autogrill");
+        seedKeywords(user, child(restaurants, "Ristoranti"), "ristorante", "trattoria", "osteria", "pizzeria", "sushi", "pub", "burger");
+        seedKeywords(user, child(restaurants, "Fast food"), "mcdonald", "burger king", "kfc", "poke", "old wild west");
+        seedKeywords(user, child(restaurants, "Delivery"), "deliveroo", "glovo", "just eat", "ubereats", "uber eats");
+
+        seedKeywords(user, child(home, "Bollette luce gas acqua"), "enel", "eni gas", "hera", "acea", "a2a", "iren", "servizio elettrico", "gas e luce", "acqua", "bolletta");
+        seedKeywords(user, child(home, "Internet e telefono"), "tim", "vodafone", "windtre", "iliad", "fastweb", "sky wifi", "poste mobile", "ho mobile", "kena");
+        seedKeywords(user, child(home, "Arredamento"), "ikea", "leroy merlin", "mondo convenienza", "brico", "obi");
+
+        seedKeywords(user, child(transport, "Carburante"), "eni station", "q8", "esso", "ip", "tamoil", "sarroch", "benzina", "carburante");
+        seedKeywords(user, child(transport, "Parcheggi"), "easypark", "mycicero", "parcheggio", "parking", "apcoa");
+        seedKeywords(user, child(transport, "Pedaggi"), "autostrade", "telepass", "pedaggio");
+        seedKeywords(user, child(transport, "Mezzi pubblici"), "trenitalia", "italo", "atm", "atac", "bus", "metro", "tpl", "trenord", "gtt");
+        seedKeywords(user, child(transport, "Taxi e ride sharing"), "uber", "freenow", "taxi", "it taxi");
+        seedKeywords(user, child(transport, "Manutenzione auto"), "meccanico", "gommista", "revisione", "autofficina");
+
+        seedKeywords(user, child(shopping, "Marketplace"), "amazon", "ebay", "aliexpress", "temu", "vinted", "subito", "etsy");
+        seedKeywords(user, child(shopping, "Abbigliamento"), "zara", "hm", "h m", "ovs", "nike", "adidas", "decathlon", "pull bear", "bershka", "primark");
+        seedKeywords(user, child(shopping, "Elettronica"), "mediaworld", "unieuro", "apple", "eprice", "euronics", "gamestop");
+        seedKeywords(user, child(shopping, "Cura persona"), "sephora", "douglas", "acqua sapone", "tigota", "profumeria", "parrucchiere", "barbiere");
+
+        seedKeywords(user, child(health, "Farmacia"), "farmacia", "lafarmacia", "dr max", "lloyds");
+        seedKeywords(user, child(health, "Medici e visite"), "studio medico", "dentista", "clinica", "laboratorio analisi", "visita medica");
+        seedKeywords(user, child(health, "Sport e benessere"), "palestra", "fitactive", "mcfit", "yoga", "piscina");
+
+        seedKeywords(user, child(leisure, "Streaming"), "netflix", "spotify", "disney", "prime video", "dazn", "now tv", "youtube premium", "apple tv");
+        seedKeywords(user, child(leisure, "Giochi e app"), "steam", "playstation", "xbox", "nintendo", "gamsgo", "google play", "app store");
+        seedKeywords(user, child(leisure, "Cinema eventi"), "cinema", "ticketone", "eventim", "teatro", "concerto");
+        seedKeywords(user, child(leisure, "Abbonamenti"), "abbonamento", "patreon", "onlyfans", "chatgpt", "openai", "icloud", "google one");
+
+        seedKeywords(user, child(travel, "Hotel"), "booking", "airbnb", "hotel", "b b", "bed breakfast");
+        seedKeywords(user, child(travel, "Voli e treni"), "ryanair", "easyjet", "wizz", "ita airways", "lufthansa", "trenitalia", "italo");
+        seedKeywords(user, child(travel, "Noleggi"), "hertz", "avis", "sixt", "rentalcars", "noleggio");
+
+        seedKeywords(user, child(education, "Universita"), "universita", "politecnico", "unimi", "uni", "tasse universitarie");
+        seedKeywords(user, child(education, "Libri"), "libreria", "feltrinelli", "mondadori", "ibs");
+        seedKeywords(user, child(education, "Corsi"), "udemy", "coursera", "edx", "corso");
+
+        seedKeywords(user, child(transfers, "Bonifici inviati"), "bonifico", "giroconto", "trasferimento fondi");
+        seedKeywords(user, child(transfers, "Prelievi"), "prelievo", "atm prelievo", "bancomat");
+        seedKeywords(user, child(transfers, "Commissioni bancarie"), "commissione", "canone", "imposta di bollo", "spese bancarie");
+
+        seedKeywords(user, child(work, "Stipendio"), "stipendio", "salary", "retribuzione", "cedolino");
+        seedKeywords(user, child(work, "Tirocinio"), "tirocinio", "stage");
+        seedKeywords(user, child(work, "Bonus"), "bonus", "premio produzione");
+        seedKeywords(user, child(work, "Rimborsi lavoro"), "rimborso spese", "trasferta");
+
+        seedKeywords(user, child(gifts, "Regali"), "regalo", "gift");
+        seedKeywords(user, child(gifts, "Rimborsi amici"), "rimborso", "splitwise", "satispay");
+        seedKeywords(user, child(gifts, "Rimborsi fiscali"), "rimborso irpef", "agenzia entrate", "govt", "fisco");
+
+        seedKeywords(user, child(investments, "Dividendi"), "dividendo", "dividend");
+        seedKeywords(user, child(investments, "Interessi"), "interessi", "interest");
+        seedKeywords(user, child(investments, "Vendite investimenti"), "vendita titoli", "capital gain");
+        seedKeywords(user, miscIncome, "accredito", "entrata varia");
+        seedKeywords(user, child(otherExpense, "Da classificare"), "paypal", "sumup", "pos");
     }
 
     private Category seedMacro(String name, TransactionType type, String color, User user) {
         return categoryRepository.save(createCategoryEntity(name, type, color, user, null));
     }
 
-    private void seedSub(Category parent, String name, String color, User user) {
-        categoryRepository.save(createCategoryEntity(name, parent.getType(), color, user, parent));
+    private Category seedSub(Category parent, String name, String color, User user) {
+        return categoryRepository.save(createCategoryEntity(name, parent.getType(), color, user, parent));
+    }
+
+
+    private Category child(Category parent, String name) {
+        return categoryRepository.findByUserIdAndParentIdAndName(parent.getUser().getId(), parent.getId(), name)
+                .orElseThrow(() -> new IllegalStateException("Missing seeded category: " + name));
+    }
+
+    private void seedKeywords(User user, Category category, String... keywords) {
+        for (String keyword : keywords) {
+            String matchKey = category.getType() + ":" + keyword.toLowerCase();
+            mappingRepository.findByUserIdAndTypeAndMatchKey(user.getId(), category.getType(), matchKey)
+                    .orElseGet(() -> mappingRepository.save(TransactionCategoryMapping.builder()
+                            .user(user)
+                            .type(category.getType())
+                            .matchKey(matchKey)
+                            .description(keyword)
+                            .category(category)
+                            .build()));
+        }
     }
 
     private Category createCategoryEntity(String name, TransactionType type, String color, User user, Category parent) {

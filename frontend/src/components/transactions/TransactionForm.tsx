@@ -1,21 +1,22 @@
 import React, { useState, useEffect } from 'react';
 import { X, ChevronDown, Loader2 } from 'lucide-react';
-import type { Transaction, Category } from '../../types';
+import type { Transaction, Category, Account } from '../../types';
 
 interface TransactionFormProps {
     editing: Transaction | null;
     categories: Category[];
-    initialData: { amount: string; date: string; description: string; categoryId: string };
+    accounts: Account[];
+    initialData: { amount: string; date: string; description: string; categoryId: string; accountId: string };
     saving: boolean;
     error: string;
-    onSave: (form: { amount: string; date: string; description: string; categoryId: string }) => void;
+    onSave: (form: { amount: string; date: string; description: string; categoryId: string; accountId: string }) => void;
     onClose: () => void;
 }
 
 const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all';
 const labelClass = 'block text-sm font-medium text-gray-700 mb-1.5';
 
-export default function TransactionForm({ editing, categories, initialData, saving, error, onSave, onClose }: TransactionFormProps) {
+export default function TransactionForm({ editing, categories, accounts, initialData, saving, error, onSave, onClose }: TransactionFormProps) {
     const [form, setForm] = useState(initialData);
 
     useEffect(() => {
@@ -51,6 +52,23 @@ export default function TransactionForm({ editing, categories, initialData, savi
 
                     <form onSubmit={handleSubmit} className="space-y-4">
                         <div>
+                            <label className={labelClass}>Conto</label>
+                            <div className="relative">
+                                <select
+                                    value={form.accountId}
+                                    onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+                                    className={`${inputClass} appearance-none pr-9`}
+                                >
+                                    <option value="">Conto principale</option>
+                                    {accounts.filter(account => !account.archived).map((account) => (
+                                        <option key={account.id} value={account.id}>{account.name}</option>
+                                    ))}
+                                </select>
+                                <ChevronDown size={15} className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none" />
+                            </div>
+                        </div>
+
+                        <div>
                             <label className={labelClass}>Categoria</label>
                             <div className="relative">
                                 <select
@@ -72,7 +90,7 @@ export default function TransactionForm({ editing, categories, initialData, savi
 
                         <div className="grid grid-cols-2 gap-4">
                             <div>
-                                <label className={labelClass}>Importo (€)</label>
+                                <label className={labelClass}>Importo</label>
                                 <input
                                     type="number"
                                     value={form.amount}
@@ -129,4 +147,3 @@ export default function TransactionForm({ editing, categories, initialData, savi
         </div>
     );
 }
-

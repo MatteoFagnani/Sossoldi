@@ -17,5 +17,9 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
 
     List<Transaction> findByCategoryIdOrderByDateDesc(Long categoryId);
 
+    List<Transaction> findByAccountIdOrderByDateDesc(Long accountId);
+
+    List<Transaction> findByUserIdAndAccountIsNull(Long userId);
+
     Optional<Transaction> findFirstByAutomationRuleAndDateBetween(AutomationRule automationRule, LocalDate startDate, LocalDate endDate);
 }

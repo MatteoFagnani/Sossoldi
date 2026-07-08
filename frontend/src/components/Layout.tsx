@@ -1,11 +1,12 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Tags, ArrowLeftRight, Zap, Target, ChevronsLeft } from 'lucide-react';
+import { LayoutDashboard, Tags, ArrowLeftRight, Zap, Target, ChevronsLeft, Wallet } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
 const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/transactions', icon: ArrowLeftRight, label: 'Transazioni' },
+    { to: '/wealth', icon: Wallet, label: 'Patrimonio' },
     { to: '/budgets', icon: Target, label: 'Budget' },
     { to: '/categories', icon: Tags, label: 'Categorie' },
     { to: '/automations', icon: Zap, label: 'Automazioni' },

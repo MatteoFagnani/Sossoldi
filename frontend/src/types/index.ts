@@ -11,6 +11,16 @@ export interface AuthResponse {
 }
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
+export type AccountType = 'CHECKING' | 'SAVINGS' | 'CASH' | 'CARD' | 'INVESTMENT' | 'OTHER';
+
+export interface Account {
+    id: number;
+    name: string;
+    type: AccountType;
+    initialBalance: number;
+    currentBalance: number;
+    archived: boolean;
+}
 
 export interface Category {
     id: number;
@@ -30,6 +40,8 @@ export interface Transaction {
     categoryId: number;
     categoryName: string;
     categoryColor: string;
+    accountId?: number | null;
+    accountName?: string | null;
     automatic: boolean;
 }
 
@@ -76,4 +88,3 @@ export interface DashboardOverview {
     yearlyReport: ReportDto;
     categoryReport: ReportDto;
 }
-

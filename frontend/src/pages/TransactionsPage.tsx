@@ -96,7 +96,7 @@ const apiError = (err: unknown) => {
 };
 
 export default function TransactionsPage() {
-    const { transactions, categories, loading, saving, error, setError, loadData, saveTransaction, deleteTransaction } = useTransactions();
+    const { transactions, categories, accounts, loading, saving, error, setError, loadData, saveTransaction, deleteTransaction } = useTransactions();
 
     const [showForm, setShowForm] = useState(false);
     const [showMappings, setShowMappings] = useState(false);
@@ -107,12 +107,15 @@ export default function TransactionsPage() {
     const [importMessage, setImportMessage] = useState('');
     const [categoryMappings, setCategoryMappings] = useState<CategoryMappings>({});
     const [savingMappingKey, setSavingMappingKey] = useState('');
+    const [mappingType, setMappingType] = useState<TransactionType>('EXPENSE');
+    const [mappingSearch, setMappingSearch] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({
         amount: '',
         date: new Date().toISOString().split('T')[0],
         description: '',
         categoryId: '',
+        accountId: '',
     });
 
     useEffect(() => {
@@ -168,26 +171,60 @@ export default function TransactionsPage() {
         return [...groups.values()].sort((a, b) => b.count - a.count || a.description.localeCompare(b.description));
     }, [transactions]);
 
+    const visibleTransactionGroups = useMemo(() => {
+        const query = mappingSearch.trim().toLowerCase();
+        return transactionGroups
+            .filter(group => group.type === mappingType)
+            .filter(group => !query || group.description.toLowerCase().includes(query) || group.examples.some(example => example.toLowerCase().includes(query)));
+    }, [mappingSearch, mappingType, transactionGroups]);
+
+    const categoryOptionsFor = (type: TransactionType) => {
+        const typeCategories = categories.filter(category => category.type === type);
+        const macros = typeCategories.filter(category => !category.parentId);
+        const children = typeCategories.filter(category => category.parentId);
+        const grouped = macros
+            .map(macro => ({ macro, children: children.filter(category => category.parentId === macro.id) }))
+            .filter(group => group.children.length > 0);
+        const standalone = typeCategories.filter(category => !category.parentId && !children.some(child => child.parentId === category.id));
+
+        return { grouped, standalone };
+    };
+
+    const openMappings = () => {
+        setMappingType(filter === 'INCOME' ? 'INCOME' : 'EXPENSE');
+        setMappingSearch('');
+        setShowMappings(true);
+    };
     const categoryFor = (type: TransactionType, description: string, fallbackId: number) => {
-        const mappedId = categoryMappings[mappingKey(type, description)];
-        return categories.some(category => category.id === mappedId && category.type === type) ? mappedId : fallbackId;
+        const exactId = categoryMappings[mappingKey(type, description)];
+        if (categories.some(category => category.id === exactId && category.type === type)) return exactId;
+
+        const normalized = similarDescriptionKey(description) || description.toLowerCase();
+        const prefix = `${type}:`;
+        const match = Object.entries(categoryMappings)
+            .filter(([key, categoryId]) => key.startsWith(prefix) && categories.some(category => category.id === categoryId && category.type === type))
+            .map(([key, categoryId]) => ({ keyword: key.slice(prefix.length), categoryId }))
+            .filter(({ keyword }) => keyword && normalized.includes(keyword))
+            .sort((a, b) => b.keyword.length - a.keyword.length)[0];
+
+        return match?.categoryId ?? fallbackId;
     };
 
     const openNew = () => {
         setEditing(null);
-        setFormData({ amount: '', date: new Date().toISOString().split('T')[0], description: '', categoryId: '' });
+        setFormData({ amount: '', date: new Date().toISOString().split('T')[0], description: '', categoryId: '', accountId: '' });
         setError('');
         setShowForm(true);
     };
 
     const openEdit = (tx: Transaction) => {
         setEditing(tx);
-        setFormData({ amount: String(tx.amount), date: tx.date, description: tx.description || '', categoryId: String(tx.categoryId) });
+        setFormData({ amount: String(tx.amount), date: tx.date, description: tx.description || '', categoryId: String(tx.categoryId), accountId: tx.accountId ? String(tx.accountId) : '' });
         setError('');
         setShowForm(true);
     };
 
-    const handleSave = async (form: { amount: string; date: string; description: string; categoryId: string }) => {
+    const handleSave = async (form: { amount: string; date: string; description: string; categoryId: string; accountId: string }) => {
         const success = await saveTransaction(editing ? editing.id : null, form);
         if (success) {
             setShowForm(false);
@@ -226,6 +263,7 @@ export default function TransactionsPage() {
                     date: tx.date,
                     description: tx.description,
                     categoryId,
+                    accountId: tx.accountId ?? undefined,
                 });
             }
 
@@ -283,6 +321,7 @@ export default function TransactionsPage() {
                         date,
                         description,
                         categoryId: categoryFor(type, description, fallbackCategoryId),
+                        accountId: accounts.find(account => !account.archived)?.id,
                     });
                     imported += 1;
                 } catch {
@@ -344,7 +383,7 @@ export default function TransactionsPage() {
                         onChange={(e) => handleImport(e.target.files?.[0])}
                     />
                     <button
-                        onClick={() => setShowMappings(true)}
+                        onClick={openMappings}
                         disabled={loading || transactions.length === 0}
                         className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-60 text-gray-700 text-sm font-medium rounded-xl transition-colors"
                     >
@@ -389,7 +428,10 @@ export default function TransactionsPage() {
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
-                            <h3 className="text-base font-semibold text-gray-900">Mappa categorie</h3>
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900">Mappa categorie</h3>
+                                <p className="text-xs text-gray-500 mt-1">Aggiorna una regola e verranno aggiornate tutte le transazioni uguali.</p>
+                            </div>
                             <button
                                 onClick={() => setShowMappings(false)}
                                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
@@ -398,18 +440,50 @@ export default function TransactionsPage() {
                             </button>
                         </div>
 
+                        <div className="p-4 border-b border-gray-100 shrink-0 space-y-3">
+                            <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                                {(['EXPENSE', 'INCOME'] as const).map((type) => (
+                                    <button
+                                        key={type}
+                                        onClick={() => setMappingType(type)}
+                                        className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${mappingType === type
+                                            ? 'bg-white text-gray-950 shadow-sm'
+                                            : 'text-gray-500 hover:text-gray-800'
+                                            }`}
+                                    >
+                                        {type === 'EXPENSE' ? 'Uscite' : 'Entrate'} ({transactionGroups.filter(group => group.type === type).length})
+                                    </button>
+                                ))}
+                            </div>
+                            <div className="relative">
+                                <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                <input
+                                    type="text"
+                                    value={mappingSearch}
+                                    onChange={(e) => setMappingSearch(e.target.value)}
+                                    placeholder="Cerca negozio, azienda o descrizione..."
+                                    className="w-full pl-9 pr-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent"
+                                />
+                            </div>
+                        </div>
+
                         <div className="overflow-y-auto divide-y divide-gray-100">
-                            {transactionGroups.map(group => {
+                            {visibleTransactionGroups.length === 0 ? (
+                                <div className="p-8 text-center text-sm text-gray-500">Nessuna casistica da mappare per questo filtro.</div>
+                            ) : visibleTransactionGroups.map(group => {
                                 const selectedCategoryId = categoryMappings[group.key] ?? group.categoryId;
-                                const availableCategories = categories.filter(category => category.type === group.type);
+                                const options = categoryOptionsFor(group.type);
 
                                 return (
-                                    <div key={group.key} className="grid grid-cols-1 md:grid-cols-[1fr_220px] gap-3 p-4 items-center">
+                                    <div key={group.key} className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-3 p-4 items-center hover:bg-gray-50/70 transition-colors">
                                         <div className="min-w-0">
-                                            <p className="text-sm font-medium text-gray-800 truncate">{group.description}</p>
-                                            <p className="text-xs text-gray-400">
-                                                {group.count} transazioni - {group.type === 'INCOME' ? 'Entrata' : 'Uscita'}
-                                            </p>
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${group.type === 'INCOME' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>
+                                                    {group.type === 'INCOME' ? 'Entrata' : 'Uscita'}
+                                                </span>
+                                                <p className="text-sm font-medium text-gray-900 truncate">{group.description}</p>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1">{group.count} transazioni</p>
                                             {group.examples.length > 1 && (
                                                 <p className="text-xs text-gray-400 truncate mt-0.5">
                                                     Esempi: {group.examples.slice(1).join(', ')}
@@ -423,11 +497,18 @@ export default function TransactionsPage() {
                                                 onChange={(e) => handleMappingChange(group.key, Number(e.target.value))}
                                                 className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900"
                                             >
-                                                {availableCategories.map(category => (
+                                                {options.grouped.map(({ macro, children }) => (
+                                                    <optgroup key={macro.id} label={macro.name}>
+                                                        {children.map(category => (
+                                                            <option key={category.id} value={category.id}>{category.name}</option>
+                                                        ))}
+                                                    </optgroup>
+                                                ))}
+                                                {options.standalone.map(category => (
                                                     <option key={category.id} value={category.id}>{category.name}</option>
                                                 ))}
                                             </select>
-                                            {savingMappingKey === group.key && <Loader2 size={16} className="animate-spin text-gray-900" />}
+                                            {savingMappingKey === group.key && <Loader2 size={16} className="animate-spin text-gray-900 shrink-0" />}
                                         </div>
                                     </div>
                                 );
@@ -441,6 +522,7 @@ export default function TransactionsPage() {
                 <TransactionForm
                     editing={editing}
                     categories={categories}
+                    accounts={accounts}
                     initialData={formData}
                     saving={saving}
                     error={error}
@@ -451,4 +533,3 @@ export default function TransactionsPage() {
         </div>
     );
 }
-

@@ -47,6 +47,8 @@ class AuthenticationServiceTest {
     @Mock
     private CategoryService categoryService;
     @Mock
+    private AccountService accountService;
+    @Mock
     private AuthenticationAttemptPersistenceService authenticationAttemptPersistenceService;
 
     private LoginAttemptService loginAttemptService;
@@ -62,6 +64,7 @@ class AuthenticationServiceTest {
                 authenticationManager,
                 userMapper,
                 categoryService,
+                accountService,
                 loginAttemptService,
                 authenticationAttemptPersistenceService
         );

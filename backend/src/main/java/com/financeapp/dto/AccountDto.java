@@ -20,4 +20,7 @@ public class AccountDto {
 
     private Double currentBalance;
     private boolean archived;
+    
+    private String color;
+    private String icon;
 }

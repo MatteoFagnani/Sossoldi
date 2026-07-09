@@ -127,7 +127,7 @@ export default function InvestmentsPage() {
                     <div className="bg-white border border-gray-200 rounded-2xl p-5"><p className="text-sm text-gray-500">Capitale investito</p><p className="text-2xl font-semibold mt-2 text-gray-900">{fmt(invested)}</p></div>
                     <div className="bg-white border border-gray-200 rounded-2xl p-5"><p className="text-sm text-gray-500">PAC mensili attivi</p><p className="text-2xl font-semibold mt-2 text-gray-900">{fmt(pacTotal)}</p></div>
                 </div>
-                <button onClick={openCreate} className="inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-medium rounded-xl"><Plus size={16} />Nuovo investimento/PAC</button>
+                <button onClick={openCreate} className="app-button-primary"><Plus size={16} />Nuovo investimento/PAC</button>
             </div>
 
             {error && <div className="px-4 py-3 bg-red-50 border border-red-100 rounded-xl text-sm text-red-600">{error}</div>}

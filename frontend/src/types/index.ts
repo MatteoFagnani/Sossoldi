@@ -22,6 +22,8 @@ export interface Account {
     initialBalance: number;
     currentBalance: number;
     archived: boolean;
+    color?: string;
+    icon?: string;
 }
 
 export interface AccountTransfer {
@@ -127,6 +129,7 @@ export interface TransactionCategoryMapping {
 
 export type { Budget, BudgetStatus, BudgetUpdateRequest } from './budget';
 import type { BudgetStatus } from './budget';
+
 
 export interface ReportDto {
     title: string;

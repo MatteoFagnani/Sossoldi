@@ -7,6 +7,7 @@ const navItems = [
     { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/transactions', icon: ArrowLeftRight, label: 'Transazioni' },
     { to: '/wealth', icon: Wallet, label: 'Patrimonio' },
+
     { to: '/investments', icon: TrendingUp, label: 'Investimenti' },
     { to: '/budgets', icon: Target, label: 'Budget' },
     { to: '/categories', icon: Tags, label: 'Categorie' },

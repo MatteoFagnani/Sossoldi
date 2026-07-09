@@ -28,7 +28,7 @@ export default function BudgetList({ budgets, loading, month, year, onAdd, onEdi
 
     if (budgets.length === 0) {
         return (
-            <div className="border-2 border-dashed border-gray-200 rounded-2xl py-16 text-center">
+            <div className="app-empty">
                 <p className="text-sm text-gray-500 mb-1 font-medium">Nessun budget per {SHORT_MONTHS[month - 1]} {year}</p>
                 <p className="text-xs text-gray-400 mb-4">Imposta un budget per tenere sotto controllo le tue spese</p>
                 <button
@@ -49,7 +49,7 @@ export default function BudgetList({ budgets, loading, month, year, onAdd, onEdi
                 const isOver = b.remainingAmount < 0;
 
                 return (
-                    <div key={b.id} className="group bg-white border border-gray-200 rounded-2xl p-5 hover:border-gray-300 transition-colors relative">
+                    <div key={b.id} className="group app-card app-card-hover p-5 relative">
                         {/* Actions */}
                         <div className="absolute top-4 right-4 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                             <button

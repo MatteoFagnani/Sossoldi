@@ -1,6 +1,6 @@
 import React from 'react';
 
-/* ─── UI COMPONENTS ─────────────────────────────────────────── */
+/* UI components */
 
 export const Card: React.FC<{
     children: React.ReactNode;
@@ -8,7 +8,7 @@ export const Card: React.FC<{
     style?: React.CSSProperties;
 }> = ({ children, className = '', style = {} }) => (
     <div
-        className={`bg-white border border-gray-200 rounded-2xl p-6 ${className}`}
+        className={`app-card p-6 ${className}`}
         style={style}
     >
         {children}
@@ -25,8 +25,8 @@ export const Btn: React.FC<{
     disabled?: boolean;
 }> = ({ children, variant = 'primary', onClick, className = '', style = {}, type = 'button', disabled = false }) => {
     const variants = {
-        primary: 'bg-gray-900 hover:bg-black text-white',
-        ghost: 'bg-white hover:bg-gray-50 text-gray-700 border border-gray-300',
+        primary: 'app-button-primary',
+        ghost: 'app-button-secondary',
         danger: 'bg-red-500 hover:bg-red-600 text-white',
     };
 
@@ -35,7 +35,7 @@ export const Btn: React.FC<{
             type={type}
             onClick={onClick}
             disabled={disabled}
-            className={`inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
+            className={`disabled:opacity-50 disabled:cursor-not-allowed ${variants[variant]} ${className}`}
             style={style}
         >
             {children}
@@ -93,7 +93,7 @@ export const StatCard: React.FC<{
     color: string;
     icon: React.ReactNode;
 }> = ({ label, value, sub, up, color, icon }) => (
-    <div className="bg-white border border-gray-200 rounded-2xl p-5">
+    <div className="app-card p-5">
         <div className="flex items-center justify-between mb-3">
             <p className="text-sm text-gray-500">{label}</p>
             <div className="p-2 rounded-xl" style={{ backgroundColor: `${color}15`, color }}>

@@ -49,6 +49,10 @@ export default function WealthPage() {
         () => activeAccounts.filter(account => account.type !== 'INVESTMENT').reduce((sum, account) => sum + account.currentBalance, 0),
         [activeAccounts]
     );
+    const cashTotal = useMemo(
+        () => activeAccounts.filter(account => account.type === 'CASH').reduce((sum, account) => sum + account.currentBalance, 0),
+        [activeAccounts]
+    );
     const fmt = (value: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
 
     const loadData = async () => {
@@ -183,11 +187,11 @@ export default function WealthPage() {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div />
                 <div className="flex items-center gap-2">
-                    <button type="button" onClick={openTransfer} disabled={activeAccounts.length < 2} className="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-200 hover:bg-gray-50 disabled:opacity-60 text-gray-800 text-sm font-medium rounded-xl transition-colors">
+                    <button type="button" onClick={openTransfer} disabled={activeAccounts.length < 2} className="app-button-secondary disabled:opacity-60">
                         <ArrowRightLeft size={16} />
                         Muovi denaro
                     </button>
-                    <button type="button" onClick={openNewAccount} className="inline-flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-medium rounded-xl transition-colors">
+                    <button type="button" onClick={openNewAccount} className="app-button-primary">
                         <Plus size={16} />
                         Nuovo conto
                     </button>
@@ -195,14 +199,26 @@ export default function WealthPage() {
             </div>
 
             <div className="space-y-5">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div className="bg-gray-900 text-white rounded-2xl p-6">
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4">
+                    <div className="bg-gray-900 text-white rounded-2xl p-5">
                         <p className="text-sm text-gray-300">Patrimonio</p>
-                        <p className="text-3xl font-semibold mt-2">{fmt(total)}</p>
+                        <p className="text-2xl font-semibold mt-2">{fmt(total)}</p>
+                        <p className="text-xs text-gray-400 mt-1">Liquidita + investimenti</p>
                     </div>
-                    <div className="bg-white border border-gray-200 rounded-2xl p-6">
-                        <p className="text-sm text-gray-500">Patrimonio liquido</p>
-                        <p className="text-3xl font-semibold text-gray-900 mt-2">{fmt(liquidTotal)}</p>
+                    <div className="app-card p-5">
+                        <p className="text-sm text-gray-500">Liquido</p>
+                        <p className="text-2xl font-semibold text-gray-900 mt-2">{fmt(liquidTotal)}</p>
+                        <p className="text-xs text-gray-400 mt-1">Conti e contanti</p>
+                    </div>
+                    <div className="app-card p-5">
+                        <p className="text-sm text-gray-500">Investito</p>
+                        <p className="text-2xl font-semibold text-gray-900 mt-2">{fmt(investmentTotal)}</p>
+                        <p className="text-xs text-gray-400 mt-1">Controvalore attuale</p>
+                    </div>
+                    <div className="app-card p-5">
+                        <p className="text-sm text-gray-500">Contanti</p>
+                        <p className="text-2xl font-semibold text-gray-900 mt-2">{fmt(cashTotal)}</p>
+                        <p className="text-xs text-gray-400 mt-1">Solo conti cash</p>
                     </div>
                 </div>
 
@@ -358,3 +374,4 @@ export default function WealthPage() {
         </div>
     );
 }
+

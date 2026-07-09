@@ -37,6 +37,7 @@ export default function App() {
                   <Route path="categories" element={<CategoriesPage />} />
                   <Route path="transactions" element={<TransactionsPage />} />
                   <Route path="wealth" element={<WealthPage />} />
+
                   <Route path="investments" element={<InvestmentsPage />} />
                   <Route path="budgets" element={<BudgetsPage />} />
                   <Route path="profile" element={<ProfilePage />} />

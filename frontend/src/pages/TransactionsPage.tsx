@@ -50,9 +50,18 @@ const readLegacyMappings = () => {
     return null;
 };
 
-const columnIndex = (headers: SheetRow, name: string) => {
-    const index = headers.findIndex(header => readText(header).toLowerCase() === name.toLowerCase());
-    if (index < 0) throw new Error(`Colonna mancante: ${name}.`);
+const normalizeHeader = (value: unknown) => readText(value)
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '');
+
+const columnIndex = (headers: SheetRow, ...names: string[]) => {
+    const wanted = names.map(normalizeHeader);
+    const normalized = headers.map(normalizeHeader);
+    let index = normalized.findIndex(header => wanted.includes(header));
+    if (index < 0) index = normalized.findIndex(header => wanted.some(name => header.includes(name) || name.includes(header)));
+    if (index < 0) throw new Error(`Colonna mancante: ${names[0]}.`);
     return index;
 };
 
@@ -247,17 +256,19 @@ export default function TransactionsPage() {
             const [headers, ...rows] = rawRows;
             const [, ...displayDataRows] = displayRows;
             if (!headers) throw new Error('Riga intestazioni non trovata alla riga 28.');
-            const descriptionCol = columnIndex(headers, 'Descrizione estesa');
-            const debitCol = columnIndex(headers, 'Addebiti');
-            const creditCol = columnIndex(headers, 'Accrediti');
-            const dateCol = columnIndex(headers, 'Data valuta');
+            const descriptionCol = columnIndex(headers, 'Descrizione estesa', 'Descrizione', 'Causale');
+            const debitCol = columnIndex(headers, 'Addebiti', 'Addebito', 'Dare', 'Uscite');
+            const creditCol = columnIndex(headers, 'Accrediti', 'Accredito', 'Avere', 'Entrate');
+            const dateCol = columnIndex(headers, 'Data valuta', 'Data', 'Valuta');
             const selectedAccount = accountFilter ? accounts.find(account => String(account.id) === accountFilter) : null;
             if (selectedAccount?.type === 'INVESTMENT') throw new Error("Seleziona un conto corrente, carta, risparmio o contanti per importare l'estratto conto.");
             const importAccountId = selectedAccount?.id || accounts.find(account => !account.archived && account.type !== 'INVESTMENT')?.id;
             if (!importAccountId) throw new Error("Seleziona un conto prima di importare l'estratto conto.");
+            const existingKeys = new Set(transactions.map(tx => `${tx.accountId ?? ''}:${tx.date}:${Math.round(tx.amount * 100)}:${similarDescriptionKey(cleanDescription(tx.description || ''))}`));
             let imported = 0;
             let skipped = 0;
             let invalidRows = 0;
+            let duplicateRows = 0;
             let apiErrors = 0;
             let firstSkipReason = '';
             for (const [rowIndex, row] of rows.entries()) {
@@ -274,9 +285,17 @@ export default function TransactionsPage() {
                 }
                 const type: TransactionType = credit ? 'INCOME' : 'EXPENSE';
                 const description = cleanDescription(row[descriptionCol] || displayRow[descriptionCol]);
+                const duplicateKey = `${importAccountId}:${date}:${Math.round(amount * 100)}:${similarDescriptionKey(description)}`;
+                if (existingKeys.has(duplicateKey)) {
+                    skipped += 1;
+                    duplicateRows += 1;
+                    if (!firstSkipReason) firstSkipReason = 'transazione gia presente';
+                    continue;
+                }
                 const fallbackCategoryId = type === 'INCOME' ? incomeCategory.id : expenseCategory.id;
                 try {
                     await transactionService.create({ amount, date, description, categoryId: categoryFor(type, description, fallbackCategoryId), accountId: importAccountId });
+                    existingKeys.add(duplicateKey);
                     imported += 1;
                 } catch (err) {
                     skipped += 1;
@@ -285,7 +304,7 @@ export default function TransactionsPage() {
                 }
             }
             await loadData(accountFilter);
-            const resultMessage = `Importate ${imported} transazioni. Skippate ${skipped} righe${skipped ? ` (${invalidRows} non valide, ${apiErrors} errori server${firstSkipReason ? `; primo motivo: ${firstSkipReason}` : ''})` : ''}.`;
+            const resultMessage = `Importate ${imported} transazioni. Skippate ${skipped} righe${skipped ? ` (${invalidRows} non valide, ${duplicateRows} duplicate, ${apiErrors} errori server${firstSkipReason ? `; primo motivo: ${firstSkipReason}` : ''})` : ''}.`;
             if (imported === 0 && skipped > 0) setError(resultMessage);
             else setImportMessage(resultMessage);
         } catch (err) {
@@ -323,9 +342,9 @@ export default function TransactionsPage() {
 
                 <div className="flex gap-2 flex-shrink-0">
                     <input ref={fileInputRef} type="file" accept=".xlsx,.xls" className="hidden" onChange={(e) => handleImport(e.target.files?.[0])} />
-                    <button onClick={openMappings} disabled={loading || transactions.length === 0} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-60 text-gray-700 text-sm font-medium rounded-xl transition-colors"><Tags size={16} /> Mappa categorie</button>
-                    <button onClick={() => fileInputRef.current?.click()} disabled={importing || loading} className="flex items-center gap-2 px-4 py-2.5 bg-white border border-gray-300 hover:bg-gray-50 disabled:opacity-60 text-gray-700 text-sm font-medium rounded-xl transition-colors">{importing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Importa Excel</button>
-                    <button onClick={openNew} className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-medium rounded-xl transition-colors"><Plus size={16} /> Nuova transazione</button>
+                    <button onClick={openMappings} disabled={loading || transactions.length === 0} className="app-button-secondary disabled:opacity-60"><Tags size={16} /> Mappa categorie</button>
+                    <button onClick={() => fileInputRef.current?.click()} disabled={importing || loading} className="app-button-secondary disabled:opacity-60">{importing ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />} Importa Excel</button>
+                    <button onClick={openNew} className="app-button-primary"><Plus size={16} /> Nuova transazione</button>
                 </div>
             </div>
 

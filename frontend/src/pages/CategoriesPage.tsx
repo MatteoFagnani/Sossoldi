@@ -51,7 +51,7 @@ export default function CategoriesPage() {
                 <div />
                 <button
                     onClick={openNew}
-                    className="flex items-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black text-white text-sm font-medium rounded-xl transition-colors"
+                    className="app-button-primary"
                 >
                     <Plus size={16} /> Nuova categoria
                 </button>
@@ -80,4 +80,3 @@ export default function CategoriesPage() {
         </div>
     );
 }
-

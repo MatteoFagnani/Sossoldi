@@ -45,6 +45,8 @@ public class AccountService {
                 .type(dto.getType())
                 .initialBalance(dto.getInitialBalance())
                 .archived(dto.isArchived())
+                .color(dto.getColor())
+                .icon(dto.getIcon())
                 .user(user)
                 .build();
         return toDto(accountRepository.save(account));
@@ -56,6 +58,8 @@ public class AccountService {
         account.setType(dto.getType());
         account.setInitialBalance(dto.getInitialBalance());
         account.setArchived(dto.isArchived());
+        account.setColor(dto.getColor());
+        account.setIcon(dto.getIcon());
         return toDto(accountRepository.save(account));
     }
 
@@ -83,6 +87,8 @@ public class AccountService {
                         .type(AccountType.CHECKING)
                         .initialBalance(0.0)
                         .archived(false)
+                        .color("#3b82f6")
+                        .icon("🏦")
                         .user(user)
                         .build()));
 
@@ -101,6 +107,8 @@ public class AccountService {
                         .type(AccountType.CASH)
                         .initialBalance(0.0)
                         .archived(false)
+                        .color("#10b981")
+                        .icon("💵")
                         .user(user)
                         .build()));
     }
@@ -113,10 +121,12 @@ public class AccountService {
         dto.setInitialBalance(account.getInitialBalance());
         dto.setArchived(account.isArchived());
         dto.setCurrentBalance(currentBalance(account));
+        dto.setColor(account.getColor());
+        dto.setIcon(account.getIcon());
         return dto;
     }
 
-    private double currentBalance(Account account) {
+    public double currentBalance(Account account) {
         double transactionTotal = transactionRepository.findByAccountIdOrderByDateDesc(account.getId()).stream()
                 .mapToDouble(transaction -> transaction.getType() == TransactionType.INCOME ? transaction.getAmount() : -transaction.getAmount())
                 .sum();

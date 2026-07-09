@@ -29,6 +29,7 @@ public class AuthenticationService {
     private final UserMapper userMapper;
     private final CategoryService categoryService;
     private final AccountService accountService;
+    private final BudgetService budgetService;
     private final LoginAttemptService loginAttemptService;
     private final AuthenticationAttemptPersistenceService authenticationAttemptPersistenceService;
 
@@ -50,6 +51,7 @@ public class AuthenticationService {
         var savedUser = repository.save(user);
         categoryService.seedDefaultCategories(savedUser);
         accountService.seedDefaultAccounts(savedUser);
+        budgetService.seedDefaultBudgets(savedUser);
 
         var jwtToken = jwtService.generateToken(savedUser);
 
@@ -106,3 +108,4 @@ public class AuthenticationService {
         return new BadCredentialsException(AuthErrorMessages.GENERIC_AUTH_ERROR);
     }
 }
+

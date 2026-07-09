@@ -5,6 +5,7 @@ import { StatCard } from '../components/UI';
 import DashboardCharts from '../components/dashboard/DashboardCharts';
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions';
 import DashboardBudgetOverview from '../components/dashboard/DashboardBudgetOverview';
+import DashboardInsights from '../components/dashboard/DashboardInsights';
 
 const MONTHS = [
     'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -181,6 +182,8 @@ export default function DashboardPage() {
                 />
             </div>
 
+            <DashboardInsights data={data} />
+
             {/* Charts */}
             <DashboardCharts data={data} viewType={viewType} />
 
@@ -195,3 +198,5 @@ export default function DashboardPage() {
         </div>
     );
 }
+
+

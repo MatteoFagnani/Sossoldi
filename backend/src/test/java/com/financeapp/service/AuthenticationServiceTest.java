@@ -49,6 +49,8 @@ class AuthenticationServiceTest {
     @Mock
     private AccountService accountService;
     @Mock
+    private BudgetService budgetService;
+    @Mock
     private AuthenticationAttemptPersistenceService authenticationAttemptPersistenceService;
 
     private LoginAttemptService loginAttemptService;
@@ -65,6 +67,7 @@ class AuthenticationServiceTest {
                 userMapper,
                 categoryService,
                 accountService,
+                budgetService,
                 loginAttemptService,
                 authenticationAttemptPersistenceService
         );
@@ -155,3 +158,4 @@ class AuthenticationServiceTest {
                 .build();
     }
 }
+

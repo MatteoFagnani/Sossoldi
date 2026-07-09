@@ -8,6 +8,7 @@ import com.financeapp.model.Category;
 import com.financeapp.model.TransactionType;
 import com.financeapp.model.User;
 import com.financeapp.repository.BudgetRepository;
+import com.financeapp.repository.CategoryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -28,6 +29,7 @@ import com.financeapp.service.pattern.state.BudgetContext;
 public class BudgetService {
 
     private final BudgetRepository budgetRepository;
+    private final CategoryRepository categoryRepository;
     private final BudgetMapper budgetMapper;
     private final CategoryService categoryService;
     private final TransactionRepository transactionRepository;
@@ -35,6 +37,10 @@ public class BudgetService {
 
     public List<BudgetStatusDto> getBudgetStatusesByMonthAndYear(User user, Integer month, Integer year) {
         List<Budget> budgets = budgetRepository.findByUserId(user.getId());
+        if (budgets.isEmpty()) {
+            seedDefaultBudgets(user);
+            budgets = budgetRepository.findByUserId(user.getId());
+        }
         
         List<Long> budgetIds = budgets.stream().map(Budget::getId).collect(Collectors.toList());
         List<BudgetOverride> overrides = budgetOverrideRepository.findByBudgetIdInAndMonthAndYear(budgetIds, month, year);
@@ -108,7 +114,36 @@ public class BudgetService {
         }).collect(Collectors.toList());
     }
 
+
+    public void seedDefaultBudgets(User user) {
+        seedBudget(user, "Casa", 25);
+        seedBudget(user, "Alimentari", 15);
+        seedBudget(user, "Trasporti", 7);
+        seedBudget(user, "Salute", 3);
+        seedBudget(user, "Shopping", 10);
+        seedBudget(user, "Bar e Ristoranti", 8);
+        seedBudget(user, "Intrattenimento", 5);
+        seedBudget(user, "Viaggi", 5);
+        seedBudget(user, "Istruzione", 2);
+        seedBudget(user, "Risparmio e investimenti", 20);
+    }
+
+    private void seedBudget(User user, String categoryName, double percentageOfIncome) {
+        categoryRepository.findByUserIdAndType(user.getId(), TransactionType.EXPENSE).stream()
+                .filter(category -> category.getName().equals(categoryName))
+                .findFirst()
+                .ifPresent(category -> budgetRepository.findByUserIdAndCategoryId(user.getId(), category.getId())
+                        .orElseGet(() -> budgetRepository.save(Budget.builder()
+                                .user(user)
+                                .category(category)
+                                .percentageOfIncome(percentageOfIncome)
+                                .automatic(true)
+                                .build())));
+    }
     public List<BudgetDto> getBudgets(User user) {
+        if (budgetRepository.findByUserId(user.getId()).isEmpty()) {
+            seedDefaultBudgets(user);
+        }
         return budgetRepository.findByUserId(user.getId())
                 .stream()
                 .map(budgetMapper::toDto)
@@ -196,3 +231,4 @@ public class BudgetService {
         return budget;
     }
 }
+

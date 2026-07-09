@@ -18,9 +18,9 @@ export default function CategoriesPage() {
         loadCategories();
     }, [loadCategories]);
 
-    const openNew = () => {
+    const openNew = (parent?: Category) => {
         setEditing(null);
-        setFormData({ name: '', type: 'EXPENSE', color: DEFAULT_COLORS[0], parentId: null });
+        setFormData({ name: '', type: parent?.type ?? 'EXPENSE', color: parent?.color ?? DEFAULT_COLORS[0], parentId: parent?.id ?? null });
         setError('');
         setShowForm(true);
     };
@@ -50,7 +50,7 @@ export default function CategoriesPage() {
             <div className="flex items-center justify-between">
                 <div />
                 <button
-                    onClick={openNew}
+                    onClick={() => openNew()}
                     className="app-button-primary"
                 >
                     <Plus size={16} /> Nuova categoria
@@ -80,3 +80,4 @@ export default function CategoriesPage() {
         </div>
     );
 }
+

@@ -117,6 +117,7 @@ export default function TransactionsPage() {
     const [savingMappingKey, setSavingMappingKey] = useState('');
     const [mappingType, setMappingType] = useState<TransactionType>('EXPENSE');
     const [mappingSearch, setMappingSearch] = useState('');
+    const [mappingOnlyUnmapped, setMappingOnlyUnmapped] = useState(true);
     const fileInputRef = useRef<HTMLInputElement>(null);
     const [formData, setFormData] = useState({ amount: '', date: new Date().toISOString().split('T')[0], description: '', categoryId: '', accountId: '' });
 
@@ -164,8 +165,14 @@ export default function TransactionsPage() {
         const query = mappingSearch.trim().toLowerCase();
         return transactionGroups
             .filter(group => group.type === mappingType)
+            .filter(group => {
+                if (!mappingOnlyUnmapped) return true;
+                const categoryId = categoryMappings[group.key] ?? group.categoryId;
+                const category = categories.find(item => item.id === categoryId);
+                return !category || category.name.toLowerCase() === 'altro';
+            })
             .filter(group => !query || group.description.toLowerCase().includes(query) || group.examples.some(example => example.toLowerCase().includes(query)));
-    }, [mappingSearch, mappingType, transactionGroups]);
+    }, [categories, categoryMappings, mappingOnlyUnmapped, mappingSearch, mappingType, transactionGroups]);
 
     const categoryOptionsFor = (type: TransactionType) => {
         const typeCategories = categories.filter(category => category.type === type);
@@ -192,6 +199,7 @@ export default function TransactionsPage() {
     const openMappings = () => {
         setMappingType(filter === 'INCOME' ? 'INCOME' : 'EXPENSE');
         setMappingSearch('');
+        setMappingOnlyUnmapped(true);
         setShowMappings(true);
     };
 
@@ -365,6 +373,10 @@ export default function TransactionsPage() {
                                 {(['EXPENSE', 'INCOME'] as const).map((type) => <button key={type} onClick={() => setMappingType(type)} className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${mappingType === type ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}>{type === 'EXPENSE' ? 'Uscite' : 'Entrate'} ({transactionGroups.filter(group => group.type === type).length})</button>)}
                             </div>
                             <div className="relative"><Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" /><input type="text" value={mappingSearch} onChange={(e) => setMappingSearch(e.target.value)} placeholder="Cerca negozio, azienda o descrizione..." className="w-full pl-9 pr-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent" /></div>
+                            <label className="inline-flex items-center gap-2 text-sm text-gray-600 w-fit">
+                                <input type="checkbox" checked={mappingOnlyUnmapped} onChange={(e) => setMappingOnlyUnmapped(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-gray-900 focus:ring-gray-900" />
+                                Solo da sistemare
+                            </label>
                         </div>
                         <div className="overflow-y-auto divide-y divide-gray-100">
                             {visibleTransactionGroups.length === 0 ? <div className="p-8 text-center text-sm text-gray-500">Nessuna casistica da mappare per questo filtro.</div> : visibleTransactionGroups.map(group => {
@@ -386,3 +398,5 @@ export default function TransactionsPage() {
         </div>
     );
 }
+
+

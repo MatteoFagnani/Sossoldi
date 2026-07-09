@@ -12,7 +12,7 @@ export default function DashboardBudgetOverview({ budgets, isAnnualView = false 
     const navigate = useNavigate();
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <div className="app-card p-6">
             <div className="flex items-center justify-between mb-4">
                 <div>
                     <h2 className="text-sm font-semibold text-gray-900">
@@ -58,3 +58,4 @@ export default function DashboardBudgetOverview({ budgets, isAnnualView = false 
         </div>
     );
 }
+

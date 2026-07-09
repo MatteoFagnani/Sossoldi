@@ -8,10 +8,10 @@ interface DashboardRecentTransactionsProps {
 
 export default function DashboardRecentTransactions({ transactions }: DashboardRecentTransactionsProps) {
     const navigate = useNavigate();
-    const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n);
+    const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Math.abs(n));
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl p-6">
+        <div className="app-card p-6">
             <div className="flex items-center justify-between mb-4">
                 <h2 className="text-sm font-semibold text-gray-900">Transazioni recenti</h2>
                 <button
@@ -35,8 +35,8 @@ export default function DashboardRecentTransactions({ transactions }: DashboardR
                                 <p className="text-sm font-medium text-gray-800 truncate">{tx.description || tx.categoryName}</p>
                                 <p className="text-xs text-gray-400">{tx.date}</p>
                             </div>
-                            <span className={`text-sm font-semibold flex-shrink-0 ${tx.type === 'INCOME' ? 'text-emerald-600' : 'text-gray-700'}`}>
-                                {tx.type === 'INCOME' ? '+' : ''}{fmt(tx.amount)}
+                            <span className={`text-sm font-semibold flex-shrink-0 ${tx.type === 'INCOME' ? 'text-emerald-600' : 'text-red-600'}`}>
+                                {tx.type === 'INCOME' ? '+' : '-'}{fmt(tx.amount)}
                             </span>
                         </div>
                     ))

@@ -66,7 +66,7 @@ export default function DashboardCharts({ data, viewType }: DashboardChartsProps
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            <div className="lg:col-span-2 bg-white border border-gray-200 rounded-2xl p-6">
+            <div className="lg:col-span-2 app-card p-6">
                 <div className="mb-5 flex justify-between items-start">
                     <div>
                         <h2 className="text-sm font-semibold text-gray-900 mb-0.5">
@@ -113,7 +113,7 @@ export default function DashboardCharts({ data, viewType }: DashboardChartsProps
                 </div>
             </div>
 
-            <div className="bg-white border border-gray-200 rounded-2xl p-6">
+            <div className="app-card p-6">
                 <h2 className="text-sm font-semibold text-gray-900 mb-0.5">Spese per categoria</h2>
                 <p className="text-xs text-gray-400 mb-4">Distribuzione delle uscite</p>
                 <div className="h-[150px]">
@@ -149,3 +149,4 @@ export default function DashboardCharts({ data, viewType }: DashboardChartsProps
         </div>
     );
 }
+

@@ -79,6 +79,10 @@ public class CategoryService {
         seedSub(education, "Libri", "#db2777", user);
         seedSub(education, "Corsi", "#be185d", user);
 
+        Category savings = seedMacro("Risparmio e investimenti", TransactionType.EXPENSE, "#111827", user);
+        seedSub(savings, "PAC e investimenti", "#374151", user);
+        seedSub(savings, "Fondo emergenza", "#4b5563", user);
+
         Category transfers = seedMacro("Bonifici", TransactionType.EXPENSE, "#64748b", user);
         seedSub(transfers, "Bonifici inviati", "#475569", user);
         seedSub(transfers, "Prelievi", "#334155", user);
@@ -106,10 +110,10 @@ public class CategoryService {
         Category otherIncome = seedMacro("Altro", TransactionType.INCOME, "#94a3b8", user);
         Category miscIncome = seedSub(otherIncome, "Entrate varie", "#64748b", user);
 
-        seedDefaultMappings(user, food, restaurants, home, transport, shopping, health, leisure, travel, education, transfers, otherExpense, work, gifts, investments, miscIncome);
+        seedDefaultMappings(user, food, restaurants, home, transport, shopping, health, leisure, travel, education, savings, transfers, otherExpense, work, gifts, investments, miscIncome);
     }
 
-    private void seedDefaultMappings(User user, Category food, Category restaurants, Category home, Category transport, Category shopping, Category health, Category leisure, Category travel, Category education, Category transfers, Category otherExpense, Category work, Category gifts, Category investments, Category miscIncome) {
+    private void seedDefaultMappings(User user, Category food, Category restaurants, Category home, Category transport, Category shopping, Category health, Category leisure, Category travel, Category education, Category savings, Category transfers, Category otherExpense, Category work, Category gifts, Category investments, Category miscIncome) {
         Category supermarket = child(food, "Supermercato");
         seedKeywords(user, supermarket, "esselunga", "conad", "coop", "carrefour", "lidl", "eurospin", "aldi", "pam", "iper", "md", "crai", "tigros", "bennet", "mercato");
         seedKeywords(user, child(food, "Discount"), "discount", "d piu", "prix");
@@ -152,6 +156,9 @@ public class CategoryService {
         seedKeywords(user, child(education, "Universita"), "universita", "politecnico", "unimi", "uni", "tasse universitarie");
         seedKeywords(user, child(education, "Libri"), "libreria", "feltrinelli", "mondadori", "ibs");
         seedKeywords(user, child(education, "Corsi"), "udemy", "coursera", "edx", "corso");
+
+        seedKeywords(user, child(savings, "PAC e investimenti"), "pac", "piano accumulo", "investimento", "trading", "broker", "directa", "fineco trading", "degiro", "trade republic");
+        seedKeywords(user, child(savings, "Fondo emergenza"), "fondo emergenza", "risparmio", "accantonamento");
 
         seedKeywords(user, child(transfers, "Bonifici inviati"), "bonifico", "giroconto", "trasferimento fondi");
         seedKeywords(user, child(transfers, "Prelievi"), "prelievo", "atm prelievo", "bancomat");
@@ -289,3 +296,4 @@ public class CategoryService {
         return parent;
     }
 }
+

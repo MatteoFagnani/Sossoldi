@@ -11,8 +11,10 @@ export default function BudgetsPage() {
     const now = new Date();
     const [month, setMonth] = useState(now.getMonth() + 1);
     const [year, setYear] = useState(now.getFullYear());
+    const [statusFilter, setStatusFilter] = useState<'ALL' | 'ATTENTION'>('ALL');
 
     const { budgets, categories, loading, saving, error, setError, loadData, saveBudget, deleteBudget } = useBudgets(month, year);
+    const visibleBudgets = statusFilter === 'ATTENTION' ? budgets.filter((budget) => budget.status !== 'OK') : budgets;
 
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<BudgetStatus | null>(null);
@@ -91,16 +93,29 @@ export default function BudgetsPage() {
                     </div>
                 </div>
 
-                <button
-                    onClick={openNew}
-                    className="app-button-primary"
-                >
-                    <Plus size={16} /> Nuovo budget
-                </button>
+                <div className="flex items-center gap-2">
+                    <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
+                        {(['ALL', 'ATTENTION'] as const).map((value) => (
+                            <button
+                                key={value}
+                                onClick={() => setStatusFilter(value)}
+                                className={`px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${statusFilter === value ? 'bg-white text-gray-950 shadow-sm' : 'text-gray-500 hover:text-gray-800'}`}
+                            >
+                                {value === 'ALL' ? 'Tutti' : 'Da controllare'}
+                            </button>
+                        ))}
+                    </div>
+                    <button
+                        onClick={openNew}
+                        className="app-button-primary"
+                    >
+                        <Plus size={16} /> Nuovo budget
+                    </button>
+                </div>
             </div>
 
             <BudgetList
-                budgets={budgets}
+                budgets={visibleBudgets}
                 loading={loading}
                 month={month}
                 year={year}
@@ -123,3 +138,4 @@ export default function BudgetsPage() {
         </div>
     );
 }
+

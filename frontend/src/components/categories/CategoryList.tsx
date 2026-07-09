@@ -4,7 +4,7 @@ import type { Category } from '../../types';
 interface CategoryListProps {
     categories: Category[];
     loading: boolean;
-    onAdd: () => void;
+    onAdd: (parent?: Category) => void;
     onEdit: (category: Category) => void;
     onDelete: (id: number) => void;
 }
@@ -57,9 +57,9 @@ export default function CategoryList({ categories, loading, onAdd, onEdit, onDel
                         </div>
 
                         {items.length === 0 ? (
-                            <div className="border-2 border-dashed border-gray-200 rounded-2xl py-12 text-center">
+                            <div className="app-empty">
                                 <p className="text-sm text-gray-400 mb-3">Nessuna categoria</p>
-                                <button onClick={onAdd} className="text-sm text-gray-900 hover:text-black font-medium transition-colors">
+                                <button onClick={() => onAdd()} className="text-sm text-gray-900 hover:text-black font-medium transition-colors">
                                     Aggiungine una
                                 </button>
                             </div>
@@ -69,7 +69,7 @@ export default function CategoryList({ categories, loading, onAdd, onEdit, onDel
                                     const children = items.filter((cat) => cat.parentId === macro.id);
 
                                     return (
-                                        <div key={macro.id} className="bg-white border border-gray-200 rounded-2xl p-5">
+                                        <div key={macro.id} className="app-card p-5">
                                             <div className="flex items-start justify-between gap-3">
                                                 <div className="min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
@@ -82,9 +82,12 @@ export default function CategoryList({ categories, loading, onAdd, onEdit, onDel
                                             </div>
 
                                             <div className="mt-4 space-y-2">
+                                                <button onClick={() => onAdd(macro)} className="w-full flex items-center justify-center gap-2 text-xs font-medium text-gray-600 bg-gray-50 hover:bg-gray-100 rounded-xl px-3 py-2 transition-colors">
+                                                    <Plus size={13} /> Sotto categoria
+                                                </button>
                                                 {children.length === 0 ? (
-                                                    <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 rounded-xl px-3 py-2">
-                                                        <Plus size={13} /> Nessuna sotto categoria
+                                                    <div className="text-xs text-gray-400 bg-gray-50 rounded-xl px-3 py-2 text-center">
+                                                        Nessuna sotto categoria
                                                     </div>
                                                 ) : children.map((cat) => (
                                                     <div key={cat.id} className="flex items-center justify-between gap-3 rounded-xl bg-gray-50 px-3 py-2">
@@ -107,3 +110,4 @@ export default function CategoryList({ categories, loading, onAdd, onEdit, onDel
         </div>
     );
 }
+

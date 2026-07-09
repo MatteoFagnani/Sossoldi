@@ -59,6 +59,14 @@ public class AccountService {
         return toDto(accountRepository.save(account));
     }
 
+    public void deleteAccount(User user, Long id) {
+        Account account = getAccountAndVerifyOwner(id, user);
+        if (transactionRepository.existsByAccountId(id) || transferRepository.existsByFromAccountIdOrToAccountId(id, id)) {
+            throw new IllegalArgumentException("Impossibile eliminare un conto con movimenti collegati. Archiviarlo o spostare prima le transazioni.");
+        }
+        accountRepository.delete(account);
+    }
+
     public Account getAccountAndVerifyOwner(Long id, User user) {
         Account account = accountRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Account not found with id: " + id));

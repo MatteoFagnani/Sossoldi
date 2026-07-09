@@ -4,6 +4,8 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Getter
@@ -38,6 +40,26 @@ public class Investment {
 
     @Column(nullable = false)
     private boolean pacActive;
+
+    private Double stocksPercent;
+
+    private Double bondsPercent;
+
+    private Double governmentBondsPercent;
+
+    private Double cashPercent;
+
+    private Double otherPercent;
+
+    @Builder.Default
+    @ElementCollection
+    @CollectionTable(name = "investment_component", joinColumns = @JoinColumn(name = "investment_id"))
+    private List<InvestmentComponent> components = new ArrayList<>();
+
+    @Builder.Default
+    @ElementCollection
+    @CollectionTable(name = "investment_snapshot", joinColumns = @JoinColumn(name = "investment_id"))
+    private List<InvestmentSnapshot> snapshots = new ArrayList<>();
 
     private LocalDate lastUpdateDate;
 

@@ -32,4 +32,10 @@ public class AccountController extends BaseController {
     public ResponseEntity<AccountDto> updateAccount(Authentication authentication, @PathVariable Long id, @Valid @RequestBody AccountDto dto) {
         return ResponseEntity.ok(accountService.updateAccount(getCurrentUser(authentication), id, dto));
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteAccount(Authentication authentication, @PathVariable Long id) {
+        accountService.deleteAccount(getCurrentUser(authentication), id);
+        return ResponseEntity.noContent().build();
+    }
 }

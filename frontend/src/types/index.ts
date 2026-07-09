@@ -35,16 +35,38 @@ export interface AccountTransfer {
     toAccountName: string;
 }
 
+export interface InvestmentComponent {
+    assetClass: string;
+    name?: string | null;
+    ticker?: string | null;
+    percentage?: number | null;
+    currentValue?: number | null;
+}
+
+export interface InvestmentSnapshot {
+    month: string;
+    investedCapital?: number | null;
+    value?: number | null;
+    currentValue?: number | null;
+}
+
 export interface Investment {
     id: number;
     name: string;
     type: InvestmentType;
-    ticker?: string;
+    ticker?: string | null;
     currentValue: number;
     investedCapital: number;
     recurringAmount?: number | null;
     recurringDay?: number | null;
     pacActive: boolean;
+    stocksPercent?: number | null;
+    bondsPercent?: number | null;
+    governmentBondsPercent?: number | null;
+    cashPercent?: number | null;
+    otherPercent?: number | null;
+    components?: InvestmentComponent[];
+    snapshots?: InvestmentSnapshot[];
     lastUpdateDate?: string;
     gainLoss: number;
     gainLossPercent: number;

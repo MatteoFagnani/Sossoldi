@@ -3,6 +3,7 @@ package com.financeapp.service;
 import com.financeapp.dto.InvestmentDto;
 import com.financeapp.exception.ResourceNotFoundException;
 import com.financeapp.model.Investment;
+import com.financeapp.model.InvestmentSnapshot;
 import com.financeapp.model.User;
 import com.financeapp.repository.InvestmentRepository;
 import lombok.RequiredArgsConstructor;
@@ -10,6 +11,8 @@ import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 
 @Service
@@ -20,7 +23,7 @@ public class InvestmentService {
 
     public List<InvestmentDto> getInvestments(User user) {
         List<Investment> investments = investmentRepository.findByUserIdOrderByNameAsc(user.getId());
-        double total = investments.stream().mapToDouble(Investment::getCurrentValue).sum();
+        double total = investments.stream().mapToDouble(this::effectiveCurrentValue).sum();
         return investments.stream().map(investment -> toDto(investment, total)).toList();
     }
 
@@ -34,6 +37,13 @@ public class InvestmentService {
                 .recurringAmount(dto.getRecurringAmount())
                 .recurringDay(dto.getRecurringDay())
                 .pacActive(dto.isPacActive())
+                .stocksPercent(dto.getStocksPercent())
+                .bondsPercent(dto.getBondsPercent())
+                .governmentBondsPercent(dto.getGovernmentBondsPercent())
+                .cashPercent(dto.getCashPercent())
+                .otherPercent(dto.getOtherPercent())
+                .components(dto.getComponents() == null ? new ArrayList<>() : dto.getComponents())
+                .snapshots(dto.getSnapshots() == null ? new ArrayList<>() : dto.getSnapshots())
                 .lastUpdateDate(dto.getLastUpdateDate() == null ? LocalDate.now() : dto.getLastUpdateDate())
                 .user(user)
                 .build();
@@ -50,6 +60,13 @@ public class InvestmentService {
         investment.setRecurringAmount(dto.getRecurringAmount());
         investment.setRecurringDay(dto.getRecurringDay());
         investment.setPacActive(dto.isPacActive());
+        investment.setStocksPercent(dto.getStocksPercent());
+        investment.setBondsPercent(dto.getBondsPercent());
+        investment.setGovernmentBondsPercent(dto.getGovernmentBondsPercent());
+        investment.setCashPercent(dto.getCashPercent());
+        investment.setOtherPercent(dto.getOtherPercent());
+        investment.setComponents(dto.getComponents() == null ? new ArrayList<>() : dto.getComponents());
+        investment.setSnapshots(dto.getSnapshots() == null ? new ArrayList<>() : dto.getSnapshots());
         investment.setLastUpdateDate(dto.getLastUpdateDate() == null ? LocalDate.now() : dto.getLastUpdateDate());
         return toDto(investmentRepository.save(investment), investment.getCurrentValue());
     }
@@ -78,11 +95,61 @@ public class InvestmentService {
         dto.setRecurringAmount(investment.getRecurringAmount());
         dto.setRecurringDay(investment.getRecurringDay());
         dto.setPacActive(investment.isPacActive());
+        dto.setStocksPercent(investment.getStocksPercent());
+        dto.setBondsPercent(investment.getBondsPercent());
+        dto.setGovernmentBondsPercent(investment.getGovernmentBondsPercent());
+        dto.setCashPercent(investment.getCashPercent());
+        dto.setOtherPercent(investment.getOtherPercent());
+        dto.setComponents(investment.getComponents());
+        dto.setSnapshots(investment.getSnapshots());
         dto.setLastUpdateDate(investment.getLastUpdateDate());
-        double gain = investment.getCurrentValue() - investment.getInvestedCapital();
+        double currentValue = effectiveCurrentValue(investment);
+        double investedCapital = effectiveInvestedCapital(investment);
+        double gain = currentValue - investedCapital;
+        dto.setCurrentValue(currentValue);
+        dto.setInvestedCapital(investedCapital);
         dto.setGainLoss(gain);
-        dto.setGainLossPercent(investment.getInvestedCapital() == 0 ? 0 : gain / investment.getInvestedCapital() * 100);
-        dto.setAllocationPercent(total == 0 ? 0 : investment.getCurrentValue() / total * 100);
+        dto.setGainLossPercent(compoundReturnPercent(investment));
+        dto.setAllocationPercent(total == 0 ? 0 : currentValue / total * 100);
         return dto;
+    }
+    private List<InvestmentSnapshot> sortedSnapshots(Investment investment) {
+        return investment.getSnapshots().stream()
+                .filter(snapshot -> snapshot.getMonth() != null && !snapshot.getMonth().isBlank())
+                .sorted(Comparator.comparing(InvestmentSnapshot::getMonth))
+                .toList();
+    }
+
+    private double effectiveCurrentValue(Investment investment) {
+        List<InvestmentSnapshot> snapshots = sortedSnapshots(investment);
+        if (snapshots.isEmpty()) return investment.getCurrentValue();
+        Double value = snapshots.getLast().getCurrentValue();
+        return value == null ? investment.getCurrentValue() : value;
+    }
+
+    private double effectiveInvestedCapital(Investment investment) {
+        List<InvestmentSnapshot> snapshots = sortedSnapshots(investment);
+        if (snapshots.isEmpty()) return investment.getInvestedCapital();
+        return snapshots.stream().mapToDouble(snapshot -> snapshot.getInvestedCapital() == null ? 0 : snapshot.getInvestedCapital()).sum();
+    }
+
+    private double compoundReturnPercent(Investment investment) {
+        List<InvestmentSnapshot> snapshots = sortedSnapshots(investment);
+        if (snapshots.isEmpty()) {
+            return investment.getInvestedCapital() == 0 ? 0 : (investment.getCurrentValue() / investment.getInvestedCapital() - 1) * 100;
+        }
+        double previousValue = 0;
+        double compound = 1;
+        for (InvestmentSnapshot snapshot : snapshots) {
+            double contribution = snapshot.getInvestedCapital() == null ? 0 : snapshot.getInvestedCapital();
+            double currentValue = snapshot.getCurrentValue() == null ? previousValue + contribution : snapshot.getCurrentValue();
+            double base = previousValue == 0 ? contribution : previousValue;
+            if (base > 0) {
+                double monthlyReturn = previousValue == 0 ? currentValue / base - 1 : (currentValue - contribution) / base - 1;
+                compound *= 1 + monthlyReturn;
+            }
+            previousValue = currentValue;
+        }
+        return (compound - 1) * 100;
     }
 }

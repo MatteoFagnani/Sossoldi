@@ -11,7 +11,10 @@ type SheetRow = unknown[];
 type CategoryMappings = Record<string, number>;
 
 const headerRowIndex = 27;
-const readText = (value: unknown) => String(value ?? '').trim();
+const readText = (value: unknown) => {
+    if (value && typeof value === 'object' && 'v' in value) return String((value as { v?: unknown }).v ?? '').trim();
+    return String(value ?? '').trim();
+};
 const cleanDescription = (value: unknown) => {
     const text = readText(value);
     const pressoMatch = text.match(/\bPRESSO\b\s+(.+)$/i);
@@ -53,25 +56,35 @@ const columnIndex = (headers: SheetRow, name: string) => {
     return index;
 };
 
-const parseAmount = (value: unknown) => {
-    if (typeof value === 'number') return Math.abs(value);
-    const normalized = readText(value).replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.');
-    const amount = Number.parseFloat(normalized);
-    return Number.isFinite(amount) ? Math.abs(amount) : 0;
+const parseAmount = (...values: unknown[]) => {
+    for (const value of values) {
+        if (typeof value === 'number') return Math.abs(value);
+        const text = readText(value);
+        const normalized = text
+            .replace(/[()]/g, '')
+            .replace(/[^\d,.-]/g, '')
+            .replace(/\.(?=\d{3}(\D|$))/g, '')
+            .replace(',', '.');
+        const amount = Number.parseFloat(normalized);
+        if (Number.isFinite(amount)) return Math.abs(amount);
+    }
+    return 0;
 };
 
-const parseExcelDate = (value: unknown) => {
-    if (value instanceof Date) return value.toISOString().split('T')[0];
-    if (typeof value === 'number') {
-        const parsed = XLSX.SSF.parse_date_code(value);
-        if (parsed) return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
-    }
-    const text = readText(value);
-    if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-    const match = text.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
-    if (match) {
-        const [, day, month, year] = match;
-        return `${year.length === 2 ? `20${year}` : year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+const parseExcelDate = (...values: unknown[]) => {
+    for (const value of values) {
+        if (value instanceof Date && !Number.isNaN(value.getTime())) return value.toISOString().split('T')[0];
+        if (typeof value === 'number') {
+            const parsed = XLSX.SSF.parse_date_code(value);
+            if (parsed) return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
+        }
+        const text = readText(value).split(/\s+/)[0];
+        if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+        const match = text.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
+        if (match) {
+            const [, day, month, year] = match;
+            return `${year.length === 2 ? `20${year}` : year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
     }
     return '';
 };
@@ -229,35 +242,52 @@ export default function TransactionsPage() {
             if (!expenseCategory || !incomeCategory) throw new Error('Categoria Altro mancante per entrate o uscite.');
             const workbook = XLSX.read(await file.arrayBuffer(), { cellDates: true });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
-            const [headers, ...rows] = XLSX.utils.sheet_to_json<SheetRow>(sheet, { header: 1, defval: '', range: headerRowIndex });
+            const rawRows = XLSX.utils.sheet_to_json<SheetRow>(sheet, { header: 1, defval: '', range: headerRowIndex, raw: true });
+            const displayRows = XLSX.utils.sheet_to_json<SheetRow>(sheet, { header: 1, defval: '', range: headerRowIndex, raw: false });
+            const [headers, ...rows] = rawRows;
+            const [, ...displayDataRows] = displayRows;
             if (!headers) throw new Error('Riga intestazioni non trovata alla riga 28.');
             const descriptionCol = columnIndex(headers, 'Descrizione estesa');
             const debitCol = columnIndex(headers, 'Addebiti');
             const creditCol = columnIndex(headers, 'Accrediti');
             const dateCol = columnIndex(headers, 'Data valuta');
+            const selectedAccount = accountFilter ? accounts.find(account => String(account.id) === accountFilter) : null;
+            if (selectedAccount?.type === 'INVESTMENT') throw new Error("Seleziona un conto corrente, carta, risparmio o contanti per importare l'estratto conto.");
+            const importAccountId = selectedAccount?.id || accounts.find(account => !account.archived && account.type !== 'INVESTMENT')?.id;
+            if (!importAccountId) throw new Error("Seleziona un conto prima di importare l'estratto conto.");
             let imported = 0;
             let skipped = 0;
-            for (const row of rows) {
-                const debit = parseAmount(row[debitCol]);
-                const credit = parseAmount(row[creditCol]);
+            let invalidRows = 0;
+            let apiErrors = 0;
+            let firstSkipReason = '';
+            for (const [rowIndex, row] of rows.entries()) {
+                const displayRow = displayDataRows[rowIndex] || [];
+                const debit = parseAmount(row[debitCol], displayRow[debitCol]);
+                const credit = parseAmount(row[creditCol], displayRow[creditCol]);
                 const amount = credit || debit;
-                const date = parseExcelDate(row[dateCol]);
+                const date = parseExcelDate(row[dateCol], displayRow[dateCol]);
                 if (!amount || !date) {
                     skipped += 1;
+                    invalidRows += 1;
+                    if (!firstSkipReason) firstSkipReason = `riga senza ${!amount ? 'importo' : 'data'} valida`;
                     continue;
                 }
                 const type: TransactionType = credit ? 'INCOME' : 'EXPENSE';
-                const description = cleanDescription(row[descriptionCol]);
+                const description = cleanDescription(row[descriptionCol] || displayRow[descriptionCol]);
                 const fallbackCategoryId = type === 'INCOME' ? incomeCategory.id : expenseCategory.id;
                 try {
-                    await transactionService.create({ amount, date, description, categoryId: categoryFor(type, description, fallbackCategoryId), accountId: accountFilter || accounts.find(account => !account.archived)?.id });
+                    await transactionService.create({ amount, date, description, categoryId: categoryFor(type, description, fallbackCategoryId), accountId: importAccountId });
                     imported += 1;
-                } catch {
+                } catch (err) {
                     skipped += 1;
+                    apiErrors += 1;
+                    if (!firstSkipReason) firstSkipReason = apiError(err);
                 }
             }
             await loadData(accountFilter);
-            setImportMessage(`Importate ${imported} transazioni. Skippate ${skipped} righe.`);
+            const resultMessage = `Importate ${imported} transazioni. Skippate ${skipped} righe${skipped ? ` (${invalidRows} non valide, ${apiErrors} errori server${firstSkipReason ? `; primo motivo: ${firstSkipReason}` : ''})` : ''}.`;
+            if (imported === 0 && skipped > 0) setError(resultMessage);
+            else setImportMessage(resultMessage);
         } catch (err) {
             setError(apiError(err));
         } finally {

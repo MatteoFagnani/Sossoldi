@@ -16,6 +16,7 @@ export const accountService = {
     async getAll(): Promise<Account[]> { return (await api.get('/accounts')).data; },
     async create(data: object): Promise<Account> { return (await api.post('/accounts', data)).data; },
     async update(id: number, data: object): Promise<Account> { return (await api.put(`/accounts/${id}`, data)).data; },
+    async remove(id: number): Promise<void> { return (await api.delete(`/accounts/${id}`)).data; },
 };
 
 export const accountTransferService = {

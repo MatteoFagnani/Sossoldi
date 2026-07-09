@@ -9,4 +9,5 @@ public interface AccountTransferRepository extends JpaRepository<AccountTransfer
     List<AccountTransfer> findByUserIdOrderByDateDescIdDesc(Long userId);
     List<AccountTransfer> findByUserIdAndFromAccountIdOrUserIdAndToAccountIdOrderByDateDescIdDesc(Long fromUserId, Long fromAccountId, Long toUserId, Long toAccountId);
     List<AccountTransfer> findByFromAccountIdOrToAccountId(Long fromAccountId, Long toAccountId);
+    boolean existsByFromAccountIdOrToAccountId(Long fromAccountId, Long toAccountId);
 }

@@ -1,5 +1,5 @@
 import api from './api';
-import type { AuthResponse, Account, AccountMovement, AccountTransfer, Category, Investment, Transaction, TransactionCategoryMapping, Budget, BudgetStatus, DashboardOverview } from '../types';
+import type { AuthResponse, Account, AccountMovement, AccountTransfer, Category, CashFlowData, Investment, Transaction, TransactionCategoryMapping, Budget, BudgetStatus, DashboardOverview } from '../types';
 
 export const authService = {
     async register(username: string, email: string, password: string): Promise<AuthResponse> {
@@ -9,6 +9,14 @@ export const authService = {
     async login(username: string, password: string): Promise<AuthResponse> {
         const response = await api.post<AuthResponse>('/auth/authenticate', { username, password });
         return response.data;
+    },
+};
+
+export const analyticsService = {
+    async getCashFlow(year: number, month?: number): Promise<CashFlowData> {
+        const params = new URLSearchParams({ year: String(year) });
+        if (month !== undefined) params.append('month', String(month));
+        return (await api.get(`/analytics/cash-flow?${params.toString()}`)).data;
     },
 };
 

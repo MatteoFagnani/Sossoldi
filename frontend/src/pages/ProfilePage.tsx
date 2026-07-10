@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
+import axios from 'axios';
 import * as Icons from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
+
+const apiErrorMessage = (error: unknown, fallback: string) =>
+    axios.isAxiosError(error) && typeof error.response?.data?.message === 'string'
+        ? error.response.data.message
+        : fallback;
 
 export default function ProfilePage() {
     const { user, setAuth, logout } = useAuthStore();
@@ -36,10 +42,10 @@ export default function ProfilePage() {
             const updatedUser = response.data;
             setAuth(updatedUser);
             setProfileStatus({ type: 'success', message: 'Profilo aggiornato con successo!' });
-        } catch (err: any) {
+        } catch (error: unknown) {
             setProfileStatus({
                 type: 'error',
-                message: err.response?.data?.message || 'Errore durante l\'aggiornamento del profilo.'
+                message: apiErrorMessage(error, 'Errore durante l\'aggiornamento del profilo.')
             });
         } finally {
             setProfileLoading(false);
@@ -61,10 +67,10 @@ export default function ProfilePage() {
             });
             setPasswordStatus({ type: 'success', message: 'Password cambiata con successo!' });
             setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
-        } catch (err: any) {
+        } catch (error: unknown) {
             setPasswordStatus({
                 type: 'error',
-                message: err.response?.data?.message || 'Errore durante il cambio password.'
+                message: apiErrorMessage(error, 'Errore durante il cambio password.')
             });
         } finally {
             setPasswordLoading(false);
@@ -76,7 +82,7 @@ export default function ProfilePage() {
         try {
             await api.delete('/users/me');
             logout();
-        } catch (err) {
+        } catch {
             alert('Errore durante l\'eliminazione dell\'account.');
             setDeleteLoading(false);
         }

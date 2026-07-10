@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, X, Loader2 } from 'lucide-react';
 import type { BudgetStatus, Category } from '../../types';
 
@@ -22,11 +22,6 @@ export default function BudgetForm({ editing, categories, initialData, saving, e
     const [mode, setMode] = useState<'AMOUNT' | 'PERCENTAGE'>(
         initialData.percentageOfIncome ? 'PERCENTAGE' : 'AMOUNT'
     );
-
-    useEffect(() => {
-        setForm(initialData);
-        setMode(initialData.percentageOfIncome ? 'PERCENTAGE' : 'AMOUNT');
-    }, [initialData]);
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault();

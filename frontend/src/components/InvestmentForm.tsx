@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useState, type FormEvent } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, Plus, Trash2, X } from 'lucide-react';
 import type { Investment, InvestmentComponent, InvestmentSnapshot, InvestmentType } from '../types';
 
@@ -99,11 +99,6 @@ export default function InvestmentForm({ investment, saving, onCancel, onSave }:
     const [form, setForm] = useState<FormState>(() => formFromInvestment(investment));
     const [step, setStep] = useState(0);
     const allocationTotal = form.components.reduce((sum, item) => sum + toMoney(item.percentage), 0);
-
-    useEffect(() => {
-        setForm(formFromInvestment(investment));
-        setStep(0);
-    }, [investment]);
 
     const updateComponent = (index: number, patch: Partial<PacComponentForm>) => {
         setForm(current => ({ ...current, components: current.components.map((item, i) => i === index ? { ...item, ...patch } : item) }));

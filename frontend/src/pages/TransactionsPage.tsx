@@ -183,6 +183,11 @@ export default function TransactionsPage() {
         return { grouped, standalone };
     };
 
+    const defaultCategoryId = (type: TransactionType) =>
+        categories.find(c => c.type === type && c.name.toLowerCase() === 'da classificare')?.id
+        ?? categories.find(c => c.type === type && c.name.toLowerCase() === 'altro')?.id
+        ?? categories.find(c => c.type === type)?.id;
+
     const categoryFor = (type: TransactionType, description: string, fallbackId: number) => {
         const exactId = categoryMappings[mappingKey(type, description)];
         if (categories.some(category => category.id === exactId && category.type === type)) return exactId;
@@ -205,7 +210,7 @@ export default function TransactionsPage() {
 
     const openNew = () => {
         setEditing(null);
-        setFormData({ amount: '', date: new Date().toISOString().split('T')[0], description: '', categoryId: '', accountId: accountFilter });
+        setFormData({ amount: '', date: new Date().toISOString().split('T')[0], description: '', categoryId: String(defaultCategoryId('EXPENSE') ?? ''), accountId: accountFilter });
         setError('');
         setShowForm(true);
     };
@@ -218,6 +223,10 @@ export default function TransactionsPage() {
     };
 
     const handleSave = async (form: { amount: string; date: string; description: string; categoryId: string; accountId: string }) => {
+        if (!form.categoryId) {
+            setError('Seleziona una categoria.');
+            return;
+        }
         const success = await saveTransaction(editing ? editing.id : null, form, accountFilter);
         if (success) setShowForm(false);
     };
@@ -254,9 +263,9 @@ export default function TransactionsPage() {
         setError('');
         setImportMessage('');
         try {
-            const expenseCategory = categories.find(c => c.type === 'EXPENSE' && c.name.toLowerCase() === 'altro');
-            const incomeCategory = categories.find(c => c.type === 'INCOME' && c.name.toLowerCase() === 'altro');
-            if (!expenseCategory || !incomeCategory) throw new Error('Categoria Altro mancante per entrate o uscite.');
+            const expenseCategoryId = defaultCategoryId('EXPENSE');
+            const incomeCategoryId = defaultCategoryId('INCOME');
+            if (!expenseCategoryId || !incomeCategoryId) throw new Error('Categorie mancanti per entrate o uscite.');
             const workbook = XLSX.read(await file.arrayBuffer(), { cellDates: true });
             const sheet = workbook.Sheets[workbook.SheetNames[0]];
             const rawRows = XLSX.utils.sheet_to_json<SheetRow>(sheet, { header: 1, defval: '', range: headerRowIndex, raw: true });
@@ -300,7 +309,7 @@ export default function TransactionsPage() {
                     if (!firstSkipReason) firstSkipReason = 'transazione gia presente';
                     continue;
                 }
-                const fallbackCategoryId = type === 'INCOME' ? incomeCategory.id : expenseCategory.id;
+                const fallbackCategoryId = type === 'INCOME' ? incomeCategoryId : expenseCategoryId;
                 try {
                     await transactionService.create({ amount, date, description, categoryId: categoryFor(type, description, fallbackCategoryId), accountId: importAccountId });
                     existingKeys.add(duplicateKey);
@@ -398,5 +407,4 @@ export default function TransactionsPage() {
         </div>
     );
 }
-
 

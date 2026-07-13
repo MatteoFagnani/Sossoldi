@@ -219,6 +219,9 @@ public class CategoryService {
     }
 
     public List<CategoryDto> getAllCategories(User user) {
+        if (categoryRepository.findByUserId(user.getId()).isEmpty()) {
+            seedDefaultCategories(user);
+        }
         return categoryRepository.findByUserId(user.getId())
                 .stream()
                 .map(categoryMapper::toDto)

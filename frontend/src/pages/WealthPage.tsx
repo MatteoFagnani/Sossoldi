@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRightLeft, Loader2, Plus, Trash2, Wallet, X } from 'lucide-react';
 import { accountService, accountTransferService, investmentService } from '../services/services';
+import { adjustedInitialBalance } from '../services/accountBalance';
 import type { Account, AccountTransfer, AccountType, Investment } from '../types';
 
 const accountTypes: { value: AccountType; label: string }[] = [
@@ -88,7 +89,7 @@ export default function WealthPage() {
 
     const openEdit = (account: Account) => {
         setEditing(account);
-        setAccountForm({ name: account.name, type: account.type, initialBalance: String(account.initialBalance), archived: account.archived });
+        setAccountForm({ name: account.name, type: account.type, initialBalance: String(Math.round(account.currentBalance * 100) / 100), archived: account.archived });
         setModal('account');
     };
 
@@ -118,7 +119,8 @@ export default function WealthPage() {
         setSavingAccount(true);
         setError('');
         try {
-            const payload = { ...accountForm, initialBalance: Number.parseFloat(accountForm.initialBalance) || 0 };
+            const enteredBalance = Number.parseFloat(accountForm.initialBalance) || 0;
+            const payload = { ...accountForm, initialBalance: editing ? adjustedInitialBalance(editing.initialBalance, editing.currentBalance, enteredBalance) : enteredBalance };
             if (editing) await accountService.update(editing.id, payload);
             else await accountService.create(payload);
             resetAccountForm();
@@ -320,8 +322,8 @@ export default function WealthPage() {
                                     </select>
                                 </div>
                                 <div>
-                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Saldo iniziale</label>
-                                    <input type="number" step="0.01" value={accountForm.initialBalance} onChange={e => setAccountForm({ ...accountForm, initialBalance: e.target.value })} className={inputClass} />
+                                    <label className="block text-sm font-medium text-gray-700 mb-1.5">{editing ? 'Forza saldo attuale' : 'Saldo iniziale'}</label>
+                                    <input type="number" step="0.01" value={accountForm.initialBalance} onChange={e => setAccountForm({ ...accountForm, initialBalance: e.target.value })} required className={inputClass} />
                                 </div>
                                 <label className="flex items-center gap-2 text-sm text-gray-700">
                                     <input type="checkbox" checked={accountForm.archived} onChange={e => setAccountForm({ ...accountForm, archived: e.target.checked })} />

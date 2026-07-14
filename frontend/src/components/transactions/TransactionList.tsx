@@ -30,16 +30,24 @@ export default function TransactionList({ movements, loading, onEdit, onDelete }
     }
 
     return (
-        <div className="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-            <table className="w-full">
+        <div className="bg-white border border-gray-200 rounded-2xl overflow-x-auto">
+            <table className="w-full min-w-[720px] table-fixed">
+                <colgroup>
+                    <col className="w-24" />
+                    <col />
+                    <col className="w-32" />
+                    <col className="w-32" />
+                    <col className="w-28" />
+                    <col className="w-20" />
+                </colgroup>
                 <thead>
                     <tr className="border-b border-gray-100">
-                        <th className="text-left text-xs font-medium text-gray-400 px-5 py-3.5 hidden md:table-cell">Data</th>
-                        <th className="text-left text-xs font-medium text-gray-400 px-5 py-3.5">Descrizione</th>
-                        <th className="text-left text-xs font-medium text-gray-400 px-5 py-3.5 hidden md:table-cell">Categoria</th>
-                        <th className="text-left text-xs font-medium text-gray-400 px-5 py-3.5 hidden lg:table-cell">Conto</th>
-                        <th className="text-right text-xs font-medium text-gray-400 px-5 py-3.5">Importo</th>
-                        <th className="px-5 py-3.5 w-20" />
+                        <th className="px-3 py-3.5 text-left text-xs font-medium text-gray-400">Data</th>
+                        <th className="px-3 py-3.5 text-left text-xs font-medium text-gray-400">Descrizione</th>
+                        <th className="px-3 py-3.5 text-left text-xs font-medium text-gray-400">Categoria</th>
+                        <th className="px-3 py-3.5 text-left text-xs font-medium text-gray-400">Conto</th>
+                        <th className="px-3 py-3.5 text-right text-xs font-medium text-gray-400">Importo</th>
+                        <th className="px-2 py-3.5" />
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
@@ -53,10 +61,10 @@ export default function TransactionList({ movements, loading, onEdit, onDelete }
 
                         return (
                             <tr key={`${movement.source}-${movement.id}`} className="group hover:bg-gray-50 transition-colors">
-                                <td className="px-5 py-4 hidden md:table-cell">
-                                    <span className="text-sm text-gray-500">{movement.date}</span>
+                                <td className="px-3 py-4">
+                                    <span className="text-xs text-gray-500 whitespace-nowrap">{movement.date}</span>
                                 </td>
-                                <td className="px-5 py-4">
+                                <td className="px-3 py-4 min-w-0">
                                     <div className="flex items-center gap-3">
                                         <div
                                             className="w-8 h-8 rounded-lg flex items-center justify-center text-xs font-bold flex-shrink-0"
@@ -64,29 +72,30 @@ export default function TransactionList({ movements, loading, onEdit, onDelete }
                                         >
                                             {isTransfer ? <ArrowRightLeft size={14} /> : movement.categoryName?.charAt(0).toUpperCase()}
                                         </div>
-                                        <div className="min-w-0">
-                                            <p className="text-sm font-medium text-gray-800 truncate">{description}</p>
+                                        <div className="min-w-0 overflow-hidden">
+                                            <p className="text-sm font-medium text-gray-800 truncate" title={description}>{description}</p>
                                             {isTransfer && movement.description && <p className="text-xs text-gray-400 truncate">{movement.description}</p>}
                                         </div>
                                     </div>
                                 </td>
-                                <td className="px-5 py-4 hidden md:table-cell">
+                                <td className="px-3 py-4 min-w-0">
                                     <span
-                                        className="text-xs font-medium px-2.5 py-1 rounded-full"
+                                        className="inline-block max-w-full truncate align-middle text-xs font-medium px-2.5 py-1 rounded-full"
                                         style={{ backgroundColor: `${movement.categoryColor || '#4b5563'}15`, color: movement.categoryColor || '#4b5563' }}
+                                        title={isTransfer ? 'Trasferimento' : movement.categoryName ?? undefined}
                                     >
                                         {isTransfer ? 'Trasferimento' : movement.categoryName}
                                     </span>
                                 </td>
-                                <td className="px-5 py-4 hidden lg:table-cell">
-                                    <span className="text-xs text-gray-500">{movement.accountName || 'Conto principale'}</span>
+                                <td className="px-3 py-4 min-w-0">
+                                    <span className="block truncate text-xs text-gray-500" title={movement.accountName || 'Conto principale'}>{movement.accountName || 'Conto principale'}</span>
                                 </td>
-                                <td className="px-5 py-4 text-right">
-                                    <span className={`text-sm font-semibold ${amountClass}`}>
+                                <td className="px-3 py-4 text-right">
+                                    <span className={`text-sm font-semibold whitespace-nowrap ${amountClass}`}>
                                         {sign}{fmt(isTransfer ? movement.signedAmount || movement.amount : movement.amount)}
                                     </span>
                                 </td>
-                                <td className="px-5 py-4">
+                                <td className="px-2 py-4">
                                     {!isTransfer && (
                                         <div className="flex items-center gap-1 justify-end opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button

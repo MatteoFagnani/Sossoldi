@@ -57,6 +57,22 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
+    @ExceptionHandler(org.springframework.web.servlet.resource.NoResourceFoundException.class)
+    public Object handleNoResourceFound(
+            org.springframework.web.servlet.resource.NoResourceFoundException ex,
+            jakarta.servlet.http.HttpServletRequest request) {
+        String path = request.getRequestURI();
+        if (!path.startsWith("/api") &&
+            !path.startsWith("/h2-console") &&
+            !path.startsWith("/swagger-ui") &&
+            !path.startsWith("/v3/api-docs")) {
+            return new org.springframework.web.servlet.ModelAndView("forward:/index.html");
+        }
+        Map<String, String> error = new HashMap<>();
+        error.put("error", ex.getMessage());
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
         Map<String, String> error = new HashMap<>();

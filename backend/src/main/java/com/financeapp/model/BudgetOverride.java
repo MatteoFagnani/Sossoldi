@@ -11,7 +11,7 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @AllArgsConstructor
 @Table(uniqueConstraints = {
-        @UniqueConstraint(columnNames = { "budget_id", "month", "year" })
+        @UniqueConstraint(columnNames = { "budget_id", "\"month\"", "\"year\"" })
 })
 public class BudgetOverride {
 
@@ -29,10 +29,10 @@ public class BudgetOverride {
     @Column(name = "percentage_of_income", nullable = true)
     private Double percentageOfIncome;
 
-    @Column(nullable = false)
+    @Column(name = "\"month\"", nullable = false)
     private Integer month;
 
-    @Column(nullable = false)
+    @Column(name = "\"year\"", nullable = false)
     private Integer year;
 
     @Column(nullable = false, updatable = false)

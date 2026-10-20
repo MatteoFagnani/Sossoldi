@@ -55,53 +55,71 @@ L'applicazione implementa diversi pattern architetturali per garantire flessibil
 ## Funzionalità Principali
 
 ### Per gli Utenti
-- Registrazione e login sicuro (JWT)
+- **Accesso e Registrazione Esclusivi con Google**: Login rapido a 1 clic tramite Google Sign-In, senza password da ricordare.
 - Tracciamento di entrate e spese in tempo reale
 - Gestione categorie personalizzate e **seeding automatico in Italiano**
-- **Sezione Profilo**: Gestione username, email e cambio password sicuro
+- **Sezione Profilo**: Gestione username, email e stato autenticazione Google
 - Dashboard riepilogativa con grafici interattivi e report mensili
 - Monitoraggio del budget con avvisi automatici
 - **Eliminazione Account**: Possibilità di rimuovere permanentemente l'utente e i dati associati
 
-## Installazione e Setup
+## Installazione e Avvio Rapido
 
-### Prerequisiti
-- Java 21 SDK
-- Node.js 18+
-- Docker & Docker Compose
-- Maven (per build backend)
+### Modalità 1: Avvio Immediato su PC (Consigliato per uso personale) 🚀
+Non richiede l'installazione o l'esecuzione di Docker o PostgreSQL. I dati vengono salvati localmente in modo sicuro nella cartella `./data/`.
 
-### 1. Clone Repository
-```bash
-git clone https://github.com/MatteoFagnani/FinanceTracker.git
-cd FinanceTracker
-```
+- **Doppio clic su `avvia.bat`** (oppure esegui `.\avvia.ps1` in PowerShell).
+- Lo script verifica i requisiti, compila se necessario e apre automaticamente il browser all'indirizzo:
+  👉 **http://localhost:10000**
+- Per arrestare l'applicazione, chiudi la finestra del terminale oppure fai doppio clic su `ferma.bat`.
 
-### 2. Setup Rapido con Docker
+---
+
+### Modalità 2: Sviluppo Locale (Live Reload)
+Se vuoi modificare il codice in tempo reale con Hot Module Replacement:
+- Fai doppio clic su `avvia-dev.bat`.
+- Oppure manualmente da terminale:
+  ```bash
+  # Backend (Spring Boot con DB locale)
+  cd backend
+  .\mvnw.cmd spring-boot:run
+
+  # Frontend (Vite con HMR su http://localhost:5173)
+  cd frontend
+  npm install
+  npm run dev
+  ```
+
+---
+
+### Modalità 3: Container Docker (con PostgreSQL)
+Se preferisci utilizzare PostgreSQL tramite container Docker:
 ```bash
 docker-compose up --build
 ```
-L'applicazione sarà disponibile al seguente indirizzo:
 - **Frontend**: http://localhost:3000
+- **Backend API**: http://localhost:10000
 
-### 3. Sviluppo Locale
+---
 
-#### Backend
-```bash
-cd backend
-# Avviare PostgreSQL via Docker
-docker-compose up postgres -d
-# Run applicazione
-mvn spring-boot:run
-```
+## Database e Persistenza
 
-#### Frontend
-```bash
-cd frontend
-npm install
-npm run dev
-```
-Disponibile su: http://localhost:5173
+- **Database Locale Predefinito**: H2 Database in modalità file (`./data/sossoldi.mv.db`). Zero configurazione, zero processi in background, consumo di memoria minimo e backup immediato copiando la cartella `data`.
+- **H2 Web Console**: Accessibile all'indirizzo `http://localhost:10000/h2-console` (JDBC URL: `jdbc:h2:file:./data/sossoldi`, User: `sa`, Password: vuota).
+- **PostgreSQL**: Attivabile impostando il profilo `SPRING_PROFILES_ACTIVE=postgres` o tramite `docker-compose.yml`.
+
+---
+
+## Autenticazione con Google
+
+L'accesso e la registrazione all'applicazione avvengono esclusivamente tramite **Google**:
+- **Pulsante ufficiale Google Identity Services (GIS)**: supporta popup standard e One-Tap di Google.
+- **Configurazione (Opzionale)**: Per collegare il popup ufficiale di Google Cloud Console, genera un OAuth 2.0 Client ID (tipo Web Application con origine autorizzata `http://localhost:10000`) e inseriscilo in `.env`:
+  ```env
+  GOOGLE_CLIENT_ID=tuo-client-id.apps.googleusercontent.com
+  GOOGLE_CLIENT_SECRET=tuo-client-secret
+  ```
+- **Modalità Personale / Locale Immediata**: Se il Client ID non è ancora impostato, puoi comunque accedere con 1 clic con il tuo indirizzo email personale. I dati rimangono salvati sul tuo computer.
 
 ## Struttura del Progetto
 

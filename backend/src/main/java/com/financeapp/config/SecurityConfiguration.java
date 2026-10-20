@@ -32,14 +32,38 @@ public class SecurityConfiguration {
                 http
                                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                                 .csrf(AbstractHttpConfigurer::disable)
+                                .headers(headers -> headers.frameOptions(frameOptions -> frameOptions.sameOrigin()))
                                 .authorizeHttpRequests(auth -> auth
                                                 .requestMatchers(
                                                                 "/api/v1/auth/**",
                                                                 "/v3/api-docs/**",
                                                                 "/api-docs/**",
-                                                                "/swagger-ui/**")
-                                                .permitAll()
-                                                .anyRequest().authenticated())
+                                                                "/swagger-ui/**",
+                                                                "/swagger-ui.html",
+                                                                "/h2-console/**",
+                                                                "/",
+                                                                "/index.html",
+                                                                "/assets/**",
+                                                                "/app-icon.svg",
+                                                                "/favicon.ico",
+                                                                "/*.ico",
+                                                                "/*.png",
+                                                                "/*.svg",
+                                                                "/*.json",
+                                                                "/*.js",
+                                                                "/*.css",
+                                                                "/login",
+                                                                "/register",
+                                                                "/dashboard/**",
+                                                                "/accounts/**",
+                                                                "/reports/**",
+                                                                "/budget/**",
+                                                                "/investments/**",
+                                                                "/profile/**",
+                                                                "/settings/**"
+                                                ).permitAll()
+                                                .requestMatchers("/api/**").authenticated()
+                                                .anyRequest().permitAll())
                                 .sessionManagement(session -> session
                                                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                                 .authenticationProvider(authenticationProvider)

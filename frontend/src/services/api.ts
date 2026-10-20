@@ -15,7 +15,7 @@ api.interceptors.response.use(
     (error) => {
         const status = error.response?.status;
         const requestUrl = String(error.config?.url || '');
-        const isAuthRequest = requestUrl.includes('/auth/authenticate') || requestUrl.includes('/auth/register');
+        const isAuthRequest = requestUrl.includes('/auth/') || requestUrl.includes('/users/me');
         const isPublicAuthPage = window.location.pathname === '/login' || window.location.pathname === '/register';
 
         if (status === 401 && !isAuthRequest && !isPublicAuthPage) {

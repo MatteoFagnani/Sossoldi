@@ -20,15 +20,6 @@ export default function ProfilePage() {
     const [profileLoading, setProfileLoading] = useState(false);
     const [profileStatus, setProfileStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
 
-    // Password State
-    const [passwordForm, setPasswordForm] = useState({
-        oldPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-    });
-    const [passwordLoading, setPasswordLoading] = useState(false);
-    const [passwordStatus, setPasswordStatus] = useState<{ type: 'success' | 'error', message: string } | null>(null);
-
     // Delete Account State
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [deleteLoading, setDeleteLoading] = useState(false);
@@ -52,38 +43,15 @@ export default function ProfilePage() {
         }
     };
 
-    const handleChangePassword = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (passwordForm.newPassword !== passwordForm.confirmPassword) {
-            setPasswordStatus({ type: 'error', message: 'Le nuove password non corrispondono.' });
-            return;
-        }
-        setPasswordLoading(true);
-        setPasswordStatus(null);
-        try {
-            await api.put('/users/password', {
-                oldPassword: passwordForm.oldPassword,
-                newPassword: passwordForm.newPassword
-            });
-            setPasswordStatus({ type: 'success', message: 'Password cambiata con successo!' });
-            setPasswordForm({ oldPassword: '', newPassword: '', confirmPassword: '' });
-        } catch (error: unknown) {
-            setPasswordStatus({
-                type: 'error',
-                message: apiErrorMessage(error, 'Errore durante il cambio password.')
-            });
-        } finally {
-            setPasswordLoading(false);
-        }
-    };
-
     const handleDeleteAccount = async () => {
         setDeleteLoading(true);
         try {
             await api.delete('/users/me');
-            logout();
-        } catch {
-            alert('Errore durante l\'eliminazione dell\'account.');
+            await logout();
+        } catch (error: unknown) {
+            console.error('Delete account error:', error);
+            const msg = (error as { response?: { data?: { error?: string } } })?.response?.data?.error;
+            alert(msg || 'Errore durante l\'eliminazione dell\'account.');
             setDeleteLoading(false);
         }
     };
@@ -142,64 +110,36 @@ export default function ProfilePage() {
                     </form>
                 </section>
 
-                {/* Sicurezza Password */}
-                <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-amber-50 text-amber-600 rounded-lg">
-                            <Icons.Lock size={20} />
+                {/* Sicurezza Google */}
+                <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100 flex flex-col justify-between">
+                    <div>
+                        <div className="flex items-center gap-3 mb-4">
+                            <div className="p-2 bg-blue-50 text-blue-600 rounded-lg">
+                                <Icons.ShieldCheck size={20} />
+                            </div>
+                            <h2 className="text-lg font-semibold text-gray-800">Autenticazione Google</h2>
                         </div>
-                        <h2 className="text-lg font-semibold text-gray-800">Sicurezza Password</h2>
+                        <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+                            L'accesso al tuo profilo è gestito e protetto direttamente tramite <strong>Google Sign-In</strong>. Non sono necessarie password locali né credenziali manuali.
+                        </p>
+                        <div className="p-4 bg-gray-50 border border-gray-100 rounded-xl space-y-2">
+                            <div className="flex items-center justify-between text-xs text-gray-600">
+                                <span>Metodo di accesso:</span>
+                                <span className="font-semibold text-gray-900 flex items-center gap-1.5">
+                                    <span className="w-2 h-2 rounded-full bg-green-500"></span>
+                                    Google OAuth
+                                </span>
+                            </div>
+                            <div className="flex items-center justify-between text-xs text-gray-600">
+                                <span>Email collegata:</span>
+                                <span className="font-medium text-gray-900">{user?.email || 'N/A'}</span>
+                            </div>
+                        </div>
                     </div>
-
-                    <form onSubmit={handleChangePassword} className="space-y-4">
-                        <div>
-                            <label className={labelClass}>Vecchia Password</label>
-                            <input
-                                type="password"
-                                value={passwordForm.oldPassword}
-                                onChange={(e) => setPasswordForm({ ...passwordForm, oldPassword: e.target.value })}
-                                className={inputClass}
-                                required
-                            />
-                        </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label className={labelClass}>Nuova Password</label>
-                                <input
-                                    type="password"
-                                    value={passwordForm.newPassword}
-                                    onChange={(e) => setPasswordForm({ ...passwordForm, newPassword: e.target.value })}
-                                    className={inputClass}
-                                    required
-                                />
-                            </div>
-                            <div>
-                                <label className={labelClass}>Conferma Nuova</label>
-                                <input
-                                    type="password"
-                                    value={passwordForm.confirmPassword}
-                                    onChange={(e) => setPasswordForm({ ...passwordForm, confirmPassword: e.target.value })}
-                                    className={inputClass}
-                                    required
-                                />
-                            </div>
-                        </div>
-
-                        {passwordStatus && (
-                            <div className={`p-3 rounded-xl flex items-center gap-2 text-sm ${passwordStatus.type === 'success' ? 'bg-green-50 text-green-700' : 'bg-red-50 text-red-700'}`}>
-                                {passwordStatus.type === 'success' ? <Icons.CheckCircle size={16} /> : <Icons.XCircle size={16} />}
-                                {passwordStatus.message}
-                            </div>
-                        )}
-
-                        <button
-                            type="submit"
-                            disabled={passwordLoading}
-                            className="w-full py-3 bg-gray-800 hover:bg-gray-900 text-white font-medium rounded-xl transition-colors disabled:opacity-50"
-                        >
-                            {passwordLoading ? 'Cambiamento...' : 'Aggiorna Password'}
-                        </button>
-                    </form>
+                    <div className="mt-4 pt-4 border-t border-gray-100 flex items-center gap-2 text-xs text-gray-500">
+                        <Icons.CheckCircle size={14} className="text-green-600" />
+                        <span>Autenticazione sicura a 2 fattori gestita da Google</span>
+                    </div>
                 </section>
             </div>
 

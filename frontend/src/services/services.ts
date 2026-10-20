@@ -2,6 +2,14 @@ import api from './api';
 import type { AuthResponse, Account, AccountMovement, AccountTransfer, Category, CashFlowData, Investment, Transaction, TransactionCategoryMapping, Budget, BudgetStatus, DashboardOverview } from '../types';
 
 export const authService = {
+    async getGoogleConfig(): Promise<{ clientId: string; configured: boolean }> {
+        const response = await api.get<{ clientId: string; configured: boolean }>('/auth/google/config');
+        return response.data;
+    },
+    async loginWithGoogle(payload: { idToken?: string; email?: string; name?: string }): Promise<AuthResponse> {
+        const response = await api.post<AuthResponse>('/auth/google', payload);
+        return response.data;
+    },
     async register(username: string, email: string, password: string): Promise<AuthResponse> {
         const response = await api.post<AuthResponse>('/auth/register', { username, email, password });
         return response.data;

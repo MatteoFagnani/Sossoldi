@@ -1,26 +1,52 @@
 spring:
   application:
     name: FinanceTrackerBackend
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
   datasource:
-    url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:finance_tracker}
-    username: ${DB_USER}
-    password: ${DB_PASSWORD}
+    url: ${SPRING_DATASOURCE_URL:jdbc:h2:file:./data/sossoldi;AUTO_SERVER=TRUE;DB_CLOSE_DELAY=-1;MODE=PostgreSQL;DATABASE_TO_LOWER=TRUE;DEFAULT_NULL_ORDERING=HIGH;NON_KEYWORDS=USER,TRANSACTION}
+    driver-class-name: ${SPRING_DATASOURCE_DRIVER_CLASS_NAME:org.h2.Driver}
+    username: ${SPRING_DATASOURCE_USERNAME:sa}
+    password: ${SPRING_DATASOURCE_PASSWORD:}
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: true
-    properties:
-      hibernate:
-        format_sql: true
-        dialect: org.hibernate.dialect.PostgreSQLDialect
+    show-sql: false
+    open-in-view: true
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+      settings:
+        web-allow-others: false
 
 server:
   port: ${PORT:10000}
 
 jwt:
-  secret: ${JWT_SECRET}
+  secret: ${JWT_SECRET:404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970}
   expiration: 86400000 # 24 hours in milliseconds
 
 springdoc:
   swagger-ui:
     path: /swagger-ui.html
+
+---
+spring:
+  config:
+    activate:
+      on-profile: postgres
+  datasource:
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5432}/${DB_NAME:finance_tracker}}
+    driver-class-name: org.postgresql.Driver
+    username: ${DB_USER:${SPRING_DATASOURCE_USERNAME:finance_user}}
+    password: ${DB_PASSWORD:${SPRING_DATASOURCE_PASSWORD:finance_password}}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
+  h2:
+    console:
+      enabled: false

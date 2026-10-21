@@ -30,32 +30,34 @@ export default function LoginPage() {
     const [searchParams] = useSearchParams();
 
     const [configured, setConfigured] = useState<boolean | null>(null);
-    const [showConfigGuide, setShowConfigGuide] = useState(false);
+    const [showConfigGuide, setShowConfigGuide] = useState(() => searchParams.get('error') === 'not_configured');
     const [copiedCallback, setCopiedCallback] = useState(false);
     const [copiedOrigin, setCopiedOrigin] = useState(false);
-    const [error, setError] = useState('');
+
+    const errorParam = searchParams.get('error');
+    const detailsParam = searchParams.get('details');
+
+    const error = useMemo(() => {
+        if (errorParam === 'not_configured') {
+            return 'Google OAuth non è ancora configurato nel file .env';
+        } else if (errorParam === 'access_denied') {
+            return 'Accesso Google annullato o negato dall\'utente.';
+        } else if (errorParam === 'auth_failed') {
+            return detailsParam ? `Autenticazione fallita: ${detailsParam}` : 'Autenticazione con Google fallita. Riprova.';
+        }
+        return '';
+    }, [errorParam, detailsParam]);
 
     const callbackUrl = `${window.location.origin}/api/v1/auth/google/callback`;
     const originUrl = window.location.origin;
 
     useEffect(() => {
-        const errorParam = searchParams.get('error');
-        const detailsParam = searchParams.get('details');
-        if (errorParam === 'not_configured') {
-            setError('Google OAuth non è ancora configurato nel file .env');
-            setShowConfigGuide(true);
-        } else if (errorParam === 'access_denied') {
-            setError('Accesso Google annullato o negato dall\'utente.');
-        } else if (errorParam === 'auth_failed') {
-            setError(detailsParam ? `Autenticazione fallita: ${detailsParam}` : 'Autenticazione con Google fallita. Riprova.');
-        }
-
         authService.getGoogleConfig()
             .then(cfg => {
                 setConfigured(cfg.configured);
             })
             .catch(() => setConfigured(false));
-    }, [searchParams]);
+    }, []);
 
     const handleGoogleRedirect = () => {
         if (configured) {

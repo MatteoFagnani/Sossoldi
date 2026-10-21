@@ -1,6 +1,7 @@
 import { Pencil, Trash2 } from 'lucide-react';
 import type { BudgetStatus } from '../../types';
 import { ProgressBar } from '../UI';
+import { formatCurrency } from '../../utils/formatters';
 
 const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno', 'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'];
 const SHORT_MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
@@ -16,7 +17,7 @@ interface BudgetListProps {
 }
 
 export default function BudgetList({ budgets, loading, month, year, onAdd, onEdit, onDelete }: BudgetListProps) {
-    const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n);
+    const fmt = formatCurrency;
 
     if (loading) {
         return (

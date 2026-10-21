@@ -1,3 +1,4 @@
+import { formatAbsoluteCurrency } from '../../utils/formatters';
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import type { DashboardOverview } from '../../types';
@@ -8,7 +9,7 @@ interface DashboardRecentTransactionsProps {
 
 export default function DashboardRecentTransactions({ transactions }: DashboardRecentTransactionsProps) {
     const navigate = useNavigate();
-    const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Math.abs(n));
+    const fmt = formatAbsoluteCurrency;
 
     return (
         <div className="app-card p-6">

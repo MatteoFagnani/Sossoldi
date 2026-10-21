@@ -1,3 +1,4 @@
+import { formatCurrency } from '../utils/formatters';
 import { useState } from 'react';
 import { Wallet, TrendingUp, TrendingDown, Target, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
@@ -61,7 +62,7 @@ export default function DashboardPage() {
         );
     }
 
-    const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n);
+    const fmt = formatCurrency;
     const balance = (data.totalIncome ?? 0) - (data.totalExpense ?? 0);
     const savingsRate = data.totalIncome ? Math.round((balance / data.totalIncome) * 100) : 0;
 

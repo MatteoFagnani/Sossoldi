@@ -1,5 +1,24 @@
 import React from 'react';
 
+export const ProgressBar: React.FC<{
+    pct: number;
+    color?: string;
+    height?: number;
+}> = ({ pct, color = '#111827', height = 6 }) => (
+    <div
+        className="w-full bg-gray-100 rounded-full overflow-hidden"
+        style={{ height }}
+    >
+        <div
+            className="h-full rounded-full transition-all duration-700"
+            style={{
+                width: `${Math.min(pct, 100)}%`,
+                backgroundColor: color,
+            }}
+        />
+    </div>
+);
+
 export const StatCard: React.FC<{
     label: string;
     value: string;

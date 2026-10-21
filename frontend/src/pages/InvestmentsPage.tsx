@@ -1,3 +1,4 @@
+import { formatCurrency } from '../utils/formatters';
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
@@ -55,7 +56,7 @@ export default function InvestmentsPage() {
             return { ...row, investedCapital: cumulativeInvested };
         });
     }, [investments]);
-    const fmt = (value: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+    const fmt = formatCurrency;
     const tooltipFmt = (value: unknown) => fmt(Number(value || 0));
     const roundedTooltipFmt = (value: unknown) => fmt(Math.round(Number(value || 0)));
 

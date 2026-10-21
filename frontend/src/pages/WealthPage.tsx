@@ -1,3 +1,4 @@
+import { formatCurrency } from '../utils/formatters';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRightLeft, Loader2, Plus, Trash2, Wallet, X } from 'lucide-react';
 import { accountService, accountTransferService, investmentService } from '../services/services';
@@ -54,7 +55,7 @@ export default function WealthPage() {
         () => activeAccounts.filter(account => account.type === 'CASH').reduce((sum, account) => sum + account.currentBalance, 0),
         [activeAccounts]
     );
-    const fmt = (value: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(value);
+    const fmt = formatCurrency;
 
     const loadData = async () => {
         setLoading(true);

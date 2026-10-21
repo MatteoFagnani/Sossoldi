@@ -1,3 +1,4 @@
+import { formatCurrency } from '../../utils/formatters';
 import { AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import type { DashboardOverview } from '../../types';
 
@@ -27,7 +28,7 @@ function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
                             {p.dataKey === 'income' ? 'Entrate' : 'Uscite'}:
                         </span>
                         <span className="text-sm font-semibold text-gray-800">
-                            {new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(p.value)}
+                            {formatCurrency(p.value)}
                         </span>
                     </div>
                 ))}

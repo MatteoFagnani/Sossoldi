@@ -1,3 +1,4 @@
+import { formatCurrency } from '../utils/formatters';
 import { useState, useEffect, useMemo } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend,
@@ -12,7 +13,7 @@ const MONTHS = ['Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
 const CURRENT_YEAR = new Date().getFullYear();
 const CURRENT_MONTH = new Date().getMonth() + 1;
 
-const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n);
+const fmt = formatCurrency;
 
 // ─── Sankey-flow custom SVG component ───────────────────────────────────────
 function FlowDiagram({ data }: { data: CashFlowData }) {

@@ -1,3 +1,4 @@
+import { formatCurrency } from '../../utils/formatters';
 import { AlertTriangle, ArrowDownRight, Scale } from 'lucide-react';
 import type { DashboardOverview } from '../../types';
 
@@ -6,7 +7,7 @@ interface DashboardInsightsProps {
 }
 
 export default function DashboardInsights({ data }: DashboardInsightsProps) {
-    const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(n);
+    const fmt = formatCurrency;
     const balance = (data.totalIncome ?? 0) - (data.totalExpense ?? 0);
     const topCategory = Object.entries(data.categoryReport?.dataPoints ?? {})
         .sort((a, b) => b[1] - a[1])[0];

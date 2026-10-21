@@ -1,3 +1,4 @@
+import { formatAbsoluteCurrency } from '../../utils/formatters';
 import { ArrowRightLeft, Pencil, Trash2 } from 'lucide-react';
 import type { AccountMovement, Transaction } from '../../types';
 
@@ -9,7 +10,7 @@ interface TransactionListProps {
 }
 
 export default function TransactionList({ movements, loading, onEdit, onDelete }: TransactionListProps) {
-    const fmt = (n: number) => new Intl.NumberFormat('it-IT', { style: 'currency', currency: 'EUR' }).format(Math.abs(n));
+    const fmt = formatAbsoluteCurrency;
 
     if (loading) {
         return (

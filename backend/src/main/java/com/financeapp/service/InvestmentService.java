@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -23,8 +25,16 @@ public class InvestmentService {
 
     public List<InvestmentDto> getInvestments(User user) {
         List<Investment> investments = investmentRepository.findByUserIdOrderByNameAsc(user.getId());
-        double total = investments.stream().mapToDouble(this::effectiveCurrentValue).sum();
-        return investments.stream().map(investment -> toDto(investment, total)).toList();
+        Map<Long, List<InvestmentSnapshot>> sortedSnapshotsMap = new HashMap<>();
+        for (Investment investment : investments) {
+            sortedSnapshotsMap.put(investment.getId(), sortedSnapshots(investment));
+        }
+        double total = investments.stream()
+                .mapToDouble(inv -> effectiveCurrentValue(inv, sortedSnapshotsMap.get(inv.getId())))
+                .sum();
+        return investments.stream()
+                .map(inv -> toDto(inv, total, sortedSnapshotsMap.get(inv.getId())))
+                .toList();
     }
 
     public InvestmentDto createInvestment(User user, InvestmentDto dto) {
@@ -85,6 +95,10 @@ public class InvestmentService {
     }
 
     private InvestmentDto toDto(Investment investment, double total) {
+        return toDto(investment, total, sortedSnapshots(investment));
+    }
+
+    private InvestmentDto toDto(Investment investment, double total, List<InvestmentSnapshot> snapshots) {
         InvestmentDto dto = new InvestmentDto();
         dto.setId(investment.getId());
         dto.setName(investment.getName());
@@ -103,17 +117,19 @@ public class InvestmentService {
         dto.setComponents(investment.getComponents());
         dto.setSnapshots(investment.getSnapshots());
         dto.setLastUpdateDate(investment.getLastUpdateDate());
-        double currentValue = effectiveCurrentValue(investment);
-        double investedCapital = effectiveInvestedCapital(investment);
+        double currentValue = effectiveCurrentValue(investment, snapshots);
+        double investedCapital = effectiveInvestedCapital(investment, snapshots);
         double gain = currentValue - investedCapital;
         dto.setCurrentValue(currentValue);
         dto.setInvestedCapital(investedCapital);
         dto.setGainLoss(gain);
-        dto.setGainLossPercent(compoundReturnPercent(investment));
+        dto.setGainLossPercent(compoundReturnPercent(investment, snapshots));
         dto.setAllocationPercent(total == 0 ? 0 : currentValue / total * 100);
         return dto;
     }
+
     private List<InvestmentSnapshot> sortedSnapshots(Investment investment) {
+        if (investment.getSnapshots() == null) return List.of();
         return investment.getSnapshots().stream()
                 .filter(snapshot -> snapshot.getMonth() != null && !snapshot.getMonth().isBlank())
                 .sorted(Comparator.comparing(InvestmentSnapshot::getMonth))
@@ -121,21 +137,30 @@ public class InvestmentService {
     }
 
     private double effectiveCurrentValue(Investment investment) {
-        List<InvestmentSnapshot> snapshots = sortedSnapshots(investment);
-        if (snapshots.isEmpty()) return investment.getCurrentValue();
+        return effectiveCurrentValue(investment, sortedSnapshots(investment));
+    }
+
+    private double effectiveCurrentValue(Investment investment, List<InvestmentSnapshot> snapshots) {
+        if (snapshots == null || snapshots.isEmpty()) return investment.getCurrentValue();
         Double value = snapshots.getLast().getCurrentValue();
         return value == null ? investment.getCurrentValue() : value;
     }
 
     private double effectiveInvestedCapital(Investment investment) {
-        List<InvestmentSnapshot> snapshots = sortedSnapshots(investment);
-        if (snapshots.isEmpty()) return investment.getInvestedCapital();
+        return effectiveInvestedCapital(investment, sortedSnapshots(investment));
+    }
+
+    private double effectiveInvestedCapital(Investment investment, List<InvestmentSnapshot> snapshots) {
+        if (snapshots == null || snapshots.isEmpty()) return investment.getInvestedCapital();
         return snapshots.stream().mapToDouble(snapshot -> snapshot.getInvestedCapital() == null ? 0 : snapshot.getInvestedCapital()).sum();
     }
 
     private double compoundReturnPercent(Investment investment) {
-        List<InvestmentSnapshot> snapshots = sortedSnapshots(investment);
-        if (snapshots.isEmpty()) {
+        return compoundReturnPercent(investment, sortedSnapshots(investment));
+    }
+
+    private double compoundReturnPercent(Investment investment, List<InvestmentSnapshot> snapshots) {
+        if (snapshots == null || snapshots.isEmpty()) {
             return investment.getInvestedCapital() == 0 ? 0 : (investment.getCurrentValue() / investment.getInvestedCapital() - 1) * 100;
         }
         double previousValue = 0;

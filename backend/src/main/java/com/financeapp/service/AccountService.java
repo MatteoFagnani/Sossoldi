@@ -3,6 +3,7 @@ package com.financeapp.service;
 import com.financeapp.dto.AccountDto;
 import com.financeapp.exception.ResourceNotFoundException;
 import com.financeapp.model.Account;
+import com.financeapp.model.AccountTransfer;
 import com.financeapp.model.AccountType;
 import com.financeapp.model.Transaction;
 import com.financeapp.model.TransactionType;
@@ -14,7 +15,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
@@ -30,10 +33,40 @@ public class AccountService {
     }
 
     public List<AccountDto> getAccounts(User user) {
-        seedDefaultAccounts(user);
-        return accountRepository.findByUserIdOrderByArchivedAscNameAsc(user.getId()).stream()
-                .map(this::toDto)
-                .toList();
+        List<Account> accounts = accountRepository.findByUserIdOrderByArchivedAscNameAsc(user.getId());
+        if (accounts.isEmpty()) {
+            seedDefaultAccounts(user);
+            accounts = accountRepository.findByUserIdOrderByArchivedAscNameAsc(user.getId());
+        }
+
+        List<Transaction> userTransactions = transactionRepository.findByUserIdOrderByDateDesc(user.getId());
+        List<AccountTransfer> userTransfers = transferRepository.findByUserIdOrderByDateDescIdDesc(user.getId());
+
+        Map<Long, Double> transactionSums = new HashMap<>();
+        for (Transaction t : userTransactions) {
+            if (t.getAccount() != null) {
+                double delta = t.getType() == TransactionType.INCOME ? t.getAmount() : -t.getAmount();
+                transactionSums.merge(t.getAccount().getId(), delta, Double::sum);
+            }
+        }
+
+        Map<Long, Double> transferSums = new HashMap<>();
+        for (AccountTransfer transfer : userTransfers) {
+            if (transfer.getFromAccount() != null) {
+                transferSums.merge(transfer.getFromAccount().getId(), -transfer.getAmount(), Double::sum);
+            }
+            if (transfer.getToAccount() != null) {
+                transferSums.merge(transfer.getToAccount().getId(), transfer.getAmount(), Double::sum);
+            }
+        }
+
+        return accounts.stream().map(account -> {
+            AccountDto dto = toDtoBase(account);
+            double txTotal = transactionSums.getOrDefault(account.getId(), 0.0);
+            double trTotal = transferSums.getOrDefault(account.getId(), 0.0);
+            dto.setCurrentBalance(account.getInitialBalance() + txTotal + trTotal);
+            return dto;
+        }).toList();
     }
 
     public AccountDto createAccount(User user, AccountDto dto) {
@@ -114,13 +147,18 @@ public class AccountService {
     }
 
     private AccountDto toDto(Account account) {
+        AccountDto dto = toDtoBase(account);
+        dto.setCurrentBalance(currentBalance(account));
+        return dto;
+    }
+
+    private AccountDto toDtoBase(Account account) {
         AccountDto dto = new AccountDto();
         dto.setId(account.getId());
         dto.setName(account.getName());
         dto.setType(account.getType());
         dto.setInitialBalance(account.getInitialBalance());
         dto.setArchived(account.isArchived());
-        dto.setCurrentBalance(currentBalance(account));
         dto.setColor(account.getColor());
         dto.setIcon(account.getIcon());
         return dto;

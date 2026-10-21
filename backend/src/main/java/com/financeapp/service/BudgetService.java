@@ -16,6 +16,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 import com.financeapp.dto.BudgetStatusDto;
 import com.financeapp.dto.BudgetUpdateDto;
@@ -50,21 +51,29 @@ public class BudgetService {
         
         BudgetContext budgetContext = new BudgetContext();
         
-        double totalIncome = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(
-            user.getId(), startOfMonth, endOfMonth)
-            .stream()
+        List<com.financeapp.model.Transaction> monthTransactions = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(
+            user.getId(), startOfMonth, endOfMonth);
+
+        double totalIncome = monthTransactions.stream()
             .filter(t -> t.getType() == TransactionType.INCOME)
             .mapToDouble(com.financeapp.model.Transaction::getAmount)
             .sum();
+
+        Map<Long, Double> spendingByCategoryId = monthTransactions.stream()
+            .filter(t -> t.getType() == TransactionType.EXPENSE && t.getCategory() != null)
+            .collect(Collectors.groupingBy(
+                t -> t.getCategory().getId(),
+                Collectors.summingDouble(com.financeapp.model.Transaction::getAmount)
+            ));
+
+        Map<Long, BudgetOverride> overrideByBudgetId = overrides.stream()
+            .collect(Collectors.toMap(o -> o.getBudget().getId(), o -> o, (existing, replacementVal) -> existing));
 
         return budgets.stream().map(budget -> {
             Double effectiveLimit = budget.getLimitAmount();
             
             // Check for override
-            BudgetOverride override = overrides.stream()
-                .filter(o -> o.getBudget().getId().equals(budget.getId()))
-                .findFirst()
-                .orElse(null);
+            BudgetOverride override = overrideByBudgetId.get(budget.getId());
                 
             if (override != null) {
                 if (override.getAmount() != null) {
@@ -78,13 +87,7 @@ public class BudgetService {
 
             final Double limit = effectiveLimit; // effectiveLimit is effectively final for lambda
             
-            double currentSpending = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(
-                user.getId(), startOfMonth, endOfMonth)
-                .stream()
-                .filter(t -> t.getCategory().getId().equals(budget.getCategory().getId()) && 
-                            t.getType() == TransactionType.EXPENSE)
-                .mapToDouble(com.financeapp.model.Transaction::getAmount)
-                .sum();
+            double currentSpending = spendingByCategoryId.getOrDefault(budget.getCategory().getId(), 0.0);
                 
             double percentageUsed = limit > 0 ? (currentSpending / limit) * 100 : 0;
             

@@ -1,34 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
 @import "tailwindcss";
-
-:root {
-  --bg: #020205;
-  --bg-accent: #050510;
-  --card: rgba(10, 10, 20, 0.4);
-  --card-hover: rgba(15, 15, 30, 0.6);
-  --border: rgba(255, 255, 255, 0.08);
-  --border-glow: rgba(17, 24, 39, 0.2);
-
-  --accent: #111827;
-  --accent-glow: rgba(17, 24, 39, 0.35);
-  --cyan: #00f5ff;
-  --emerald: #10b981;
-  --rose: #f43f5e;
-
-  --text: #ffffff;
-  --text-muted: #8a8aab;
-  --text-dim: #5c5c7d;
-}
 
 * {
   box-sizing: border-box;
-  cursor: default;
 }
 
 html {
   font-family: 'Plus Jakarta Sans', sans-serif;
-  background-color: var(--bg);
-  color: var(--text);
+  background-color: #f9fafb;
+  color: #111827;
   -webkit-font-smoothing: antialiased;
   scroll-behavior: smooth;
 }
@@ -37,12 +17,7 @@ body {
   margin: 0;
   min-height: 100vh;
   overflow-x: hidden;
-  background-image:
-    radial-gradient(at 0% 0%, rgba(17, 24, 39, 0.08) 0px, transparent 50%),
-    radial-gradient(at 100% 0%, rgba(0, 245, 255, 0.05) 0px, transparent 50%),
-    radial-gradient(at 100% 100%, rgba(17, 24, 39, 0.05) 0px, transparent 50%),
-    radial-gradient(at 0% 100%, rgba(244, 63, 94, 0.05) 0px, transparent 50%);
-  background-attachment: fixed;
+  background-color: #f9fafb;
 }
 
 h1,
@@ -50,24 +25,9 @@ h2,
 h3,
 h4,
 h5,
-h6,
-.font-syne {
-  font-family: 'Syne', sans-serif;
+h6 {
+  font-family: 'Plus Jakarta Sans', sans-serif;
   letter-spacing: -0.02em;
-}
-
-/* Elite Glassmorphism */
-.glass {
-  background: var(--card);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border: 1px solid var(--border);
-}
-
-.glass-hover:hover {
-  background: var(--card-hover);
-  border-color: rgba(255, 255, 255, 0.15);
-  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
 }
 
 /* Custom Scrollbar */
@@ -80,12 +40,12 @@ h6,
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border);
+  background: rgba(0, 0, 0, 0.1);
   border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-dim);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 /* Smooth Flow Animation */
@@ -105,31 +65,17 @@ h6,
   animation: fadeInUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
-.inner-shadow-glow {
-  box-shadow: inset 0 0 20px rgba(255, 255, 255, 0.02);
-}
-
-.glow-text-white {
-  text-shadow: 0 0 10px rgba(255, 255, 255, 0.3);
-}
-
-.glow-text-cyan {
-  text-shadow: 0 0 10px rgba(0, 245, 255, 0.4);
-}
-
-.glow-text-gray {
-  text-shadow: 0 0 10px rgba(17, 24, 39, 0.35);
-}
-
 /* Custom chart tooltips */
 .chart-tooltip {
-  background: rgba(10, 10, 20, 0.8);
+  background: rgba(17, 24, 39, 0.9);
   backdrop-filter: blur(12px);
   border: 1px solid rgba(255, 255, 255, 0.1);
   border-radius: 12px;
   padding: 12px;
-  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+  color: #ffffff;
+  box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
 }
+
 .app-card {
   background: #ffffff;
   border: 1px solid #e5e7eb;

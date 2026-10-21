@@ -40,27 +40,7 @@ public class SecurityConfiguration {
                                                                 "/api-docs/**",
                                                                 "/swagger-ui/**",
                                                                 "/swagger-ui.html",
-                                                                "/h2-console/**",
-                                                                "/",
-                                                                "/index.html",
-                                                                "/assets/**",
-                                                                "/app-icon.svg",
-                                                                "/favicon.ico",
-                                                                "/*.ico",
-                                                                "/*.png",
-                                                                "/*.svg",
-                                                                "/*.json",
-                                                                "/*.js",
-                                                                "/*.css",
-                                                                "/login",
-                                                                "/register",
-                                                                "/dashboard/**",
-                                                                "/accounts/**",
-                                                                "/reports/**",
-                                                                "/budget/**",
-                                                                "/investments/**",
-                                                                "/profile/**",
-                                                                "/settings/**"
+                                                                "/h2-console/**"
                                                 ).permitAll()
                                                 .requestMatchers("/api/**").authenticated()
                                                 .anyRequest().permitAll())

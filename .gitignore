@@ -5,6 +5,7 @@ frontend/dist/
 backend/target/
 backend/data/
 .external
+.idea/
 data/
 *.db
 *.mv.db

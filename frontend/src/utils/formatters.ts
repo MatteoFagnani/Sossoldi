@@ -12,3 +12,4 @@ export const formatCurrency = (amount: number): string => currencyFormatter.form
  * Formats the absolute value of a number as Euro currency.
  */
 export const formatAbsoluteCurrency = (amount: number): string => currencyFormatter.format(Math.abs(amount));
+

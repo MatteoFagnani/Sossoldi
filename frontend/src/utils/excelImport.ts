@@ -143,3 +143,4 @@ export const apiErrorMessage = (err: unknown): string => {
     const data = (err as { response?: { data?: Record<string, string> } })?.response?.data;
     return data ? Object.values(data).join('. ') : err instanceof Error ? err.message : 'Errore sconosciuto';
 };
+

@@ -111,82 +111,6 @@ export interface AccountMovement {
     accountId?: number | null;
     accountName?: string | null;
     fromAccountId?: number | null;
-}
-
-export interface InvestmentComponent {
-    assetClass: string;
-    name?: string | null;
-    ticker?: string | null;
-    percentage?: number | null;
-    currentValue?: number | null;
-}
-
-export interface InvestmentSnapshot {
-    month: string;
-    investedCapital?: number | null;
-    value?: number | null;
-    currentValue?: number | null;
-}
-
-export interface Investment {
-    id: number;
-    name: string;
-    type: InvestmentType;
-    ticker?: string | null;
-    currentValue: number;
-    investedCapital: number;
-    recurringAmount?: number | null;
-    recurringDay?: number | null;
-    pacActive: boolean;
-    stocksPercent?: number | null;
-    bondsPercent?: number | null;
-    governmentBondsPercent?: number | null;
-    cashPercent?: number | null;
-    otherPercent?: number | null;
-    components?: InvestmentComponent[];
-    snapshots?: InvestmentSnapshot[];
-    lastUpdateDate?: string;
-    gainLoss: number;
-    gainLossPercent: number;
-    allocationPercent: number;
-}
-
-export interface Category {
-    id: number;
-    name: string;
-    type: TransactionType;
-    color: string;
-    parentId?: number | null;
-    parentName?: string | null;
-}
-
-export interface Transaction {
-    id: number;
-    amount: number;
-    type: TransactionType;
-    date: string;
-    description: string;
-    categoryId: number;
-    categoryName: string;
-    categoryColor: string;
-    accountId?: number | null;
-    accountName?: string | null;
-}
-
-export interface AccountMovement {
-    id: number;
-    source: 'TRANSACTION' | 'TRANSFER';
-    type: MovementType;
-    amount: number;
-    signedAmount: number;
-    date: string;
-    description?: string;
-    categoryId?: number | null;
-    categoryName?: string | null;
-    categoryColor?: string | null;
-    accountId?: number | null;
-    accountName?: string | null;
-    fromAccountId?: number | null;
     fromAccountName?: string | null;
     toAccountId?: number | null;
     toAccountName?: string | null;
@@ -202,8 +126,31 @@ export interface TransactionCategoryMapping {
     categoryName?: string;
 }
 
-export type { Budget, BudgetStatus, BudgetUpdateRequest } from './budget';
-import type { BudgetStatus } from './budget';
+export interface Budget {
+    id: number;
+    categoryId: number;
+    categoryName: string;
+    categoryColor: string;
+    limitAmount: number;
+    percentageOfIncome?: number;
+    automatic: boolean;
+}
+
+export interface BudgetStatus extends Budget {
+    month: number;
+    year: number;
+    currentSpending: number;
+    remainingAmount: number;
+    percentageUsed: number;
+    overridden: boolean;
+    status: 'OK' | 'WARNING' | 'EXCEEDED';
+}
+
+export interface BudgetUpdateRequest extends Omit<Budget, 'id' | 'categoryName' | 'categoryColor'> {
+    type: 'PERMANENT' | 'TEMPORARY';
+    month?: number;
+    year?: number;
+}
 
 export interface ReportDto {
     title: string;

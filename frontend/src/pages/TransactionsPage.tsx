@@ -8,138 +8,23 @@ import { useTransactions } from '../hooks/useTransactions';
 import { transactionCategoryMappingService, transactionService } from '../services/services';
 import { expandWorksheetRange } from '../utils/worksheetRange';
 
-type SheetRow = unknown[];
-type CategoryMappings = Record<string, number>;
-
-const readText = (value: unknown) => {
-    if (value && typeof value === 'object' && 'v' in value) return String((value as { v?: unknown }).v ?? '').trim();
-    return String(value ?? '').trim();
-};
-const cleanDescription = (value: unknown) => {
-    const text = readText(value);
-    const pressoMatch = text.match(/\bPRESSO\b\s+(.+)$/i);
-    if (pressoMatch) return pressoMatch[1].trim();
-    return text.split('-')[0].trim();
-};
-const similarDescriptionKey = (description: string) => description
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/\b\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?\b/g, ' ')
-    .replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, ' ')
-    .replace(/\b[a-z]*\d+[a-z\d]*\b/g, ' ')
-    .replace(/\b\d+[a-z]+\b/g, ' ')
-    .replace(/x{2,}/g, ' ')
-    .replace(/[^a-z\s]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-const mappingKey = (type: TransactionType, description: string) => `${type}:${similarDescriptionKey(description) || description.toLowerCase()}`;
-const transactionImportKey = (accountId: number | string | null | undefined, type: TransactionType, date: string, amount: number, description: string) =>
-    `${accountId ?? ''}:${type}:${date}:${Math.round(amount * 100)}:${similarDescriptionKey(cleanDescription(description))}`;
-const transactionLooseKey = (accountId: number | string | null | undefined, type: TransactionType, date: string, amount: number) =>
-    `${accountId ?? ''}:${type}:${date}:${Math.round(amount * 100)}`;
-const legacyMappingKeys = ['transaction-category-mappings', 'transactionCategoryMappings', 'categoryMappings'];
-
-const readLegacyMappings = () => {
-    for (const key of legacyMappingKeys) {
-        const value = localStorage.getItem(key);
-        if (!value) continue;
-        try {
-            const parsed = JSON.parse(value) as CategoryMappings;
-            if (parsed && typeof parsed === 'object') return { key, mappings: parsed };
-        } catch {
-            // Ignore broken old browser state.
-        }
-    }
-    return null;
-};
-
-const normalizeHeader = (value: unknown) => readText(value)
-    .toLowerCase()
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .replace(/[^a-z0-9]/g, '');
-
-const columnIndex = (headers: SheetRow, ...names: string[]) => {
-    const wanted = names.map(normalizeHeader);
-    const normalized = headers.map(normalizeHeader);
-    for (const name of wanted) {
-        const exactIndex = normalized.findIndex(header => header === name);
-        if (exactIndex >= 0) return exactIndex;
-    }
-    for (const name of wanted) {
-        const partialIndex = normalized.findIndex(header => header && name && (header.includes(name) || name.includes(header)));
-        if (partialIndex >= 0) return partialIndex;
-    }
-    throw new Error(`Colonna mancante: ${names[0]}.`);
-};
-
-const optionalColumnIndex = (headers: SheetRow, ...names: string[]) => {
-    try {
-        return columnIndex(headers, ...names);
-    } catch {
-        return -1;
-    }
-};
-
-const findHeaderRowIndex = (rows: SheetRow[]) => rows.findIndex(row => {
-    const headers = row.map(normalizeHeader);
-    return headers.some(header => ['datavaluta', 'data'].includes(header))
-        && headers.some(header => ['descrizioneestesa', 'descrizione', 'dettagli', 'operazione'].includes(header))
-        && headers.some(header => ['addebiti', 'accrediti', 'importo'].includes(header));
-});
-
-const parseSignedAmount = (...values: unknown[]) => {
-    for (const value of values) {
-        if (typeof value === 'number') return value;
-        const text = readText(value);
-        const normalized = text
-            .replace(/[()]/g, '')
-            .replace(/[^\d,.-]/g, '')
-            .replace(/\.(?=\d{3}(\D|$))/g, '')
-            .replace(',', '.');
-        const amount = Number.parseFloat(normalized);
-        if (Number.isFinite(amount)) return amount;
-    }
-    return 0;
-};
-const parseAmount = (...values: unknown[]) => {
-    for (const value of values) {
-        if (typeof value === 'number') return Math.abs(value);
-        const text = readText(value);
-        const normalized = text
-            .replace(/[()]/g, '')
-            .replace(/[^\d,.-]/g, '')
-            .replace(/\.(?=\d{3}(\D|$))/g, '')
-            .replace(',', '.');
-        const amount = Number.parseFloat(normalized);
-        if (Number.isFinite(amount)) return Math.abs(amount);
-    }
-    return 0;
-};
-
-const parseExcelDate = (...values: unknown[]) => {
-    for (const value of values) {
-        if (value instanceof Date && !Number.isNaN(value.getTime())) return [value.getFullYear(), String(value.getMonth() + 1).padStart(2, '0'), String(value.getDate()).padStart(2, '0')].join('-');
-        if (typeof value === 'number') {
-            const parsed = XLSX.SSF.parse_date_code(value);
-            if (parsed) return `${parsed.y}-${String(parsed.m).padStart(2, '0')}-${String(parsed.d).padStart(2, '0')}`;
-        }
-        const text = readText(value).split(/\s+/)[0];
-        if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
-        const match = text.match(/^(\d{1,2})[./-](\d{1,2})[./-](\d{2,4})$/);
-        if (match) {
-            const [, day, month, year] = match;
-            return `${year.length === 2 ? `20${year}` : year}-${month.padStart(2, '0')}-${day.padStart(2, '0')}`;
-        }
-    }
-    return '';
-};
-
-const apiError = (err: unknown) => {
-    const data = (err as { response?: { data?: Record<string, string> } })?.response?.data;
-    return data ? Object.values(data).join('. ') : err instanceof Error ? err.message : 'Errore sconosciuto';
-};
+import {
+    type SheetRow,
+    type CategoryMappings,
+    cleanDescription,
+    similarDescriptionKey,
+    mappingKey,
+    transactionImportKey,
+    transactionLooseKey,
+    readLegacyMappings,
+    columnIndex,
+    optionalColumnIndex,
+    findHeaderRowIndex,
+    parseSignedAmount,
+    parseAmount,
+    parseExcelDate,
+    apiErrorMessage as apiError
+} from '../utils/excelImport';
 
 export default function TransactionsPage() {
     const { transactions, movements, categories, accounts, loading, saving, error, setError, loadData, saveTransaction, deleteTransaction } = useTransactions();

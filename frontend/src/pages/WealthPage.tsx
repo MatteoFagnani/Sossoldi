@@ -2,7 +2,7 @@ import { formatCurrency } from '../utils/formatters';
 import { useEffect, useMemo, useState, type FormEvent } from 'react';
 import { ArrowRightLeft, Loader2, Plus, Trash2, Wallet, X } from 'lucide-react';
 import { accountService, accountTransferService, investmentService } from '../services/services';
-import { adjustedInitialBalance } from '../services/accountBalance';
+import { adjustedInitialBalance } from '../utils/accountBalance';
 import type { Account, AccountTransfer, AccountType, Investment } from '../types';
 
 const accountTypes: { value: AccountType; label: string }[] = [

@@ -6,7 +6,7 @@ import TransactionList from '../components/transactions/TransactionList';
 import TransactionForm from '../components/transactions/TransactionForm';
 import { useTransactions } from '../hooks/useTransactions';
 import { transactionCategoryMappingService, transactionService } from '../services/services';
-import { expandWorksheetRange } from '../services/worksheetRange';
+import { expandWorksheetRange } from '../utils/worksheetRange';
 
 type SheetRow = unknown[];
 type CategoryMappings = Record<string, number>;

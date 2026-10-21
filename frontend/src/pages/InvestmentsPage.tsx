@@ -2,7 +2,7 @@ import { formatCurrency } from '../utils/formatters';
 import { useEffect, useMemo, useState } from 'react';
 import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
-import InvestmentForm from '../components/InvestmentForm';
+import InvestmentForm from '../components/investments/InvestmentForm';
 import { investmentService } from '../services/services';
 import type { Investment, InvestmentType } from '../types';
 

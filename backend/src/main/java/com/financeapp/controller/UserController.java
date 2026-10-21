@@ -1,6 +1,5 @@
 package com.financeapp.controller;
 
-import com.financeapp.dto.PasswordChangeRequest;
 import com.financeapp.dto.ProfileUpdateRequest;
 import com.financeapp.dto.UserDto;
 import com.financeapp.service.UserService;
@@ -29,14 +28,6 @@ public class UserController extends BaseController {
             Authentication authentication,
             @RequestBody ProfileUpdateRequest request) {
         return ResponseEntity.ok(userService.updateProfile(getCurrentUser(authentication), request));
-    }
-
-    @PutMapping("/password")
-    public ResponseEntity<Void> changePassword(
-            Authentication authentication,
-            @RequestBody PasswordChangeRequest request) {
-        userService.changePassword(getCurrentUser(authentication), request);
-        return ResponseEntity.ok().build();
     }
 
     @DeleteMapping("/me")

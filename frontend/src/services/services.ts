@@ -10,14 +10,6 @@ export const authService = {
         const response = await api.post<AuthResponse>('/auth/google', payload);
         return response.data;
     },
-    async register(username: string, email: string, password: string): Promise<AuthResponse> {
-        const response = await api.post<AuthResponse>('/auth/register', { username, email, password });
-        return response.data;
-    },
-    async login(username: string, password: string): Promise<AuthResponse> {
-        const response = await api.post<AuthResponse>('/auth/authenticate', { username, password });
-        return response.data;
-    },
 };
 
 export const analyticsService = {

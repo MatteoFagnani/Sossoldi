@@ -1,5 +1,5 @@
 @echo off
-cd /d "%~dp0"
+cd /d "%~dp0.."
 title Arresto Sossoldi
 echo ============================================================
 echo               SOSSOLDI - ARRESTO SERVIZI

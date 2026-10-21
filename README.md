@@ -1,4 +1,4 @@
-# FinanceTracker
+# Sossoldi
 
 Un'applicazione web completa per la gestione delle finanze personali, con tracciamento di entrate e uscite, gestione budget e report dettagliati.
 
@@ -68,10 +68,10 @@ L'applicazione implementa diversi pattern architetturali per garantire flessibil
 ### Modalità 1: Avvio Immediato su PC (Consigliato per uso personale) 🚀
 Non richiede l'installazione o l'esecuzione di Docker o PostgreSQL. I dati vengono salvati localmente in modo sicuro nella cartella `./data/`.
 
-- **Doppio clic su `avvia.bat`** (oppure esegui `.\avvia.ps1` in PowerShell).
+- **Doppio clic su `avvia.bat`** (oppure esegui `.\scripts\avvia.ps1` in PowerShell).
 - Lo script verifica i requisiti, compila se necessario e apre automaticamente il browser all'indirizzo:
   👉 **http://localhost:10000**
-- Per arrestare l'applicazione, chiudi la finestra del terminale oppure fai doppio clic su `ferma.bat`.
+- Per arrestare l'applicazione, chiudi la finestra del terminale oppure fai doppio clic su `scripts\ferma.bat`.
 
 ---
 

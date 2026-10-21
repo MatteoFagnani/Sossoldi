@@ -1,3 +1,5 @@
+Set-Location "$PSScriptRoot\.."
+
 Write-Host "============================================================" -ForegroundColor Cyan
 Write-Host "              SOSSOLDI - GESTIONE FINANZE" -ForegroundColor Cyan
 Write-Host "============================================================" -ForegroundColor Cyan

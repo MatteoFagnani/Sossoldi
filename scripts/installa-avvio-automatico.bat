@@ -7,7 +7,7 @@ echo ============================================================
 echo.
 echo [INFO] Creazione del collegamento nella cartella Esecuzione Automatica...
 
-powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $startup = [Environment]::GetFolderPath('Startup'); $sc = $ws.CreateShortcut(\"$startup\Sossoldi.lnk\"); $sc.TargetPath = 'wscript.exe'; $sc.Arguments = '\"%~dp0avvia.vbs\"'; $sc.WorkingDirectory = '%~dp0'; $sc.Description = 'Sossoldi - Finanze Personali'; $sc.Save()"
+powershell -NoProfile -ExecutionPolicy Bypass -Command "$ws = New-Object -ComObject WScript.Shell; $startup = [Environment]::GetFolderPath('Startup'); $sc = $ws.CreateShortcut(\"$startup\Sossoldi.lnk\"); $sc.TargetPath = 'wscript.exe'; $sc.Arguments = '\"%~dp0avvia.vbs\"'; $sc.WorkingDirectory = (Resolve-Path '%~dp0..').Path; $sc.Description = 'Sossoldi - Finanze Personali'; $sc.Save()"
 
 if %ERRORLEVEL% neq 0 goto :error
 

@@ -1,6 +1,6 @@
 Set WshShell = CreateObject("WScript.Shell")
 Set fso = CreateObject("Scripting.FileSystemObject")
-strPath = fso.GetParentFolderName(WScript.ScriptFullName)
+strPath = fso.GetParentFolderName(fso.GetParentFolderName(WScript.ScriptFullName))
 WshShell.CurrentDirectory = strPath
 
 ' Avvia Sossoldi in modo 100% invisibile in background (zero finestre CMD, nessun browser automatico)

@@ -4,7 +4,7 @@ import { Loader2, Pencil, Plus, Trash2 } from 'lucide-react';
 import { Cell, Line, LineChart, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import InvestmentForm from '../components/investments/InvestmentForm';
 import { investmentService } from '../services/services';
-import type { Investment, InvestmentType } from '../types';
+import type { Investment, InvestmentPayload, InvestmentType } from '../types';
 
 const investmentTypes: { value: InvestmentType; label: string }[] = [
     { value: 'ETF', label: 'ETF' },
@@ -89,7 +89,7 @@ export default function InvestmentsPage() {
         setShowForm(true);
     };
 
-    const save = async (payload: object) => {
+    const save = async (payload: InvestmentPayload) => {
         setSaving(true);
         setError('');
         try {

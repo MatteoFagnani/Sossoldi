@@ -26,6 +26,8 @@ export interface Account {
     icon?: string;
 }
 
+export type AccountPayload = Omit<Account, 'id' | 'currentBalance'>;
+
 export interface AccountTransfer {
     id: number;
     amount: number;
@@ -36,6 +38,8 @@ export interface AccountTransfer {
     toAccountId: number;
     toAccountName: string;
 }
+
+export type AccountTransferPayload = Omit<AccountTransfer, 'id' | 'fromAccountName' | 'toAccountName'>;
 
 export interface InvestmentComponent {
     assetClass: string;
@@ -75,6 +79,8 @@ export interface Investment {
     allocationPercent: number;
 }
 
+export type InvestmentPayload = Omit<Investment, 'id' | 'gainLoss' | 'gainLossPercent' | 'allocationPercent'>;
+
 export interface Category {
     id: number;
     name: string;
@@ -83,6 +89,8 @@ export interface Category {
     parentId?: number | null;
     parentName?: string | null;
 }
+
+export type CategoryPayload = Omit<Category, 'id' | 'parentName'>;
 
 export interface Transaction {
     id: number;
@@ -96,6 +104,10 @@ export interface Transaction {
     accountId?: number | null;
     accountName?: string | null;
 }
+
+export type TransactionPayload = Omit<Transaction, 'id' | 'type' | 'categoryName' | 'categoryColor' | 'accountName'> & {
+    type?: TransactionType;
+};
 
 export interface AccountMovement {
     id: number;
@@ -146,8 +158,15 @@ export interface BudgetStatus extends Budget {
     status: 'OK' | 'WARNING' | 'EXCEEDED';
 }
 
-export interface BudgetUpdateRequest extends Omit<Budget, 'id' | 'categoryName' | 'categoryColor'> {
-    type: 'PERMANENT' | 'TEMPORARY';
+export interface BudgetPayload {
+    categoryId: number;
+    limitAmount?: number | null;
+    percentageOfIncome?: number | null;
+    automatic?: boolean;
+}
+
+export interface BudgetUpdateRequest extends BudgetPayload {
+    type?: 'PERMANENT' | 'TEMPORARY';
     month?: number;
     year?: number;
 }

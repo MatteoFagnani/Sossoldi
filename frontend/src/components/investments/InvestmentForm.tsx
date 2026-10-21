@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from 'react';
 import { ChevronLeft, ChevronRight, Loader2, Plus, Trash2, X } from 'lucide-react';
-import type { Investment, InvestmentComponent, InvestmentSnapshot, InvestmentType } from '../types';
+import type { Investment, InvestmentComponent, InvestmentPayload, InvestmentSnapshot, InvestmentType } from '../../types';
 
 const investmentTypes: { value: InvestmentType; label: string }[] = [
     { value: 'ETF', label: 'ETF' },
@@ -30,7 +30,7 @@ type Props = {
     investment: Investment | null;
     saving: boolean;
     onCancel: () => void;
-    onSave: (payload: object) => Promise<void>;
+    onSave: (payload: InvestmentPayload) => Promise<void>;
 };
 
 const toMoney = (value: unknown) => Number.parseFloat(String(value ?? '')) || 0;

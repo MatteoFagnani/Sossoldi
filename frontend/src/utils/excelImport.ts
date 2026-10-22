@@ -10,10 +10,48 @@ export const readText = (value: unknown): string => {
 };
 
 export const cleanDescription = (value: unknown): string => {
-    const text = readText(value);
+    const raw = readText(value);
+    let text = raw.trim();
+    if (!text) return '';
+
+    // 1. If 'PRESSO' exists, capture following merchant
     const pressoMatch = text.match(/\bPRESSO\b\s+(.+)$/i);
-    if (pressoMatch) return pressoMatch[1].trim();
-    return text.split('-')[0].trim();
+    if (pressoMatch) {
+        text = pressoMatch[1].trim();
+    }
+    // 2. Remove C/O prefix
+    text = text.replace(/^C\/O\s+/i, '');
+    // 3. Remove common banking prefixes
+    text = text.replace(/^(PAGAMENTO|PAGAM|DISPOSIZIONE\s+BONIFICO|BONIFICO|ADDEBITO\s+DIRETTO|ADDEBITO|ACCREDITO|PRELIEVO)(\s+(BANCOMAT|POS|SEPA|CARTA|TRAMITE\s+POS|A\s+FAVORE\s+DI))?\s*/i, '');
+    text = text.replace(/^A\s+FAVORE\s+DI\s+/i, '');
+
+    // 4. Remove dates
+    text = text.replace(/\bDEL\s+\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?\b/gi, ' ');
+    text = text.replace(/\b\d{1,2}[./-]\d{1,2}([./-]\d{2,4})?\b/g, ' ');
+
+    // 5. Remove times
+    text = text.replace(/\bORE\s+\d{1,2}[:.]\d{2}([:.]\d{2})?\b/gi, ' ');
+    text = text.replace(/\b\d{1,2}:\d{2}(:\d{2})?\b/g, ' ');
+
+    // 6. Remove prices and currency
+    text = text.replace(/\b(IMPORTO|IMP|TOTALE|TOT)\b[:.\s]*\d+([.,]\d+)?\s*(EUR|EURO|€|E\.)?/gi, ' ');
+    text = text.replace(/\b(EUR|EURO|€|E\.)\s*\d+([.,]\d+)?/gi, ' ');
+    text = text.replace(/\d+([.,]\d+)?\s*(EUR|EURO|€|E\.)\b/gi, ' ');
+    text = text.replace(/\d+([.,]\d+)?\s*€/g, ' ');
+    text = text.replace(/\b\d+([.,]\d{2})\b/g, ' ');
+
+    // 7. Remove card tokens / reference numbers / terminal codes
+    text = text.replace(/\b(PAN|CARTA|C\.ES|AUT|AUTH|TERMINALE|POS|OPERAZIONE|DIV|REF|ID|TRX|N\.|NUM)\b[:.\s]*\w+/gi, ' ');
+    text = text.replace(/[\*\d]{6,}/g, ' ');
+    text = text.replace(/\*{3,}\d+/g, ' ');
+    text = text.replace(/\bN\.\s*\d+/gi, ' ');
+    text = text.replace(/\b(EUR|EURO)\b|[€]/gi, ' ');
+
+    // 8. Clean up hyphens and extra whitespace
+    text = text.replace(/\s*-\s*/g, ' ').replace(/\s+/g, ' ').trim();
+    text = text.replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '').trim();
+
+    return text || raw.split('-')[0].trim();
 };
 
 export const similarDescriptionKey = (description: string): string => description
@@ -143,4 +181,3 @@ export const apiErrorMessage = (err: unknown): string => {
     const data = (err as { response?: { data?: Record<string, string> } })?.response?.data;
     return data ? Object.values(data).join('. ') : err instanceof Error ? err.message : 'Errore sconosciuto';
 };
-

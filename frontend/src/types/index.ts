@@ -3,6 +3,8 @@ export interface User {
     username: string;
     email: string;
     role: 'USER' | 'ADMIN';
+    geminiApiKey?: string;
+    geminiConfigured?: boolean;
 }
 
 export interface AuthResponse {
@@ -215,4 +217,19 @@ export interface DashboardOverview {
     monthlyReport: ReportDto;
     yearlyReport: ReportDto;
     categoryReport: ReportDto;
+}
+
+export interface AiStatus {
+    configured: boolean;
+    source: 'USER' | 'SYSTEM' | 'NONE';
+    model: string;
+    maskedKey?: string;
+    message?: string;
+}
+
+export interface CategorizeMerchantResponse {
+    mapped: TransactionCategoryMapping[];
+    totalProcessed: number;
+    newlyMapped: number;
+    message: string;
 }

@@ -14,11 +14,14 @@ import type {
     Transaction,
     TransactionPayload,
     TransactionCategoryMapping,
+    TransactionType,
     Budget,
     BudgetPayload,
     BudgetStatus,
     BudgetUpdateRequest,
     DashboardOverview,
+    AiStatus,
+    CategorizeMerchantResponse,
 } from '../types';
 
 export const authService = {
@@ -79,6 +82,18 @@ export const transactionService = {
 export const transactionCategoryMappingService = {
     async getAll(): Promise<TransactionCategoryMapping[]> { return (await api.get('/transaction-category-mappings')).data; },
     async save(data: TransactionCategoryMapping): Promise<TransactionCategoryMapping> { return (await api.put('/transaction-category-mappings', data)).data; },
+};
+
+export const aiService = {
+    async getStatus(): Promise<AiStatus> {
+        return (await api.get<AiStatus>('/ai/status')).data;
+    },
+    async testConnection(apiKey?: string): Promise<{ success: boolean; message: string; model?: string }> {
+        return (await api.post<{ success: boolean; message: string; model?: string }>('/ai/test', { apiKey })).data;
+    },
+    async categorizeAndMap(items: { description: string; type: TransactionType }[]): Promise<CategorizeMerchantResponse> {
+        return (await api.post<CategorizeMerchantResponse>('/ai/categorize-and-map', { items })).data;
+    },
 };
 
 export const budgetService = {

@@ -23,10 +23,13 @@ public class UserService {
     private final AccountRepository accountRepository;
     private final CategoryRepository categoryRepository;
     private final UserMapper userMapper;
+    private final GeminiService geminiService;
 
     @Transactional(readOnly = true)
     public UserDto getProfile(User user) {
-        return userMapper.toDto(user);
+        UserDto dto = userMapper.toDto(user);
+        dto.setGeminiConfigured(geminiService.isConfigured(user));
+        return dto;
     }
 
     @Transactional
@@ -45,8 +48,15 @@ public class UserService {
             user.setEmail(request.getEmail());
         }
 
+        if (request.getGeminiApiKey() != null) {
+            String cleanKey = request.getGeminiApiKey().trim();
+            user.setGeminiApiKey(cleanKey.isEmpty() ? null : cleanKey);
+        }
+
         User savedUser = userRepository.save(user);
-        return userMapper.toDto(savedUser);
+        UserDto dto = userMapper.toDto(savedUser);
+        dto.setGeminiConfigured(geminiService.isConfigured(savedUser));
+        return dto;
     }
 
     @Transactional

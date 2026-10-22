@@ -50,6 +50,9 @@ public class User implements UserDetails {
     @Column(name = "account_locked_until")
     private java.time.LocalDateTime accountLockedUntil;
 
+    @Column(name = "gemini_api_key", length = 500)
+    private String geminiApiKey;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));

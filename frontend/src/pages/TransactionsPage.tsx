@@ -1,11 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Loader2, Plus, Search, Tags, Upload, X } from 'lucide-react';
+import { Loader2, Plus, Search, Sparkles, Tags, Upload, X } from 'lucide-react';
 import * as XLSX from 'xlsx';
 import type { AccountMovement, Transaction, TransactionType } from '../types';
 import TransactionList from '../components/transactions/TransactionList';
 import TransactionForm from '../components/transactions/TransactionForm';
 import { useTransactions } from '../hooks/useTransactions';
-import { transactionCategoryMappingService, transactionService } from '../services/services';
+import { aiService, transactionCategoryMappingService, transactionService } from '../services/services';
 import { expandWorksheetRange } from '../utils/worksheetRange';
 
 import {
@@ -35,6 +35,7 @@ export default function TransactionsPage() {
     const [accountFilter, setAccountFilter] = useState('');
     const [search, setSearch] = useState('');
     const [importing, setImporting] = useState(false);
+    const [aiMappingLoading, setAiMappingLoading] = useState(false);
     const [importMessage, setImportMessage] = useState('');
     const [pendingImportFile, setPendingImportFile] = useState<File | null>(null);
     const [selectedImportAccountId, setSelectedImportAccountId] = useState('');
@@ -94,7 +95,7 @@ export default function TransactionsPage() {
                 if (!mappingOnlyUnmapped) return true;
                 const categoryId = categoryMappings[group.key] ?? group.categoryId;
                 const category = categories.find(item => item.id === categoryId);
-                return !category || category.name.toLowerCase() === 'altro';
+                return !category || category.name.toLowerCase() === 'da classificare' || category.name.toLowerCase() === 'altro';
             })
             .filter(group => !query || group.description.toLowerCase().includes(query) || group.examples.some(example => example.toLowerCase().includes(query)));
     }, [categories, categoryMappings, mappingOnlyUnmapped, mappingSearch, mappingType, transactionGroups]);
@@ -113,12 +114,12 @@ export default function TransactionsPage() {
         ?? categories.find(c => c.type === type && c.name.toLowerCase() === 'altro')?.id
         ?? categories.find(c => c.type === type)?.id;
 
-    const categoryFor = (type: TransactionType, description: string, fallbackId: number) => {
-        const exactId = categoryMappings[mappingKey(type, description)];
+    const categoryFor = (type: TransactionType, description: string, fallbackId: number, currentMappings: CategoryMappings = categoryMappings) => {
+        const exactId = currentMappings[mappingKey(type, description)];
         if (categories.some(category => category.id === exactId && category.type === type)) return exactId;
         const normalized = similarDescriptionKey(description) || description.toLowerCase();
         const prefix = `${type}:`;
-        const match = Object.entries(categoryMappings)
+        const match = Object.entries(currentMappings)
             .filter(([key, categoryId]) => key.startsWith(prefix) && categories.some(category => category.id === categoryId && category.type === type))
             .map(([key, categoryId]) => ({ keyword: key.slice(prefix.length), categoryId }))
             .filter(({ keyword }) => keyword && normalized.includes(keyword))
@@ -182,6 +183,47 @@ export default function TransactionsPage() {
         }
     };
 
+    const handleAiAutoMapGroups = async () => {
+        setAiMappingLoading(true);
+        setError('');
+        try {
+            const unmapped = visibleTransactionGroups
+                .filter(group => {
+                    const categoryId = categoryMappings[group.key] ?? group.categoryId;
+                    const category = categories.find(item => item.id === categoryId);
+                    return !category || category.name.toLowerCase() === 'da classificare' || category.name.toLowerCase() === 'altro';
+                })
+                .map(group => ({ description: group.description, type: group.type }));
+
+            if (unmapped.length === 0) {
+                setImportMessage('Tutti gli esercenti visibili sono già mappati con una categoria specifica!');
+                return;
+            }
+
+            const res = await aiService.categorizeAndMap(unmapped);
+            if (res && res.mapped) {
+                const newEntries = Object.fromEntries(res.mapped.map(m => [m.matchKey, m.categoryId]));
+                setCategoryMappings(prev => ({ ...prev, ...newEntries }));
+
+                // Update transactions matching the newly mapped groups
+                for (const m of res.mapped) {
+                    const matchingTxs = transactions.filter(tx => tx.type === m.type && mappingKey(tx.type, cleanDescription(tx.description || tx.categoryName)) === m.matchKey);
+                    for (const tx of matchingTxs) {
+                        if (tx.categoryId === m.categoryId) continue;
+                        await transactionService.update(tx.id, { amount: tx.amount, date: tx.date, description: tx.description, categoryId: m.categoryId, accountId: tx.accountId ?? undefined });
+                    }
+                }
+
+                await loadData(accountFilter);
+                setImportMessage(`Completato! ${res.newlyMapped} esercenti mappati con successo con Gemini AI.`);
+            }
+        } catch (err) {
+            setError(apiError(err));
+        } finally {
+            setAiMappingLoading(false);
+        }
+    };
+
     const prepareImport = (file: File | undefined) => {
         if (!file) return;
         setPendingImportFile(file);
@@ -222,18 +264,30 @@ export default function TransactionsPage() {
             if (amountCol < 0 && (debitCol < 0 || creditCol < 0)) throw new Error('Colonna importo mancante.');
             const selectedAccount = accounts.find(account => account.id === importAccountId && !account.archived);
             if (!selectedAccount || selectedAccount.type === 'INVESTMENT') throw new Error("Seleziona un conto valido per importare l'estratto conto.");
+
             const existingKeys = new Set(transactions.map(tx => transactionImportKey(tx.accountId, tx.type, tx.date, tx.amount, tx.description || '')));
             const existingLooseCounts = new Map<string, number>();
             for (const tx of transactions) {
                 const key = transactionLooseKey(tx.accountId, tx.type, tx.date, tx.amount);
                 existingLooseCounts.set(key, (existingLooseCounts.get(key) || 0) + 1);
             }
-            let imported = 0;
+
             let skipped = 0;
             let invalidRows = 0;
             let duplicateRows = 0;
-            let apiErrors = 0;
             let firstSkipReason = '';
+
+            // 1. Parse rows and filter out invalid / duplicate transactions
+            interface CandidateTransaction {
+                amount: number;
+                date: string;
+                type: TransactionType;
+                description: string;
+                duplicateKey: string;
+                looseDuplicateKey: string;
+            }
+            const candidateTransactions: CandidateTransaction[] = [];
+
             for (const [rowIndex, row] of rows.entries()) {
                 const displayRow = displayDataRows[rowIndex] || [];
                 const signedAmount = amountCol >= 0 ? parseSignedAmount(row[amountCol], displayRow[amountCol]) : 0;
@@ -241,28 +295,87 @@ export default function TransactionsPage() {
                 const credit = amountCol >= 0 ? (signedAmount > 0 ? signedAmount : 0) : parseAmount(row[creditCol], displayRow[creditCol]);
                 const amount = Math.abs(signedAmount) || credit || debit;
                 const date = parseExcelDate(row[dateCol], displayRow[dateCol]);
+
                 if (!amount || !date) {
                     skipped += 1;
                     invalidRows += 1;
                     if (!firstSkipReason) firstSkipReason = `riga senza ${!amount ? 'importo' : 'data'} valida`;
                     continue;
                 }
+
                 const type: TransactionType = credit ? 'INCOME' : 'EXPENSE';
+                // Description cleaned without prices, dates, times or banking prefixes
                 const description = cleanDescription(row[descriptionCol] || displayRow[descriptionCol]);
                 const duplicateKey = transactionImportKey(importAccountId, type, date, amount, description);
                 const looseDuplicateKey = transactionLooseKey(importAccountId, type, date, amount);
+
                 if (existingKeys.has(duplicateKey) || (existingLooseCounts.get(looseDuplicateKey) || 0) > 0) {
                     existingLooseCounts.set(looseDuplicateKey, Math.max((existingLooseCounts.get(looseDuplicateKey) || 1) - 1, 0));
                     skipped += 1;
                     duplicateRows += 1;
-                    if (!firstSkipReason) firstSkipReason = 'transazione gia presente';
+                    if (!firstSkipReason) firstSkipReason = 'transazione già presente';
                     continue;
                 }
-                const fallbackCategoryId = type === 'INCOME' ? incomeCategoryId : expenseCategoryId;
+
+                candidateTransactions.push({
+                    amount,
+                    date,
+                    type,
+                    description,
+                    duplicateKey,
+                    looseDuplicateKey
+                });
+            }
+
+            // 2. Extract unknown merchants (deduplicated) that appear for the first time
+            const localMappings = { ...categoryMappings };
+            const unknownMerchantsMap = new Map<string, { description: string; type: TransactionType }>();
+
+            for (const tx of candidateTransactions) {
+                const key = mappingKey(tx.type, tx.description);
+                const assignedCatId = categoryFor(tx.type, tx.description, -1, localMappings);
+                const assignedCat = categories.find(c => c.id === assignedCatId);
+                const isUnmapped = !assignedCat || assignedCat.name.toLowerCase() === 'da classificare' || assignedCat.name.toLowerCase() === 'altro';
+
+                if (isUnmapped && !unknownMerchantsMap.has(key)) {
+                    unknownMerchantsMap.set(key, { description: tx.description, type: tx.type });
+                }
+            }
+
+            // 3. If unknown merchants exist, attempt AI auto-mapping with Gemini
+            let aiMappedCount = 0;
+            if (unknownMerchantsMap.size > 0) {
                 try {
-                    await transactionService.create({ amount, date, description, categoryId: categoryFor(type, description, fallbackCategoryId), accountId: importAccountId });
-                    existingKeys.add(duplicateKey);
-                    existingLooseCounts.set(looseDuplicateKey, (existingLooseCounts.get(looseDuplicateKey) || 0) + 1);
+                    const aiResult = await aiService.categorizeAndMap([...unknownMerchantsMap.values()]);
+                    if (aiResult && aiResult.mapped) {
+                        const newEntries = Object.fromEntries(aiResult.mapped.map(m => [m.matchKey, m.categoryId]));
+                        Object.assign(localMappings, newEntries);
+                        setCategoryMappings(prev => ({ ...prev, ...newEntries }));
+                        aiMappedCount = aiResult.newlyMapped;
+                    }
+                } catch (aiErr) {
+                    console.warn('AI auto-mapping failed or key not configured:', aiErr);
+                }
+            }
+
+            // 4. Create transactions with mapped categories
+            let imported = 0;
+            let apiErrors = 0;
+
+            for (const tx of candidateTransactions) {
+                const fallbackCategoryId = tx.type === 'INCOME' ? incomeCategoryId : expenseCategoryId;
+                const categoryId = categoryFor(tx.type, tx.description, fallbackCategoryId, localMappings);
+
+                try {
+                    await transactionService.create({
+                        amount: tx.amount,
+                        date: tx.date,
+                        description: tx.description,
+                        categoryId,
+                        accountId: importAccountId
+                    });
+                    existingKeys.add(tx.duplicateKey);
+                    existingLooseCounts.set(tx.looseDuplicateKey, (existingLooseCounts.get(tx.looseDuplicateKey) || 0) + 1);
                     imported += 1;
                 } catch (err) {
                     skipped += 1;
@@ -270,8 +383,12 @@ export default function TransactionsPage() {
                     if (!firstSkipReason) firstSkipReason = apiError(err);
                 }
             }
+
             await loadData(accountFilter);
-            const resultMessage = `Importate ${imported} transazioni. Skippate ${skipped} righe${skipped ? ` (${invalidRows} non valide, ${duplicateRows} duplicate, ${apiErrors} errori server${firstSkipReason ? `; primo motivo: ${firstSkipReason}` : ''})` : ''}.`;
+
+            const aiNotice = aiMappedCount > 0 ? ` (${aiMappedCount} nuovi esercenti mappati con Gemini AI)` : '';
+            const resultMessage = `Importate ${imported} transazioni${aiNotice}. Skippate ${skipped} righe${skipped ? ` (${invalidRows} non valide, ${duplicateRows} duplicate, ${apiErrors} errori server${firstSkipReason ? `; primo motivo: ${firstSkipReason}` : ''})` : ''}.`;
+
             if (imported === 0 && skipped > 0) setError(resultMessage);
             else setImportMessage(resultMessage);
         } catch (err) {
@@ -295,7 +412,6 @@ export default function TransactionsPage() {
         .filter(t => filter === 'ALL' || t.type === filter)
         .filter(t => !search || (t.description || t.categoryName || t.accountName || t.fromAccountName || t.toAccountName || '').toLowerCase().includes(search.toLowerCase()));
     const importAccounts = accounts.filter(account => !account.archived && account.type !== 'INVESTMENT');
-
 
     return (
         <div className="space-y-5 pb-10">
@@ -330,6 +446,7 @@ export default function TransactionsPage() {
             {importMessage && <div className="px-4 py-3 bg-emerald-50 border border-emerald-100 rounded-xl text-sm text-emerald-700">{importMessage}</div>}
 
             <TransactionList movements={filtered} loading={loading} onEdit={openEdit} onDelete={handleDelete} />
+
             {pendingImportFile && (
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <form onSubmit={(event) => { event.preventDefault(); confirmImport(); }} className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
@@ -343,20 +460,30 @@ export default function TransactionsPage() {
                             </button>
                         </div>
 
-                        <div className="p-6">
-                            <label htmlFor="import-account" className="block text-sm font-medium text-gray-700 mb-1.5">A quale conto appartengono queste transazioni?</label>
-                            <select
-                                id="import-account"
-                                value={selectedImportAccountId}
-                                onChange={(event) => setSelectedImportAccountId(event.target.value)}
-                                autoFocus
-                                required
-                                className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                            >
-                                <option value="">Seleziona un conto</option>
-                                {importAccounts.map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
-                            </select>
-                            {importAccounts.length === 0 && <p className="mt-2 text-xs text-red-600">Nessun conto disponibile per l'importazione.</p>}
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label htmlFor="import-account" className="block text-sm font-medium text-gray-700 mb-1.5">A quale conto appartengono queste transazioni?</label>
+                                <select
+                                    id="import-account"
+                                    value={selectedImportAccountId}
+                                    onChange={(event) => setSelectedImportAccountId(event.target.value)}
+                                    autoFocus
+                                    required
+                                    className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                                >
+                                    <option value="">Seleziona un conto</option>
+                                    {importAccounts.map(account => <option key={account.id} value={account.id}>{account.name}</option>)}
+                                </select>
+                                {importAccounts.length === 0 && <p className="mt-2 text-xs text-red-600">Nessun conto disponibile per l'importazione.</p>}
+                            </div>
+
+                            <div className="p-3 bg-purple-50/80 border border-purple-100 rounded-xl flex items-start gap-2.5 text-xs text-purple-900">
+                                <Sparkles size={16} className="text-purple-600 shrink-0 mt-0.5" />
+                                <div>
+                                    <span className="font-semibold">Mappatura automatica con Gemini AI</span>
+                                    <p className="text-purple-700 mt-0.5">I prezzi verranno rimossi dalle descrizioni e i negozi sconosciuti verranno categorizzati e mappati automaticamente.</p>
+                                </div>
+                            </div>
                         </div>
 
                         <div className="flex justify-end gap-2 px-6 py-4 bg-gray-50 border-t border-gray-100">
@@ -373,8 +500,22 @@ export default function TransactionsPage() {
                 <div className="fixed inset-0 bg-black/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-3xl max-h-[90vh] flex flex-col">
                         <div className="flex items-center justify-between p-6 border-b border-gray-100 shrink-0">
-                            <div><h3 className="text-base font-semibold text-gray-900">Mappa categorie</h3><p className="text-xs text-gray-500 mt-1">Aggiorna una regola e verranno aggiornate tutte le transazioni uguali.</p></div>
-                            <button onClick={() => setShowMappings(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><X size={18} /></button>
+                            <div>
+                                <h3 className="text-base font-semibold text-gray-900">Mappa categorie</h3>
+                                <p className="text-xs text-gray-500 mt-1">Aggiorna una regola e verranno aggiornate tutte le transazioni uguali.</p>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleAiAutoMapGroups}
+                                    disabled={aiMappingLoading || visibleTransactionGroups.length === 0}
+                                    title="Categorizza automaticamente i negozi sconosciuti usando Gemini AI"
+                                    className="px-3 py-1.5 bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                                >
+                                    {aiMappingLoading ? <Loader2 size={14} className="animate-spin text-purple-700" /> : <Sparkles size={14} />}
+                                    Auto-mappa con AI
+                                </button>
+                                <button onClick={() => setShowMappings(false)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"><X size={18} /></button>
+                            </div>
                         </div>
                         <div className="p-4 border-b border-gray-100 shrink-0 space-y-3">
                             <div className="flex bg-gray-100 rounded-xl p-1 gap-1">
@@ -392,8 +533,21 @@ export default function TransactionsPage() {
                                 const options = categoryOptionsFor(group.type);
                                 return (
                                     <div key={group.key} className="grid grid-cols-1 md:grid-cols-[1fr_280px] gap-3 p-4 items-center hover:bg-gray-50/70 transition-colors">
-                                        <div className="min-w-0"><div className="flex items-center gap-2 min-w-0"><span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${group.type === 'INCOME' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{group.type === 'INCOME' ? 'Entrata' : 'Uscita'}</span><p className="text-sm font-medium text-gray-900 truncate">{group.description}</p></div><p className="text-xs text-gray-500 mt-1">{group.count} transazioni</p>{group.examples.length > 1 && <p className="text-xs text-gray-400 truncate mt-0.5">Esempi: {group.examples.slice(1).join(', ')}</p>}</div>
-                                        <div className="flex items-center gap-2"><select value={selectedCategoryId} disabled={savingMappingKey === group.key} onChange={(e) => handleMappingChange(group.key, Number(e.target.value))} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900">{options.grouped.map(({ macro, children }) => <optgroup key={macro.id} label={macro.name}>{children.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</optgroup>)}{options.standalone.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</select>{savingMappingKey === group.key && <Loader2 size={16} className="animate-spin text-gray-900 shrink-0" />}</div>
+                                        <div className="min-w-0">
+                                            <div className="flex items-center gap-2 min-w-0">
+                                                <span className={`shrink-0 rounded-full px-2 py-0.5 text-[11px] font-semibold ${group.type === 'INCOME' ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'}`}>{group.type === 'INCOME' ? 'Entrata' : 'Uscita'}</span>
+                                                <p className="text-sm font-medium text-gray-900 truncate">{group.description}</p>
+                                            </div>
+                                            <p className="text-xs text-gray-500 mt-1">{group.count} transazioni</p>
+                                            {group.examples.length > 1 && <p className="text-xs text-gray-400 truncate mt-0.5">Esempi: {group.examples.slice(1).join(', ')}</p>}
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <select value={selectedCategoryId} disabled={savingMappingKey === group.key} onChange={(e) => handleMappingChange(group.key, Number(e.target.value))} className="w-full px-3 py-2 bg-white border border-gray-300 rounded-xl text-sm text-gray-800 focus:outline-none focus:ring-2 focus:ring-gray-900">
+                                                {options.grouped.map(({ macro, children }) => <optgroup key={macro.id} label={macro.name}>{children.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}</optgroup>)}
+                                                {options.standalone.map(category => <option key={category.id} value={category.id}>{category.name}</option>)}
+                                            </select>
+                                            {savingMappingKey === group.key && <Loader2 size={16} className="animate-spin text-gray-900 shrink-0" />}
+                                        </div>
                                     </div>
                                 );
                             })}
@@ -406,4 +560,3 @@ export default function TransactionsPage() {
         </div>
     );
 }
-

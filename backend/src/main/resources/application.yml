@@ -32,6 +32,11 @@ google:
   client-secret: ${GOOGLE_CLIENT_SECRET:}
   redirect-uri: ${GOOGLE_REDIRECT_URI:}
 
+gemini:
+  api-key: ${GEMINI_API_KEY:}
+  model: ${GEMINI_MODEL:gemini-3.5-flash-lite}
+  api-url: ${GEMINI_API_URL:https://generativelanguage.googleapis.com/v1beta}
+
 springdoc:
   swagger-ui:
     path: /swagger-ui.html

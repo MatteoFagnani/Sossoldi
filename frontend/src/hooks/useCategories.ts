@@ -52,7 +52,23 @@ export function useCategories() {
         }
     };
 
+    const seedDefaults = async () => {
+        setSaving(true);
+        setError('');
+        try {
+            const data = await categoryService.seedDefaults();
+            setCategories(data);
+            return true;
+        } catch {
+            setError('Errore durante l\'aggiornamento delle categorie predefinite.');
+            return false;
+        } finally {
+            setSaving(false);
+        }
+    };
+
     return {
+        seedDefaults,
         categories,
         loading,
         saving,

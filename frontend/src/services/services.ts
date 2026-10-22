@@ -69,6 +69,7 @@ export const categoryService = {
     async create(data: CategoryPayload): Promise<Category> { return (await api.post('/categories', data)).data; },
     async update(id: number, data: Partial<CategoryPayload>): Promise<Category> { return (await api.put(`/categories/${id}`, data)).data; },
     async remove(id: number): Promise<void> { return (await api.delete(`/categories/${id}`)).data; },
+    async seedDefaults(): Promise<Category[]> { return (await api.post('/categories/seed-defaults')).data; },
 };
 
 export const transactionService = {

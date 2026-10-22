@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Plus } from 'lucide-react';
+import { Plus, Sparkles } from 'lucide-react';
 import type { Category, TransactionType } from '../types';
 import CategoryList from '../components/categories/CategoryList';
 import CategoryForm from '../components/categories/CategoryForm';
@@ -8,7 +8,7 @@ import { useCategories } from '../hooks/useCategories';
 const DEFAULT_COLORS = ['#111827', '#06b6d4', '#10b981', '#f43f5e', '#3b82f6', '#ec4899', '#64748b', '#f59e0b'];
 
 export default function CategoriesPage() {
-    const { categories, loading, saving, error, setError, loadCategories, saveCategory, deleteCategory } = useCategories();
+    const { categories, loading, saving, error, setError, loadCategories, saveCategory, deleteCategory, seedDefaults } = useCategories();
 
     const [showForm, setShowForm] = useState(false);
     const [editing, setEditing] = useState<Category | null>(null);
@@ -48,7 +48,20 @@ export default function CategoriesPage() {
         <div className="space-y-8 pb-10">
             {/* Header */}
             <div className="flex items-center justify-between">
-                <div />
+                <button
+                    type="button"
+                    onClick={async () => {
+                        if (confirm('Vuoi sincronizzare/importare le categorie granulari predefinite per il tuo account? Le categorie esistenti non verranno eliminate.')) {
+                            await seedDefaults();
+                        }
+                    }}
+                    disabled={saving}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-gray-700 bg-white border border-gray-200 hover:bg-gray-50 rounded-xl transition-colors cursor-pointer"
+                    title="Importa o aggiorna le categorie consigliate granulari"
+                >
+                    <Sparkles size={14} className="text-amber-500" />
+                    Sincronizza Categorie Predefinite
+                </button>
                 <button
                     onClick={() => openNew()}
                     className="app-button-primary"

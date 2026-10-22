@@ -206,15 +206,9 @@ export default function ProfilePage() {
                                 <h1 className="text-xl font-bold text-gray-900 tracking-tight truncate">
                                     {displayName}
                                 </h1>
-                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold bg-blue-50 text-blue-700 border border-blue-200/80 px-2 py-0.5 rounded-full">
-                                    <ShieldCheck size={12} />
-                                    Google Account
-                                </span>
                             </div>
 
                             <p className="text-xs text-gray-500 mt-1 flex items-center gap-1.5 flex-wrap">
-                                <span className="font-mono text-gray-600">@{user?.username}</span>
-                                <span className="text-gray-300">•</span>
                                 <span className="flex items-center gap-1">
                                     <Mail size={12} className="text-gray-400" />
                                     {user?.email}
@@ -222,9 +216,6 @@ export default function ProfilePage() {
                             </p>
 
                             <div className="flex items-center gap-2 mt-2">
-                                <span className="text-[10px] font-semibold uppercase tracking-wider text-gray-400 bg-gray-100 px-2 py-0.5 rounded">
-                                    Ruolo: {user?.role || 'USER'}
-                                </span>
                                 {user?.avatarUrl && (
                                     <span className="text-[11px] text-gray-400 flex items-center gap-1">
                                         <Camera size={11} />
@@ -511,7 +502,7 @@ export default function ProfilePage() {
                                 className="px-3.5 py-2 text-purple-700 hover:bg-purple-50 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition-colors border border-purple-200 ml-auto cursor-pointer"
                             >
                                 <ExternalLink size={12} />
-                                Ottieni chiave API gratuita (Google AI Studio)
+                                Ottieni chiave API gratuita
                             </a>
                         </div>
 

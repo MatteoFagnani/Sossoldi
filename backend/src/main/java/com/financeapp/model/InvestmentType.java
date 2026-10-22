@@ -7,5 +7,6 @@ public enum InvestmentType {
     CRYPTO,
     PENSION,
     BOND,
+    ROBO_ADVISOR,
     OTHER
 }

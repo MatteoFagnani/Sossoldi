@@ -47,6 +47,7 @@ public class InvestmentService {
                 .recurringAmount(dto.getRecurringAmount())
                 .recurringDay(dto.getRecurringDay())
                 .pacActive(dto.isPacActive())
+                .trackingFrequency(dto.getTrackingFrequency() != null ? dto.getTrackingFrequency() : "MONTHLY")
                 .stocksPercent(dto.getStocksPercent())
                 .bondsPercent(dto.getBondsPercent())
                 .governmentBondsPercent(dto.getGovernmentBondsPercent())
@@ -70,6 +71,7 @@ public class InvestmentService {
         investment.setRecurringAmount(dto.getRecurringAmount());
         investment.setRecurringDay(dto.getRecurringDay());
         investment.setPacActive(dto.isPacActive());
+        investment.setTrackingFrequency(dto.getTrackingFrequency() != null ? dto.getTrackingFrequency() : "MONTHLY");
         investment.setStocksPercent(dto.getStocksPercent());
         investment.setBondsPercent(dto.getBondsPercent());
         investment.setGovernmentBondsPercent(dto.getGovernmentBondsPercent());
@@ -109,6 +111,7 @@ public class InvestmentService {
         dto.setRecurringAmount(investment.getRecurringAmount());
         dto.setRecurringDay(investment.getRecurringDay());
         dto.setPacActive(investment.isPacActive());
+        dto.setTrackingFrequency(investment.getTrackingFrequency() != null ? investment.getTrackingFrequency() : "MONTHLY");
         dto.setStocksPercent(investment.getStocksPercent());
         dto.setBondsPercent(investment.getBondsPercent());
         dto.setGovernmentBondsPercent(investment.getGovernmentBondsPercent());
@@ -142,7 +145,8 @@ public class InvestmentService {
 
     private double effectiveCurrentValue(Investment investment, List<InvestmentSnapshot> snapshots) {
         if (snapshots == null || snapshots.isEmpty()) return investment.getCurrentValue();
-        Double value = snapshots.getLast().getCurrentValue();
+        InvestmentSnapshot last = snapshots.getLast();
+        Double value = last.getCurrentValue() != null ? last.getCurrentValue() : last.getValue();
         return value == null ? investment.getCurrentValue() : value;
     }
 
@@ -167,7 +171,8 @@ public class InvestmentService {
         double compound = 1;
         for (InvestmentSnapshot snapshot : snapshots) {
             double contribution = snapshot.getInvestedCapital() == null ? 0 : snapshot.getInvestedCapital();
-            double currentValue = snapshot.getCurrentValue() == null ? previousValue + contribution : snapshot.getCurrentValue();
+            Double snapVal = snapshot.getCurrentValue() != null ? snapshot.getCurrentValue() : snapshot.getValue();
+            double currentValue = snapVal == null ? previousValue + contribution : snapVal;
             double base = previousValue == 0 ? contribution : previousValue;
             if (base > 0) {
                 double monthlyReturn = previousValue == 0 ? currentValue / base - 1 : (currentValue - contribution) / base - 1;

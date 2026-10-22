@@ -41,6 +41,9 @@ public class Investment {
     @Column(nullable = false)
     private boolean pacActive;
 
+    @Column(length = 20)
+    private String trackingFrequency;
+
     private Double stocksPercent;
 
     private Double bondsPercent;

@@ -34,6 +34,7 @@ public class InvestmentDto {
     private Double recurringAmount;
     private Integer recurringDay;
     private boolean pacActive;
+    private String trackingFrequency;
     private Double stocksPercent;
     private Double bondsPercent;
     private Double governmentBondsPercent;

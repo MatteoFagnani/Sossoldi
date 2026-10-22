@@ -13,26 +13,51 @@ interface DashboardChartsProps {
     viewType: 'MONTH' | 'YEAR';
 }
 
-const PIE_COLORS = ['#111827', '#06b6d4', '#10b981', '#f43f5e', '#f59e0b', '#4b5563'];
+const PIE_COLORS = ['#111827', '#06b6d4', '#10b981', '#f43f5e', '#f59e0b', '#6366f1', '#ec4899', '#64748b'];
 
 function CustomTooltip({ active, payload, label }: CustomTooltipProps) {
     if (!active || !payload?.length) return null;
+    const income = payload.find(p => p.dataKey === 'income')?.value || 0;
+    const expense = payload.find(p => p.dataKey === 'expense')?.value || 0;
+    const diff = income - expense;
+
     return (
-        <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3">
-            <p className="text-xs text-gray-400 mb-2">{label}</p>
-            <div className="space-y-1">
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-4 py-3 min-w-[160px]">
+            <p className="text-xs font-semibold text-gray-500 mb-2">{label}</p>
+            <div className="space-y-1 text-xs">
                 {payload.map((p, i) => (
-                    <div key={i} className="flex items-center gap-2">
-                        <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
-                        <span className="text-xs text-gray-500">
-                            {p.dataKey === 'income' ? 'Entrate' : 'Uscite'}:
-                        </span>
-                        <span className="text-sm font-semibold text-gray-800">
+                    <div key={i} className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-2">
+                            <div className="w-2 h-2 rounded-full" style={{ backgroundColor: p.color }} />
+                            <span className="text-gray-500">
+                                {p.dataKey === 'income' ? 'Entrate' : 'Uscite'}:
+                            </span>
+                        </div>
+                        <span className="font-semibold text-gray-800">
                             {formatCurrency(p.value)}
                         </span>
                     </div>
                 ))}
+                {payload.length > 1 && (
+                    <div className="pt-1.5 mt-1 border-t border-gray-100 flex items-center justify-between gap-4">
+                        <span className="text-gray-400">Netto:</span>
+                        <span className={`font-semibold ${diff >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                            {diff >= 0 ? '+' : ''}{formatCurrency(diff)}
+                        </span>
+                    </div>
+                )}
             </div>
+        </div>
+    );
+}
+
+function CategoryTooltip({ active, payload }: CustomTooltipProps) {
+    if (!active || !payload?.length) return null;
+    const item = payload[0];
+    return (
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg px-3 py-2 text-xs">
+            <span className="font-medium text-gray-700">{item.name}: </span>
+            <span className="font-semibold text-gray-900">{formatCurrency(item.value)}</span>
         </div>
     );
 }
@@ -71,9 +96,9 @@ export default function DashboardCharts({ data, viewType }: DashboardChartsProps
                 <div className="mb-5 flex justify-between items-start">
                     <div>
                         <h2 className="text-sm font-semibold text-gray-900 mb-0.5">
-                            {viewType === 'MONTH' ? 'Flusso mensile cumulato' : 'Flusso annuale cumulato'}
+                            {viewType === 'MONTH' ? 'Flusso di cassa mensile' : 'Flusso di cassa annuale'}
                         </h2>
-                        <p className="text-xs text-gray-400">Andamento entrate e uscite nel tempo</p>
+                        <p className="text-xs text-gray-400">Confronto tra entrate e uscite nel tempo</p>
                     </div>
                     <div className="flex items-center gap-3">
                         <div className="flex items-center gap-1.5">
@@ -114,33 +139,43 @@ export default function DashboardCharts({ data, viewType }: DashboardChartsProps
                 </div>
             </div>
 
-            <div className="app-card p-6">
-                <h2 className="text-sm font-semibold text-gray-900 mb-0.5">Spese per categoria</h2>
-                <p className="text-xs text-gray-400 mb-4">Distribuzione delle uscite</p>
-                <div className="h-[150px]">
-                    {categoryChartData.length > 0 ? (
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie data={categoryChartData} dataKey="value" cx="50%" cy="50%" innerRadius={45} outerRadius={68} strokeWidth={0}>
-                                    {categoryChartData.map((_, i) => (
-                                        <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip content={<CustomTooltip />} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    ) : (
-                        <div className="h-full flex items-center justify-center text-sm text-gray-400">Nessun dato</div>
-                    )}
+            <div className="app-card p-6 flex flex-col justify-between">
+                <div>
+                    <div className="flex items-center justify-between mb-2">
+                        <div>
+                            <h2 className="text-sm font-semibold text-gray-900">Spese per categoria</h2>
+                            <p className="text-xs text-gray-400 mt-0.5">
+                                Totale: <span className="font-semibold text-gray-700">{formatCurrency(categoryTotal)}</span>
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className="h-[140px] my-2">
+                        {categoryChartData.length > 0 ? (
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={categoryChartData} dataKey="value" cx="50%" cy="50%" innerRadius={42} outerRadius={64} strokeWidth={0}>
+                                        {categoryChartData.map((_, i) => (
+                                            <Cell key={i} fill={PIE_COLORS[i % PIE_COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip content={<CategoryTooltip />} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        ) : (
+                            <div className="h-full flex items-center justify-center text-sm text-gray-400">Nessun dato</div>
+                        )}
+                    </div>
                 </div>
-                <div className="mt-4 space-y-2">
+
+                <div className="space-y-1.5 pt-2 border-t border-gray-50">
                     {categoryChartData.slice(0, 4).map((item, i) => (
-                        <div key={item.name} className="flex items-center justify-between">
-                            <div className="flex items-center gap-2">
+                        <div key={item.name} className="flex items-center justify-between text-xs">
+                            <div className="flex items-center gap-2 min-w-0">
                                 <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: PIE_COLORS[i % PIE_COLORS.length] }} />
-                                <span className="text-xs text-gray-600 truncate max-w-[100px]">{item.name}</span>
+                                <span className="text-gray-600 truncate max-w-[120px]">{item.name}</span>
                             </div>
-                            <span className="text-xs font-medium text-gray-500">
+                            <span className="font-medium text-gray-700">
                                 {categoryTotal > 0 ? Math.round((item.value / categoryTotal) * 100) : 0}%
                             </span>
                         </div>
@@ -150,4 +185,3 @@ export default function DashboardCharts({ data, viewType }: DashboardChartsProps
         </div>
     );
 }
-

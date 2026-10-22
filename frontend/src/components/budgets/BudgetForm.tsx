@@ -101,7 +101,7 @@ export default function BudgetForm({ editing, categories, initialData, saving, e
                                         type="number"
                                         value={form.percentageOfIncome}
                                         onChange={(e) => setForm({ ...form, percentageOfIncome: e.target.value })}
-                                        required min="1" max="100" step="1"
+                                        required min="0.1" max="100" step="any"
                                         placeholder="10"
                                         className={inputClass}
                                     />

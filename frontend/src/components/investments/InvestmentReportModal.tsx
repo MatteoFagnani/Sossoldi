@@ -310,7 +310,9 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
                                             <span className="text-xs font-semibold text-gray-900">{comp.assetClass}</span>
                                             {comp.percentage != null && (
                                                 <span className="text-xs font-bold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md">
-                                                    {comp.percentage}%
+                                                    {Number(comp.percentage) % 1 === 0
+                                                        ? Number(comp.percentage).toFixed(0)
+                                                        : Number(comp.percentage).toFixed(2).replace(/\.?0+$/, '')}%
                                                 </span>
                                             )}
                                         </div>

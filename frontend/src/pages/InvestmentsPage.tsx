@@ -600,7 +600,9 @@ export default function InvestmentsPage() {
                                 </div>
                                 <div className="flex items-center gap-2 font-medium shrink-0">
                                     <span className="text-gray-900">{formatCurrency(item.value)}</span>
-                                    <span className="text-gray-400 text-[11px]">({item.percentage.toFixed(0)}%)</span>
+                                    <span className="text-gray-400 text-[11px]">
+                                        ({item.percentage % 1 === 0 ? item.percentage.toFixed(0) : item.percentage.toFixed(1)}%)
+                                    </span>
                                 </div>
                             </div>
                         ))}
@@ -812,7 +814,11 @@ export default function InvestmentsPage() {
                                                             className="text-[10px] font-medium bg-gray-50 text-gray-600 border border-gray-100 px-2 py-0.5 rounded-md truncate max-w-[150px]"
                                                         >
                                                             {comp.assetClass}
-                                                            {comp.percentage != null ? ` ${comp.percentage}%` : ''}
+                                                            {comp.percentage != null
+                                                                ? ` ${Number(comp.percentage) % 1 === 0
+                                                                      ? Number(comp.percentage).toFixed(0)
+                                                                      : Number(comp.percentage).toFixed(2).replace(/\.?0+$/, '')}%`
+                                                                : ''}
                                                         </span>
                                                     ))}
                                                     {(item.components || []).length > 3 && (

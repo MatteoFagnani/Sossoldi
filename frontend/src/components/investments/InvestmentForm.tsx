@@ -73,8 +73,20 @@ type Props = {
     onSave: (payload: InvestmentPayload) => Promise<void>;
 };
 
-const toMoney = (value: unknown) => Number.parseFloat(String(value ?? '')) || 0;
-const toNullableNumber = (value: string) => (value.trim() === '' ? null : Number.parseFloat(value) || 0);
+const toMoney = (value: unknown) => {
+    if (value == null) return 0;
+    const str = String(value).trim().replace(',', '.');
+    const num = Number.parseFloat(str);
+    return Number.isFinite(num) ? num : 0;
+};
+
+const toNullableNumber = (value: string | number | null | undefined) => {
+    if (value == null) return null;
+    const str = String(value).trim().replace(',', '.');
+    if (str === '') return null;
+    const num = Number.parseFloat(str);
+    return Number.isFinite(num) ? num : null;
+};
 
 function componentRows(investment: Investment | null): PacComponentForm[] {
     if (!investment) return [{ ...emptyComponent }];
@@ -778,12 +790,12 @@ export default function InvestmentForm({ investment, saving, onCancel, onSave }:
                                     <div className="flex items-center gap-1.5">
                                         <span
                                             className={`text-xs font-bold px-2 py-0.5 rounded-md ${
-                                                Math.round(allocationTotal) === 100
+                                                Math.abs(allocationTotal - 100) < 0.05
                                                     ? 'bg-emerald-100 text-emerald-800'
                                                     : 'bg-gray-100 text-gray-600'
                                             }`}
                                         >
-                                            Totale: {allocationTotal.toFixed(0)}%
+                                            Totale: {allocationTotal % 1 === 0 ? allocationTotal.toFixed(0) : allocationTotal.toFixed(2).replace(/\.?0+$/, '')}%
                                         </span>
                                     </div>
                                 </div>
@@ -819,7 +831,7 @@ export default function InvestmentForm({ investment, saving, onCancel, onSave }:
                                                     type="number"
                                                     min="0"
                                                     max="100"
-                                                    step="0.5"
+                                                    step="any"
                                                     value={comp.percentage || ''}
                                                     onChange={(e) => updateComponent(index, { percentage: e.target.value })}
                                                     placeholder="%"

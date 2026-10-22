@@ -3,15 +3,47 @@ import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Tags, ArrowLeftRight, Target, ChevronsLeft, Wallet, TrendingUp, BarChart2 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 
-const navItems = [
-    { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
-    { to: '/analytics', icon: BarChart2, label: 'Analisi' },
-    { to: '/transactions', icon: ArrowLeftRight, label: 'Transazioni' },
-    { to: '/wealth', icon: Wallet, label: 'Patrimonio' },
-    { to: '/investments', icon: TrendingUp, label: 'Investimenti' },
-    { to: '/budgets', icon: Target, label: 'Budget' },
-    { to: '/categories', icon: Tags, label: 'Categorie' },
+interface NavItem {
+    to: string;
+    icon: React.ComponentType<{ size?: number; className?: string }>;
+    label: string;
+}
+
+interface NavSection {
+    title?: string;
+    items: NavItem[];
+}
+
+const navSections: NavSection[] = [
+    {
+        items: [
+            { to: '/', icon: LayoutDashboard, label: 'Dashboard' },
+        ],
+    },
+    {
+        title: 'Patrimonio',
+        items: [
+            { to: '/wealth', icon: Wallet, label: 'Patrimonio' },
+            { to: '/investments', icon: TrendingUp, label: 'Investimenti' },
+        ],
+    },
+    {
+        title: 'Operatività',
+        items: [
+            { to: '/transactions', icon: ArrowLeftRight, label: 'Transazioni' },
+            { to: '/budgets', icon: Target, label: 'Budget' },
+            { to: '/categories', icon: Tags, label: 'Categorie' },
+        ],
+    },
+    {
+        title: 'Report',
+        items: [
+            { to: '/analytics', icon: BarChart2, label: 'Analisi' },
+        ],
+    },
 ];
+
+const allNavItems = navSections.flatMap((section) => section.items);
 
 const pageTitles: Record<string, string> = {
     '/profile': 'Profilo',
@@ -23,7 +55,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const location = useLocation();
     const [collapsed, setCollapsed] = useState(false);
 
-    const currentPage = navItems.find((i) => i.to === location.pathname)?.label ?? pageTitles[location.pathname] ?? 'Dashboard';
+    const currentPage = allNavItems.find((i) => i.to === location.pathname)?.label ?? pageTitles[location.pathname] ?? 'Dashboard';
     const userInitial = user?.username?.charAt(0).toUpperCase() ?? '?';
 
     return (
@@ -62,23 +94,36 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                 </div>
 
                 {/* Nav */}
-                <nav className="flex-1 px-3 py-4 space-y-0.5 overflow-y-auto">
-                    {navItems.map(({ to, icon: Icon, label }) => (
-                        <NavLink
-                            key={to}
-                            to={to}
-                            end={to === '/'}
-                            title={collapsed ? label : undefined}
-                            className={({ isActive }) =>
-                                `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${collapsed ? 'justify-center' : ''} ${isActive
-                                    ? 'bg-gray-100 text-gray-900'
-                                    : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
-                                }`
-                            }
-                        >
-                            <Icon size={17} className="flex-shrink-0" />
-                            {!collapsed && <span>{label}</span>}
-                        </NavLink>
+                <nav className="flex-1 px-3 py-3 space-y-3 overflow-y-auto">
+                    {navSections.map((section, idx) => (
+                        <div key={section.title ?? `section-${idx}`} className="space-y-0.5">
+                            {section.title && (
+                                collapsed ? (
+                                    <div className="my-2 border-t border-gray-100 mx-1" />
+                                ) : (
+                                    <div className="px-3 pt-2 pb-1 text-[11px] font-semibold tracking-wider text-gray-400 uppercase select-none">
+                                        {section.title}
+                                    </div>
+                                )
+                            )}
+                            {section.items.map(({ to, icon: Icon, label }) => (
+                                <NavLink
+                                    key={to}
+                                    to={to}
+                                    end={to === '/'}
+                                    title={collapsed ? label : undefined}
+                                    className={({ isActive }) =>
+                                        `flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors ${collapsed ? 'justify-center' : ''} ${isActive
+                                            ? 'bg-gray-100 text-gray-900 font-semibold'
+                                            : 'text-gray-500 hover:text-gray-900 hover:bg-gray-50'
+                                        }`
+                                    }
+                                >
+                                    <Icon size={17} className="flex-shrink-0" />
+                                    {!collapsed && <span>{label}</span>}
+                                </NavLink>
+                            ))}
+                        </div>
                     ))}
                 </nav>
             </aside>

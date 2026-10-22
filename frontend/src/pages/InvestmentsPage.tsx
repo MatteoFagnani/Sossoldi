@@ -311,37 +311,26 @@ export default function InvestmentsPage() {
 
     return (
         <div className="space-y-6 pb-12">
-            {/* Header: Title, Search & Quick Actions */}
-            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                <div>
-                    <h1 className="text-xl font-bold text-gray-900 tracking-tight">Portafoglio & Investimenti</h1>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                        Monitoraggio investimenti, PAC, Roboadvisor e andamento anno per anno
-                    </p>
+            {/* Top Toolbar: Search & Quick Actions */}
+            <div className="flex items-center justify-between gap-3">
+                <div className="relative flex-1 max-w-xs">
+                    <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                    <input
+                        type="text"
+                        placeholder="Cerca investimento o ticker..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        className="w-full pl-8 pr-3 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all"
+                    />
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2.5">
-                    {/* Search Input */}
-                    <div className="relative min-w-[200px]">
-                        <Search size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Cerca investimento o ticker..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-8 pr-3 py-2 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 transition-all"
-                        />
-                    </div>
-
-                    {/* New Investment Button */}
-                    <button
-                        onClick={handleOpenCreate}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
-                    >
-                        <Plus size={15} />
-                        Nuovo Investimento
-                    </button>
-                </div>
+                <button
+                    onClick={handleOpenCreate}
+                    className="inline-flex items-center gap-1.5 px-4 py-2 bg-gray-900 hover:bg-black text-white text-xs font-semibold rounded-xl shadow-xs transition-colors cursor-pointer"
+                >
+                    <Plus size={15} />
+                    Nuovo Investimento
+                </button>
             </div>
 
             {/* Error banner */}

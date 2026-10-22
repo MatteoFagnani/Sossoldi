@@ -352,3 +352,4 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
         </div>
     );
 }
+

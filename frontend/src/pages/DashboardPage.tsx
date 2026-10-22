@@ -21,6 +21,7 @@ import DashboardBudgetOverview from '../components/dashboard/DashboardBudgetOver
 import DashboardAccountsOverview from '../components/dashboard/DashboardAccountsOverview';
 import TransactionForm from '../components/transactions/TransactionForm';
 import { transactionService, accountTransferService } from '../services/services';
+import { useAuthStore } from '../store/authStore';
 
 const MONTHS = [
     'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
@@ -37,6 +38,7 @@ const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded
 
 export default function DashboardPage() {
     const navigate = useNavigate();
+    const { user } = useAuthStore();
     const [viewType, setViewType] = useState<'MONTH' | 'YEAR'>('MONTH');
     const [selectedMonth, setSelectedMonth] = useState(CURRENT_MONTH);
     const [selectedYear, setSelectedYear] = useState(CURRENT_YEAR);
@@ -232,9 +234,11 @@ export default function DashboardPage() {
             {/* Header: Title, Compact Period Selector & Quick Actions */}
             <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
                 <div>
-                    <h1 className="text-xl font-bold text-gray-900 tracking-tight">Panoramica Finanziaria</h1>
+                    <h1 className="text-xl font-bold text-gray-900 tracking-tight">
+                        Ciao {user?.firstName ? `${user.firstName}, ` : user?.username ? `${user.username}, ` : ''}bentornato!
+                    </h1>
                     <p className="text-xs text-gray-500 mt-0.5">
-                        {viewType === 'MONTH' ? `Situazione di ${MONTHS[selectedMonth - 1]} ${selectedYear}` : `Riepilogo annuale del ${selectedYear}`}
+                        {viewType === 'MONTH' ? `Ecco il riepilogo di ${MONTHS[selectedMonth - 1]} ${selectedYear}` : `Ecco il riepilogo annuale del ${selectedYear}`}
                     </p>
                 </div>
 

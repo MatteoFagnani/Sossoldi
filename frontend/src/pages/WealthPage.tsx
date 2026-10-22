@@ -14,10 +14,10 @@ import {
     CreditCard,
     TrendingUp,
     Pencil,
-    Eye,
-    EyeOff,
+
+
     GripVertical,
-    RotateCcw,
+
 } from 'lucide-react';
 import { accountService, accountTransferService, investmentService } from '../services/services';
 import { adjustedInitialBalance } from '../utils/accountBalance';
@@ -103,18 +103,18 @@ export default function WealthPage() {
     const [savingAccount, setSavingAccount] = useState(false);
     const [savingTransfer, setSavingTransfer] = useState(false);
     const [error, setError] = useState('');
-    const [showArchived, setShowArchived] = useState(false);
+
 
     // Drag and Drop state
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
     const activeAccounts = useMemo(() => accounts.filter(account => !account.archived), [accounts]);
-    const archivedAccounts = useMemo(() => accounts.filter(account => account.archived), [accounts]);
 
-    const displayedAccounts = useMemo(() => {
-        return showArchived ? accounts : activeAccounts;
-    }, [accounts, activeAccounts, showArchived]);
+
+    const displayedAccounts = activeAccounts;
+
+
 
     const accountTotal = useMemo(() => activeAccounts.reduce((sum, account) => sum + account.currentBalance, 0), [activeAccounts]);
     const investmentTotal = useMemo(() => investments.reduce((sum, item) => sum + item.currentValue, 0), [investments]);

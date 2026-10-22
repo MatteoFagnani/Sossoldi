@@ -13,6 +13,7 @@ public class ProfileUpdateRequest {
     private String username;
     private String firstName;
     private String lastName;
+    private String avatarUrl;
     private String email;
     private String geminiApiKey;
 }

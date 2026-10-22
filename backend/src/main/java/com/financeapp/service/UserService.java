@@ -44,6 +44,11 @@ public class UserService {
             user.setLastName(lName.isEmpty() ? null : lName);
         }
 
+        if (request.getAvatarUrl() != null) {
+            String cleanAvatar = request.getAvatarUrl().trim();
+            user.setAvatarUrl(cleanAvatar.isEmpty() ? null : cleanAvatar);
+        }
+
         if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
             if (userRepository.existsByUsernameAndIdNot(request.getUsername(), user.getId())) {
                 throw new IllegalArgumentException("Username già in uso");

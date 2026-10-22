@@ -435,7 +435,7 @@ export default function InvestmentsPage() {
                 <div className="xl:col-span-2 bg-white border border-gray-200 rounded-2xl p-5 shadow-2xs flex flex-col justify-between">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
                         <div>
-                            <h2 className="text-sm font-bold text-gray-900 tracking-tight">
+                            <h2 className="text-sm font-semibold text-gray-900 tracking-tight">
                                 Evoluzione del Portafoglio
                             </h2>
                             <p className="text-[11px] text-gray-500 mt-0.5">
@@ -543,7 +543,7 @@ export default function InvestmentsPage() {
                 {/* Asset Allocation Chart (1/3 width) */}
                 <div className="bg-white border border-gray-200 rounded-2xl p-5 shadow-2xs flex flex-col justify-between">
                     <div>
-                        <h2 className="text-sm font-bold text-gray-900 tracking-tight">Asset Allocation</h2>
+                        <h2 className="text-sm font-semibold text-gray-900 tracking-tight">Asset Allocation</h2>
                         <p className="text-[11px] text-gray-500 mt-0.5">
                             Composizione aggregata del portafoglio per classe di attivo
                         </p>
@@ -656,7 +656,7 @@ export default function InvestmentsPage() {
                         <div className="w-12 h-12 rounded-2xl bg-gray-50 border border-gray-200 flex items-center justify-center text-gray-400 mb-3">
                             <Bot size={24} />
                         </div>
-                        <h3 className="text-sm font-bold text-gray-900">
+                        <h3 className="text-sm font-semibold text-gray-900">
                             {searchTerm || selectedTypeFilter !== 'ALL'
                                 ? 'Nessun investimento trovato con questi filtri'
                                 : 'Nessun investimento o Roboadvisor configurato'}
@@ -703,7 +703,7 @@ export default function InvestmentsPage() {
                                                 </div>
                                                 <div className="min-w-0">
                                                     <div className="flex items-center gap-1.5 flex-wrap">
-                                                        <h3 className="text-sm font-bold text-gray-900 truncate">
+                                                        <h3 className="text-sm font-medium text-gray-900 truncate">
                                                             {item.name}
                                                         </h3>
                                                     </div>

@@ -103,7 +103,7 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
                         </div>
                         <div>
                             <div className="flex items-center gap-2">
-                                <h2 className="text-lg font-bold text-gray-900 tracking-tight">{investment.name}</h2>
+                                <h2 className="text-base font-semibold text-gray-900 tracking-tight">{investment.name}</h2>
                                 {investment.ticker && (
                                     <span className="px-2 py-0.5 bg-gray-100 text-gray-600 text-xs font-mono font-medium rounded-md">
                                         {investment.ticker}
@@ -272,7 +272,7 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
                                             const rowPositive = row.periodReturnPct >= 0;
                                             return (
                                                 <tr key={idx} className="hover:bg-gray-50/50 transition-colors">
-                                                    <td className="py-3 px-3.5 font-bold text-gray-900">
+                                                    <td className="py-3 px-3.5 font-medium text-gray-900">
                                                         {row.period}
                                                     </td>
                                                     <td className="py-3 px-3.5 text-right text-gray-700">
@@ -281,7 +281,7 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
                                                     <td className="py-3 px-3.5 text-right font-medium text-gray-600">
                                                         {formatCurrency(row.cumulativeInvested)}
                                                     </td>
-                                                    <td className="py-3 px-3.5 text-right font-bold text-gray-900">
+                                                    <td className="py-3 px-3.5 text-right font-semibold text-gray-900">
                                                         {formatCurrency(row.endValue)}
                                                     </td>
                                                     <td className="py-3 px-3.5 text-right">

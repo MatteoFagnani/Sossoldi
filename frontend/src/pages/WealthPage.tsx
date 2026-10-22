@@ -388,7 +388,7 @@ export default function WealthPage() {
             {/* Header Sezione Conti con Drag & Drop Info e Filtro Archiviati */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
                 <div>
-                    <h2 className="text-base font-bold text-gray-900 tracking-tight">
+                    <h2 className="text-sm font-semibold text-gray-900 tracking-tight">
                         I tuoi conti ({activeAccounts.length})
                     </h2>
                     <p className="text-xs text-gray-400 mt-0.5">
@@ -441,7 +441,7 @@ export default function WealthPage() {
                                             <Icon size={17} />
                                         </div>
                                         <div className="min-w-0">
-                                            <h3 className="text-sm font-bold text-gray-900 truncate" title={account.name}>
+                                            <h3 className="text-sm font-medium text-gray-900 truncate" title={account.name}>
                                                 {account.name}
                                             </h3>
                                             <div className="flex items-center gap-1.5 mt-0.5">
@@ -532,7 +532,7 @@ export default function WealthPage() {
                     <div className="flex items-center justify-between mb-4">
                         <div className="flex items-center gap-2">
                             <ArrowRightLeft size={16} className="text-gray-600" />
-                            <h2 className="text-sm font-semibold text-gray-900">Ultimi giroconti</h2>
+                            <h2 className="text-sm font-medium text-gray-900">Ultimi giroconti</h2>
                         </div>
                         <span className="text-xs text-gray-400">{transfers.length} movimentazioni</span>
                     </div>
@@ -548,7 +548,7 @@ export default function WealthPage() {
                                         <ArrowRightLeft size={14} />
                                     </div>
                                     <div className="min-w-0">
-                                        <div className="flex items-center gap-2 text-sm font-semibold text-gray-900 flex-wrap">
+                                        <div className="flex items-center gap-2 text-sm font-medium text-gray-900 flex-wrap">
                                             <span>{transfer.fromAccountName}</span>
                                             <span className="text-gray-400 text-xs">➔</span>
                                             <span>{transfer.toAccountName}</span>
@@ -561,7 +561,7 @@ export default function WealthPage() {
                                 </div>
 
                                 <div className="flex items-center gap-3 shrink-0">
-                                    <span className="text-sm font-bold text-gray-900">
+                                    <span className="text-sm font-semibold text-gray-900">
                                         {fmt(transfer.amount)}
                                     </span>
                                     <button

@@ -20,4 +20,8 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     boolean existsByAccountId(Long accountId);
 
     List<Transaction> findByUserIdAndAccountIsNull(Long userId);
+
+    List<Transaction> findByInvestmentIdOrderByDateDesc(Long investmentId);
+
+    boolean existsByInvestmentId(Long investmentId);
 }

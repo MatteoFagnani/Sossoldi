@@ -83,6 +83,10 @@ export interface Investment {
     gainLoss: number;
     gainLossPercent: number;
     allocationPercent: number;
+    accountId?: number | null;
+    accountName?: string | null;
+    accountBalance?: number | null;
+    lastPacExecutionMonth?: string | null;
 }
 
 export type InvestmentPayload = Omit<Investment, 'id' | 'gainLoss' | 'gainLossPercent' | 'allocationPercent'>;
@@ -109,9 +113,11 @@ export interface Transaction {
     categoryColor: string;
     accountId?: number | null;
     accountName?: string | null;
+    investmentId?: number | null;
+    investmentName?: string | null;
 }
 
-export type TransactionPayload = Omit<Transaction, 'id' | 'type' | 'categoryName' | 'categoryColor' | 'accountName'> & {
+export type TransactionPayload = Omit<Transaction, 'id' | 'type' | 'categoryName' | 'categoryColor' | 'accountName' | 'investmentName'> & {
     type?: TransactionType;
 };
 

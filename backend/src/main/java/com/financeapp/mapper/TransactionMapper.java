@@ -12,10 +12,13 @@ public interface TransactionMapper {
     @Mapping(source = "category.color", target = "categoryColor")
     @Mapping(source = "account.id", target = "accountId")
     @Mapping(source = "account.name", target = "accountName")
+    @Mapping(source = "investment.id", target = "investmentId")
+    @Mapping(source = "investment.name", target = "investmentName")
     TransactionDto toDto(Transaction transaction);
 
     @Mapping(target = "category", ignore = true)
     @Mapping(target = "user", ignore = true)
     @Mapping(target = "account", ignore = true)
+    @Mapping(target = "investment", ignore = true)
     Transaction toEntity(TransactionDto dto);
 }

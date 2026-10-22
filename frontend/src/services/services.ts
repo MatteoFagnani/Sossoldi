@@ -61,6 +61,8 @@ export const investmentService = {
     async create(data: InvestmentPayload): Promise<Investment> { return (await api.post('/investments', data)).data; },
     async update(id: number, data: Partial<InvestmentPayload>): Promise<Investment> { return (await api.put(`/investments/${id}`, data)).data; },
     async remove(id: number): Promise<void> { return (await api.delete(`/investments/${id}`)).data; },
+    async executePac(id: number): Promise<Investment> { return (await api.post(`/investments/${id}/execute-pac`)).data; },
+    async getPacHistory(id: number): Promise<Transaction[]> { return (await api.get(`/investments/${id}/pac-history`)).data; },
 };
 
 export const categoryService = {

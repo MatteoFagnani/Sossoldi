@@ -30,4 +30,7 @@ public class TransactionDto {
 
     private Long accountId;
     private String accountName;
+
+    private Long investmentId;
+    private String investmentName;
 }

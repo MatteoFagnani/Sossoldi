@@ -1,4 +1,4 @@
-import { useState, useMemo, type FormEvent } from 'react';
+import { useState, useMemo, useEffect, type FormEvent } from 'react';
 import {
     X,
     Loader2,
@@ -18,7 +18,9 @@ import {
     RefreshCw,
     Sparkles,
 } from 'lucide-react';
-import type { Investment, InvestmentComponent, InvestmentPayload, InvestmentSnapshot, InvestmentType } from '../../types';
+import { accountService } from '../../services/services';
+import { formatCurrency } from '../../utils/formatters';
+import type { Account, Investment, InvestmentComponent, InvestmentPayload, InvestmentSnapshot, InvestmentType } from '../../types';
 
 export const investmentTypes: { value: InvestmentType; label: string; icon: typeof Wallet; desc: string }[] = [
     { value: 'ROBO_ADVISOR', label: 'Roboadvisor', icon: Bot, desc: 'Moneyfarm, Tinaba, Euclidea' },
@@ -62,6 +64,7 @@ type FormState = {
     recurringAmount: string;
     recurringDay: string;
     trackingFrequency: 'YEARLY' | 'MONTHLY';
+    accountId: string;
     components: PacComponentForm[];
     snapshots: SnapshotForm[];
 };
@@ -176,6 +179,7 @@ export default function InvestmentForm({ investment, saving, onCancel, onSave }:
                 recurringAmount: '',
                 recurringDay: '1',
                 trackingFrequency: 'YEARLY',
+                accountId: '',
                 components: [{ ...emptyComponent }],
                 snapshots: [{ ...emptySnapshot, month: String(currentYear) }],
             };
@@ -191,10 +195,37 @@ export default function InvestmentForm({ investment, saving, onCancel, onSave }:
             recurringAmount: investment.recurringAmount ? String(investment.recurringAmount) : '',
             recurringDay: investment.recurringDay ? String(investment.recurringDay) : '1',
             trackingFrequency: freq,
+            accountId: investment.accountId ? String(investment.accountId) : '',
             components: componentRows(investment),
             snapshots: snapshotRows(investment, freq),
         };
     });
+
+    const [accounts, setAccounts] = useState<Account[]>([]);
+    const [creatingAccount, setCreatingAccount] = useState(false);
+
+    useEffect(() => {
+        accountService.getAll().then(setAccounts).catch(() => {});
+    }, []);
+
+    const handleQuickCreateAccount = async () => {
+        const defaultName = form.name.trim() ? `Liquidità ${form.name.trim()}` : 'Liquidità Roboadvisor';
+        setCreatingAccount(true);
+        try {
+            const created = await accountService.create({
+                name: defaultName,
+                type: 'INVESTMENT',
+                initialBalance: 0,
+                archived: false,
+            });
+            setAccounts((prev) => [...prev, created]);
+            setForm((curr) => ({ ...curr, accountId: String(created.id) }));
+        } catch {
+            alert('Impossibile creare il conto o conto con questo nome già esistente.');
+        } finally {
+            setCreatingAccount(false);
+        }
+    };
 
     const [activeTab, setActiveTab] = useState<'MAIN' | 'HISTORY' | 'PAC'>('MAIN');
 
@@ -346,6 +377,7 @@ export default function InvestmentForm({ investment, saving, onCancel, onSave }:
             recurringAmount: form.pacActive ? toNullableNumber(form.recurringAmount) : null,
             recurringDay: form.pacActive ? Number.parseInt(form.recurringDay, 10) || 1 : null,
             trackingFrequency: form.trackingFrequency,
+            accountId: form.accountId ? Number(form.accountId) : null,
             components,
             snapshots,
         });
@@ -603,6 +635,40 @@ export default function InvestmentForm({ investment, saving, onCancel, onSave }:
                                     <p className="text-[11px] text-gray-400 mt-1">Totale dei soldi versati da te nel tempo</p>
                                 </div>
                             </div>
+
+                            {/* Linked Account Selector */}
+                            <div className="bg-gray-50/70 border border-gray-200 rounded-xl p-3.5">
+                                <div className="flex items-center justify-between mb-1.5">
+                                    <label className="block text-xs font-semibold text-gray-800 flex items-center gap-1.5">
+                                        <Landmark size={14} className="text-gray-700" />
+                                        Conto collegato / Deposito liquidità
+                                    </label>
+                                    <button
+                                        type="button"
+                                        onClick={handleQuickCreateAccount}
+                                        disabled={creatingAccount}
+                                        className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer flex items-center gap-1"
+                                    >
+                                        {creatingAccount && <Loader2 size={11} className="animate-spin" />}
+                                        + Crea conto dedicato
+                                    </button>
+                                </div>
+                                <select
+                                    value={form.accountId}
+                                    onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+                                    className={inputClass}
+                                >
+                                    <option value="">-- Nessun conto collegato (solo monitoraggio) --</option>
+                                    {accounts.filter((a) => !a.archived).map((a) => (
+                                        <option key={a.id} value={a.id}>
+                                            {a.name} ({formatCurrency(a.currentBalance)})
+                                        </option>
+                                    ))}
+                                </select>
+                                <p className="text-[11px] text-gray-500 mt-1.5">
+                                    Collega il conto dal quale versi i fondi (o sul quale fai il giroconto) e da cui verranno prelevate le quote del PAC mensile.
+                                </p>
+                            </div>
                         </div>
                     )}
 
@@ -771,6 +837,38 @@ export default function InvestmentForm({ investment, saving, onCancel, onSave }:
                                                 placeholder="1"
                                                 className={inputClass}
                                             />
+                                        </div>
+                                        <div className="sm:col-span-2 pt-2 border-t border-gray-200">
+                                            <div className="flex items-center justify-between mb-1.5">
+                                                <label className="block text-xs font-semibold text-gray-800 flex items-center gap-1.5">
+                                                    <Landmark size={13} className="text-gray-700" />
+                                                    Conto di addebito quota PAC
+                                                </label>
+                                                <button
+                                                    type="button"
+                                                    onClick={handleQuickCreateAccount}
+                                                    disabled={creatingAccount}
+                                                    className="text-[11px] font-semibold text-indigo-600 hover:text-indigo-800 transition-colors cursor-pointer flex items-center gap-1"
+                                                >
+                                                    {creatingAccount && <Loader2 size={11} className="animate-spin" />}
+                                                    + Crea conto dedicato
+                                                </button>
+                                            </div>
+                                            <select
+                                                value={form.accountId}
+                                                onChange={(e) => setForm({ ...form, accountId: e.target.value })}
+                                                className={inputClass}
+                                            >
+                                                <option value="">-- Nessun conto collegato (addebito manuale) --</option>
+                                                {accounts.filter((a) => !a.archived).map((a) => (
+                                                    <option key={a.id} value={a.id}>
+                                                        {a.name} ({formatCurrency(a.currentBalance)})
+                                                    </option>
+                                                ))}
+                                            </select>
+                                            <p className="text-[11px] text-gray-500 mt-1.5">
+                                                Ogni mese la quota di {form.recurringAmount ? formatCurrency(toMoney(form.recurringAmount)) : 'PAC'} verrà scalata da questo conto registrando una spesa nella categoria &quot;Investimenti & PAC&quot;.
+                                            </p>
                                         </div>
                                     </div>
                                 )}

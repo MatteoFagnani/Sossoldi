@@ -1,6 +1,7 @@
 package com.financeapp.controller;
 
 import com.financeapp.dto.InvestmentDto;
+import com.financeapp.dto.TransactionDto;
 import com.financeapp.service.InvestmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -37,5 +38,15 @@ public class InvestmentController extends BaseController {
     public ResponseEntity<Void> deleteInvestment(Authentication authentication, @PathVariable Long id) {
         investmentService.deleteInvestment(getCurrentUser(authentication), id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/{id}/execute-pac")
+    public ResponseEntity<InvestmentDto> executePac(Authentication authentication, @PathVariable Long id) {
+        return ResponseEntity.ok(investmentService.executePac(getCurrentUser(authentication), id));
+    }
+
+    @GetMapping("/{id}/pac-history")
+    public ResponseEntity<List<TransactionDto>> getPacHistory(Authentication authentication, @PathVariable Long id) {
+        return ResponseEntity.ok(investmentService.getPacHistory(getCurrentUser(authentication), id));
     }
 }

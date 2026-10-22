@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import {
     X,
     TrendingUp,
@@ -13,6 +13,7 @@ import {
     Coins,
     ShieldCheck,
     Landmark,
+    RefreshCw,
 } from 'lucide-react';
 import {
     ResponsiveContainer,
@@ -24,7 +25,8 @@ import {
     CartesianGrid,
 } from 'recharts';
 import { formatCurrency } from '../../utils/formatters';
-import type { Investment, InvestmentType } from '../../types';
+import { investmentService } from '../../services/services';
+import type { Investment, InvestmentType, Transaction } from '../../types';
 
 interface InvestmentReportModalProps {
     investment: Investment | null;
@@ -44,6 +46,14 @@ const typeLabels: Record<InvestmentType, { label: string; icon: typeof Wallet; c
 };
 
 export default function InvestmentReportModal({ investment, onClose, onEdit }: InvestmentReportModalProps) {
+    const [pacHistory, setPacHistory] = useState<Transaction[]>([]);
+
+    useEffect(() => {
+        if (investment?.id) {
+            investmentService.getPacHistory(investment.id).then(setPacHistory).catch(() => {});
+        }
+    }, [investment?.id]);
+
     if (!investment) return null;
 
     const typeMeta = typeLabels[investment.type] || typeLabels.OTHER;
@@ -177,6 +187,30 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
                             <p className="text-[11px] text-gray-400 mt-0.5">Time-weighted / cumulato</p>
                         </div>
                     </div>
+
+                    {/* Linked Account & PAC Status Box */}
+                    {investment.accountId && (
+                        <div className="bg-indigo-50/70 border border-indigo-100 rounded-xl p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-xs">
+                            <div className="flex items-center gap-3">
+                                <div className="w-9 h-9 rounded-xl bg-white border border-indigo-200 text-indigo-700 flex items-center justify-center shrink-0 shadow-2xs">
+                                    <Landmark size={18} />
+                                </div>
+                                <div>
+                                    <p className="font-semibold text-gray-900 flex items-center gap-2">
+                                        Conto collegato: {investment.accountName}
+                                        <span className="text-[11px] font-normal text-gray-500">
+                                            (Saldo disponibile: {formatCurrency(investment.accountBalance || 0)})
+                                        </span>
+                                    </p>
+                                    <p className="text-[11px] text-gray-600 mt-0.5">
+                                        {investment.pacActive
+                                            ? `PAC attivo di ${formatCurrency(investment.recurringAmount || 0)}/mese (addebito giorno ${investment.recurringDay || 1})`
+                                            : 'Deposito liquidità collegato (PAC al momento disattivato)'}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     {/* Chart Evolution */}
                     {chartData.length > 1 && (
@@ -322,6 +356,36 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
                                                 {formatCurrency(comp.currentValue)}
                                             </p>
                                         )}
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
+                    {/* PAC History Table (if any transactions exist) */}
+                    {pacHistory.length > 0 && (
+                        <div className="bg-white border border-gray-200 rounded-xl p-4">
+                            <h3 className="text-sm font-semibold text-gray-900 mb-3 flex items-center gap-2">
+                                <RefreshCw size={14} className="text-indigo-600" />
+                                Storico Versamenti PAC Scalati dal Conto ({pacHistory.length})
+                            </h3>
+                            <div className="divide-y divide-gray-100 max-h-48 overflow-y-auto pr-1">
+                                {pacHistory.map((tx) => (
+                                    <div key={tx.id} className="py-2.5 flex items-center justify-between text-xs">
+                                        <div>
+                                            <p className="font-semibold text-gray-900">{tx.description}</p>
+                                            <p className="text-[11px] text-gray-400">
+                                                {new Date(tx.date).toLocaleDateString('it-IT', {
+                                                    day: 'numeric',
+                                                    month: 'long',
+                                                    year: 'numeric',
+                                                })}{' '}
+                                                • Prelevato da {tx.accountName || investment.accountName || 'conto collegato'}
+                                            </p>
+                                        </div>
+                                        <span className="font-bold text-gray-900">
+                                            -{formatCurrency(tx.amount)}
+                                        </span>
                                     </div>
                                 ))}
                             </div>

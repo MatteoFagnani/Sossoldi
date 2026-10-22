@@ -46,4 +46,8 @@ public class InvestmentDto {
     private Double gainLoss;
     private Double gainLossPercent;
     private Double allocationPercent;
+    private Long accountId;
+    private String accountName;
+    private Double accountBalance;
+    private String lastPacExecutionMonth;
 }

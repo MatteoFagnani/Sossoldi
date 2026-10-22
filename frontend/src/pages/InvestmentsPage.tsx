@@ -20,6 +20,10 @@ import {
     RefreshCw,
     ExternalLink,
     Filter,
+    ArrowRightLeft,
+    CheckCircle2,
+    Play,
+    X,
 } from 'lucide-react';
 import {
     ResponsiveContainer,
@@ -34,10 +38,10 @@ import {
     Cell,
 } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
-import { investmentService } from '../services/services';
+import { accountService, accountTransferService, investmentService } from '../services/services';
 import InvestmentForm from '../components/investments/InvestmentForm';
 import InvestmentReportModal from '../components/investments/InvestmentReportModal';
-import type { Investment, InvestmentPayload, InvestmentType } from '../types';
+import type { Account, Investment, InvestmentPayload, InvestmentType } from '../types';
 
 const typeMetadata: Record<InvestmentType, { label: string; icon: typeof Wallet; color: string; bg: string }> = {
     ROBO_ADVISOR: { label: 'Roboadvisor', icon: Bot, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200' },
@@ -64,14 +68,31 @@ const CHART_COLORS = [
 
 export default function InvestmentsPage() {
     const [investments, setInvestments] = useState<Investment[]>([]);
+    const [accounts, setAccounts] = useState<Account[]>([]);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [error, setError] = useState('');
+    const [successMessage, setSuccessMessage] = useState('');
 
     // Modal states
     const [showForm, setShowForm] = useState(false);
     const [editingInvestment, setEditingInvestment] = useState<Investment | null>(null);
     const [reportModalInvestment, setReportModalInvestment] = useState<Investment | null>(null);
+
+    // PAC and Transfer states
+    const [executingPacId, setExecutingPacId] = useState<number | null>(null);
+    const [transferModal, setTransferModal] = useState<{ open: boolean; investment: Investment | null }>({
+        open: false,
+        investment: null,
+    });
+    const [transferForm, setTransferForm] = useState({
+        fromAccountId: '',
+        toAccountId: '',
+        amount: '',
+        date: new Date().toISOString().slice(0, 10),
+        description: '',
+    });
+    const [savingTransfer, setSavingTransfer] = useState(false);
 
     // Filters and Search
     const [searchTerm, setSearchTerm] = useState('');
@@ -82,8 +103,12 @@ export default function InvestmentsPage() {
         setLoading(true);
         setError('');
         try {
-            const data = await investmentService.getAll();
-            setInvestments(data);
+            const [invData, accData] = await Promise.all([
+                investmentService.getAll(),
+                accountService.getAll(),
+            ]);
+            setInvestments(invData);
+            setAccounts(accData);
         } catch {
             setError('Errore durante il caricamento degli investimenti.');
         } finally {
@@ -93,6 +118,16 @@ export default function InvestmentsPage() {
 
     useEffect(() => {
         loadInvestments();
+    }, []);
+
+    // Current date helpers for PAC status
+    const currentYearMonth = useMemo(() => {
+        const now = new Date();
+        return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    }, []);
+
+    const currentMonthName = useMemo(() => {
+        return new Date().toLocaleString('it-IT', { month: 'long' });
     }, []);
 
     // 4 Key KPIs
@@ -309,6 +344,81 @@ export default function InvestmentsPage() {
         }
     };
 
+    const handleExecutePac = async (investment: Investment) => {
+        setExecutingPacId(investment.id);
+        setError('');
+        setSuccessMessage('');
+        try {
+            await investmentService.executePac(investment.id);
+            setSuccessMessage(
+                `Rata PAC di ${formatCurrency(investment.recurringAmount || 0)} scalata con successo da ${
+                    investment.accountName || 'conto'
+                }!`
+            );
+            await loadInvestments();
+            setTimeout(() => setSuccessMessage(''), 6000);
+        } catch (err: unknown) {
+            const msg =
+                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+                (err as Error)?.message ||
+                'Errore durante l\'esecuzione della rata PAC.';
+            setError(msg);
+        } finally {
+            setExecutingPacId(null);
+        }
+    };
+
+    const handleOpenTransfer = (investment: Investment) => {
+        if (!investment.accountId) return;
+        const activeAccounts = accounts.filter((a) => !a.archived);
+        const sourceAcc = activeAccounts.find((a) => a.id !== investment.accountId);
+        setTransferForm({
+            fromAccountId: sourceAcc ? String(sourceAcc.id) : '',
+            toAccountId: String(investment.accountId),
+            amount: investment.recurringAmount ? String(investment.recurringAmount) : '',
+            date: new Date().toISOString().slice(0, 10),
+            description: `Giroconto per ${investment.name}`,
+        });
+        setTransferModal({ open: true, investment });
+    };
+
+    const handleSaveTransfer = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!transferForm.fromAccountId || !transferForm.toAccountId) {
+            setError('Seleziona entrambi i conti.');
+            return;
+        }
+        const amountNum = Number.parseFloat(transferForm.amount);
+        if (!amountNum || amountNum <= 0) {
+            setError('Inserisci un importo valido.');
+            return;
+        }
+
+        setSavingTransfer(true);
+        setError('');
+        try {
+            await accountTransferService.create({
+                fromAccountId: Number(transferForm.fromAccountId),
+                toAccountId: Number(transferForm.toAccountId),
+                amount: amountNum,
+                date: transferForm.date,
+                description: transferForm.description.trim() || undefined,
+            });
+            setSuccessMessage(
+                `Giroconto di ${formatCurrency(amountNum)} effettuato con successo verso ${
+                    transferModal.investment?.accountName
+                }!`
+            );
+            setTransferModal({ open: false, investment: null });
+            await loadInvestments();
+            setTimeout(() => setSuccessMessage(''), 6000);
+        } catch {
+            setError('Errore durante l\'esecuzione del giroconto.');
+        } finally {
+            setSavingTransfer(false);
+        }
+    };
+
     return (
         <div className="space-y-6 pb-12">
             {/* Top Toolbar: Search & Quick Actions */}
@@ -338,6 +448,19 @@ export default function InvestmentsPage() {
                 <div className="px-4 py-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600 flex items-center justify-between">
                     <span>{error}</span>
                     <button onClick={() => setError('')} className="text-red-500 hover:text-red-800">
+                        &times;
+                    </button>
+                </div>
+            )}
+
+            {/* Success banner */}
+            {successMessage && (
+                <div className="px-4 py-3 bg-emerald-50 border border-emerald-200 rounded-xl text-xs text-emerald-700 flex items-center justify-between">
+                    <span className="flex items-center gap-1.5 font-medium">
+                        <CheckCircle2 size={15} />
+                        {successMessage}
+                    </span>
+                    <button onClick={() => setSuccessMessage('')} className="text-emerald-500 hover:text-emerald-800">
                         &times;
                     </button>
                 </div>
@@ -804,6 +927,76 @@ export default function InvestmentsPage() {
                                             </div>
                                         </div>
 
+                                        {/* Linked Account & PAC Action Card */}
+                                        {item.accountId ? (
+                                            <div className="bg-gray-50/90 border border-gray-200/80 rounded-xl p-3 mb-3 text-xs space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                        <Landmark size={13} className="text-gray-500 shrink-0" />
+                                                        <span className="font-semibold text-gray-800 truncate" title={item.accountName || ''}>
+                                                            {item.accountName}
+                                                        </span>
+                                                    </div>
+                                                    <span className="font-bold text-gray-900 shrink-0">
+                                                        {formatCurrency(item.accountBalance || 0)}
+                                                    </span>
+                                                </div>
+
+                                                {/* PAC monthly status */}
+                                                {item.pacActive && (
+                                                    <div className="flex items-center justify-between pt-1.5 border-t border-gray-200/60">
+                                                        <span className="text-[11px] text-gray-500">Rata PAC mensile:</span>
+                                                        {item.lastPacExecutionMonth === currentYearMonth ? (
+                                                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-700 bg-emerald-100/80 px-2 py-0.5 rounded-full">
+                                                                <CheckCircle2 size={11} />
+                                                                Rata di {currentMonthName} versata
+                                                            </span>
+                                                        ) : (
+                                                            <div className="flex items-center gap-1.5">
+                                                                <span className="text-[10px] text-gray-500 font-medium">
+                                                                    Giorno {item.recurringDay || 1}
+                                                                </span>
+                                                                <button
+                                                                    type="button"
+                                                                    disabled={executingPacId === item.id}
+                                                                    onClick={() => handleExecutePac(item)}
+                                                                    className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-900 hover:bg-black disabled:opacity-60 text-white text-[10px] font-semibold rounded-md transition-colors cursor-pointer"
+                                                                    title="Scala subito la rata di questo mese dal conto"
+                                                                >
+                                                                    {executingPacId === item.id ? (
+                                                                        <Loader2 size={10} className="animate-spin" />
+                                                                    ) : (
+                                                                        <Play size={10} />
+                                                                    )}
+                                                                    Scala rata adesso
+                                                                </button>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenTransfer(item)}
+                                                    className="w-full flex items-center justify-center gap-1.5 py-1.5 px-2 bg-white hover:bg-gray-100 text-indigo-700 hover:text-indigo-900 border border-gray-200 rounded-lg text-[11px] font-semibold transition-colors cursor-pointer shadow-2xs"
+                                                >
+                                                    <ArrowRightLeft size={12} />
+                                                    Gira soldi su questo conto
+                                                </button>
+                                            </div>
+                                        ) : (
+                                            <div className="flex items-center justify-between bg-gray-50/50 border border-dashed border-gray-200 rounded-xl p-2.5 mb-3 text-xs">
+                                                <span className="text-gray-400 text-[11px]">Nessun conto collegato</span>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => handleOpenEdit(item)}
+                                                    className="text-indigo-600 hover:text-indigo-800 font-semibold text-[11px] cursor-pointer"
+                                                >
+                                                    Collega conto
+                                                </button>
+                                            </div>
+                                        )}
+
                                         {/* Internal Components Pills */}
                                         {(item.components || []).length > 0 && (
                                             <div className="mb-3">
@@ -884,6 +1077,130 @@ export default function InvestmentsPage() {
                         handleOpenEdit(inv);
                     }}
                 />
+            )}
+
+            {/* Quick Giroconto Modal for Linked Account */}
+            {transferModal.open && transferModal.investment && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-2xs px-4 py-8 animate-in fade-in duration-150">
+                    <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-xl p-6">
+                        <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2.5">
+                                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
+                                    <ArrowRightLeft size={16} />
+                                </div>
+                                <div>
+                                    <h2 className="text-sm font-bold text-gray-900">Giroconto verso investimento</h2>
+                                    <p className="text-[11px] text-gray-500">
+                                        Trasferisci liquidità su {transferModal.investment.accountName}
+                                    </p>
+                                </div>
+                            </div>
+                            <button
+                                type="button"
+                                onClick={() => setTransferModal({ open: false, investment: null })}
+                                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
+                            >
+                                <X size={16} />
+                            </button>
+                        </div>
+
+                        <form onSubmit={handleSaveTransfer} className="space-y-3.5">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Da quale conto prelevare <span className="text-red-500">*</span>
+                                </label>
+                                <select
+                                    value={transferForm.fromAccountId}
+                                    onChange={(e) => setTransferForm({ ...transferForm, fromAccountId: e.target.value })}
+                                    required
+                                    className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                                >
+                                    <option value="">-- Seleziona conto di origine --</option>
+                                    {accounts
+                                        .filter((a) => !a.archived && String(a.id) !== transferForm.toAccountId)
+                                        .map((a) => (
+                                            <option key={a.id} value={a.id}>
+                                                {a.name} ({formatCurrency(a.currentBalance)})
+                                            </option>
+                                        ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Conto di destinazione (collegato all&apos;investimento)
+                                </label>
+                                <div className="w-full px-3.5 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs text-gray-700 font-semibold flex items-center justify-between">
+                                    <span>{transferModal.investment.accountName}</span>
+                                    <span className="text-gray-500 font-normal">
+                                        Saldo attuale: {formatCurrency(transferModal.investment.accountBalance || 0)}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-3">
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Importo (€) <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="number"
+                                        step="0.01"
+                                        min="0.01"
+                                        required
+                                        value={transferForm.amount}
+                                        onChange={(e) => setTransferForm({ ...transferForm, amount: e.target.value })}
+                                        placeholder="0.00"
+                                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                                        Data <span className="text-red-500">*</span>
+                                    </label>
+                                    <input
+                                        type="date"
+                                        required
+                                        value={transferForm.date}
+                                        onChange={(e) => setTransferForm({ ...transferForm, date: e.target.value })}
+                                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                                    />
+                                </div>
+                            </div>
+
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    Descrizione / Note
+                                </label>
+                                <input
+                                    type="text"
+                                    value={transferForm.description}
+                                    onChange={(e) => setTransferForm({ ...transferForm, description: e.target.value })}
+                                    placeholder="Es. Versamento per PAC Roboadvisor"
+                                    className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
+                                />
+                            </div>
+
+                            <div className="flex items-center justify-end gap-2 pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => setTransferModal({ open: false, investment: null })}
+                                    className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
+                                >
+                                    Annulla
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={savingTransfer}
+                                    className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-gray-900 hover:bg-black rounded-xl transition-colors cursor-pointer disabled:opacity-60 shadow-xs"
+                                >
+                                    {savingTransfer && <Loader2 size={13} className="animate-spin" />}
+                                    Conferma Giroconto
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
             )}
         </div>
     );

@@ -10,8 +10,9 @@ import com.financeapp.model.TransactionType;
 import com.financeapp.model.User;
 import com.financeapp.repository.AccountRepository;
 import com.financeapp.repository.AccountTransferRepository;
+import com.financeapp.repository.InvestmentRepository;
 import com.financeapp.repository.TransactionRepository;
-import lombok.RequiredArgsConstructor;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
@@ -20,12 +21,23 @@ import java.util.List;
 import java.util.Map;
 
 @Service
-@RequiredArgsConstructor
 public class AccountService {
 
     private final AccountRepository accountRepository;
     private final TransactionRepository transactionRepository;
     private final AccountTransferRepository transferRepository;
+    private final InvestmentRepository investmentRepository;
+
+    public AccountService(
+            AccountRepository accountRepository,
+            TransactionRepository transactionRepository,
+            AccountTransferRepository transferRepository,
+            @Lazy InvestmentRepository investmentRepository) {
+        this.accountRepository = accountRepository;
+        this.transactionRepository = transactionRepository;
+        this.transferRepository = transferRepository;
+        this.investmentRepository = investmentRepository;
+    }
 
     public void seedDefaultAccounts(User user) {
         defaultAccountFor(user);
@@ -98,8 +110,8 @@ public class AccountService {
 
     public void deleteAccount(User user, Long id) {
         Account account = getAccountAndVerifyOwner(id, user);
-        if (transactionRepository.existsByAccountId(id) || transferRepository.existsByFromAccountIdOrToAccountId(id, id)) {
-            throw new IllegalArgumentException("Impossibile eliminare un conto con movimenti collegati. Archiviarlo o spostare prima le transazioni.");
+        if (transactionRepository.existsByAccountId(id) || transferRepository.existsByFromAccountIdOrToAccountId(id, id) || investmentRepository.existsByAccountId(id)) {
+            throw new IllegalArgumentException("Impossibile eliminare un conto con movimenti o investimenti collegati. Archiviarlo o scollegare prima gli investimenti.");
         }
         accountRepository.delete(account);
     }

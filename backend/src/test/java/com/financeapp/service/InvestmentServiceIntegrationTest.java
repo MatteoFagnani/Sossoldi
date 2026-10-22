@@ -1,6 +1,8 @@
 package com.financeapp.service;
 
+import com.financeapp.dto.AccountDto;
 import com.financeapp.dto.InvestmentDto;
+import com.financeapp.dto.TransactionDto;
 import com.financeapp.model.*;
 import com.financeapp.repository.UserRepository;
 import org.junit.jupiter.api.Test;
@@ -9,14 +11,16 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 import java.util.List;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest
 public class InvestmentServiceIntegrationTest {
 
     @Autowired
     private InvestmentService investmentService;
+
+    @Autowired
+    private AccountService accountService;
 
     @Autowired
     private UserRepository userRepository;
@@ -71,5 +75,56 @@ public class InvestmentServiceIntegrationTest {
         assertEquals(2, result.getComponents().size());
         assertEquals(2, result.getSnapshots().size());
     }
-}
 
+    @Test
+    void testPacExecutionDeductsFromLinkedAccount() {
+        User user = userRepository.findByEmail("pac_user@test.com").orElseGet(() ->
+                userRepository.save(User.builder()
+                        .username("pac_user")
+                        .email("pac_user@test.com")
+                        .password("password")
+                        .role(Role.USER)
+                        .build())
+        );
+
+        AccountDto accDto = new AccountDto();
+        String accountName = "Conto PAC " + System.currentTimeMillis();
+        accDto.setName(accountName);
+        accDto.setType(AccountType.INVESTMENT);
+        accDto.setInitialBalance(1000.0);
+        AccountDto createdAccount = accountService.createAccount(user, accDto);
+
+        InvestmentDto invDto = new InvestmentDto();
+        invDto.setName("PAC Roboadvisor " + System.currentTimeMillis());
+        invDto.setType(InvestmentType.ROBO_ADVISOR);
+        invDto.setCurrentValue(1000.0);
+        invDto.setInvestedCapital(1000.0);
+        invDto.setPacActive(true);
+        invDto.setRecurringAmount(250.0);
+        invDto.setRecurringDay(1);
+        invDto.setAccountId(createdAccount.getId());
+        invDto.setTrackingFrequency("MONTHLY");
+
+        InvestmentDto createdInv = investmentService.createInvestment(user, invDto);
+        assertNotNull(createdInv.getId());
+        assertEquals(createdAccount.getId(), createdInv.getAccountId());
+        assertEquals(accountName, createdInv.getAccountName());
+        assertEquals(1000.0, createdInv.getAccountBalance());
+
+        // Execute PAC
+        InvestmentDto updatedInv = investmentService.executePac(user, createdInv.getId());
+        assertNotNull(updatedInv);
+        assertEquals(1250.0, updatedInv.getInvestedCapital());
+        assertEquals(1250.0, updatedInv.getCurrentValue());
+        assertEquals(750.0, updatedInv.getAccountBalance());
+
+        // Check PAC history
+        List<TransactionDto> history = investmentService.getPacHistory(user, createdInv.getId());
+        assertEquals(1, history.size());
+        assertEquals(250.0, history.get(0).getAmount());
+        assertEquals(createdAccount.getId(), history.get(0).getAccountId());
+
+        // Executing again in the same month should fail
+        assertThrows(IllegalStateException.class, () -> investmentService.executePac(user, createdInv.getId()));
+    }
+}

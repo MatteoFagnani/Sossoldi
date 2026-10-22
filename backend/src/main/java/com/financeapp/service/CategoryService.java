@@ -3,17 +3,24 @@ package com.financeapp.service;
 import com.financeapp.dto.CategoryDto;
 import com.financeapp.exception.ResourceNotFoundException;
 import com.financeapp.mapper.CategoryMapper;
+import com.financeapp.model.Budget;
 import com.financeapp.model.Category;
+import com.financeapp.model.Transaction;
 import com.financeapp.model.TransactionCategoryMapping;
 import com.financeapp.model.TransactionType;
 import com.financeapp.model.User;
+import com.financeapp.repository.BudgetRepository;
 import com.financeapp.repository.CategoryRepository;
 import com.financeapp.repository.TransactionCategoryMappingRepository;
+import com.financeapp.repository.TransactionRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,152 +29,77 @@ public class CategoryService {
 
     private final CategoryRepository categoryRepository;
     private final TransactionCategoryMappingRepository mappingRepository;
+    private final TransactionRepository transactionRepository;
+    private final BudgetRepository budgetRepository;
     private final CategoryMapper categoryMapper;
 
+    /**
+     * Seeds realistic, essential default categories tailored to everyday life:
+     * work, hanging out with friends, parties, investments, housing, transport, shopping, health.
+     */
     public void seedDefaultCategories(User user) {
         // ==========================================
         // SPESE (EXPENSE)
         // ==========================================
 
-        // 1. Alimentari
-        Category food = seedMacro("Alimentari", TransactionType.EXPENSE, "#f87171", user);
-        seedSub(food, "Supermercato", "#ef4444", user);
-        seedSub(food, "Discount", "#dc2626", user);
-        seedSub(food, "Macelleria e pescheria", "#b91c1c", user);
-        seedSub(food, "Panetteria e pasticceria", "#f43f5e", user);
-        seedSub(food, "Frutta e verdura", "#e11d48", user);
-        seedSub(food, "Bevande ed enoteca", "#be123c", user);
-        seedSub(food, "Farmacia alimentare e integratori", "#fb7185", user);
+        // 1. Casa & Utenze
+        Category home = seedMacro("Casa & Utenze", TransactionType.EXPENSE, "#f59e0b", user);
+        seedSub(home, "Affitto / Mutuo", "#d97706", user);
+        seedSub(home, "Bollette & Utenze", "#b45309", user);
+        seedSub(home, "Internet & Telefono", "#92400e", user);
+        seedSub(home, "Casa & Manutenzione", "#78350f", user);
 
-        // 2. Bar e Ristoranti
-        Category restaurants = seedMacro("Bar e Ristoranti", TransactionType.EXPENSE, "#a78bfa", user);
-        seedSub(restaurants, "Ristoranti e pizzerie", "#7c3aed", user);
-        seedSub(restaurants, "Bar e caffe", "#8b5cf6", user);
-        seedSub(restaurants, "Fast food e street food", "#6d28d9", user);
-        seedSub(restaurants, "Delivery e asporto", "#5b21b6", user);
-        seedSub(restaurants, "Aperitivi e pub", "#4c1d95", user);
-        seedSub(restaurants, "Gelaterie e dolci", "#c084fc", user);
-        seedSub(restaurants, "Pranzi di lavoro e mensa", "#9333ea", user);
+        // 2. Spesa Alimentare
+        Category food = seedMacro("Spesa Alimentare", TransactionType.EXPENSE, "#ef4444", user);
+        seedSub(food, "Supermercato & Alimentari", "#dc2626", user);
 
-        // 3. Casa & Utenze
-        Category home = seedMacro("Casa", TransactionType.EXPENSE, "#facc15", user);
-        seedSub(home, "Affitto e mutuo", "#eab308", user);
-        seedSub(home, "Bollette luce gas acqua", "#ca8a04", user);
-        seedSub(home, "Spese condominiali", "#b45309", user);
-        seedSub(home, "Internet e Wi-Fi casa", "#a16207", user);
-        seedSub(home, "Telefonia mobile", "#d97706", user);
-        seedSub(home, "Manutenzione casa e riparazioni", "#854d0e", user);
-        seedSub(home, "Arredamento e bricolage", "#713f12", user);
-        seedSub(home, "Pulizia e cura casa", "#f59e0b", user);
-        seedSub(home, "Assicurazione casa", "#92400e", user);
+        // 3. Svago & Uscite
+        Category leisure = seedMacro("Svago & Uscite", TransactionType.EXPENSE, "#8b5cf6", user);
+        seedSub(leisure, "Ristoranti & Pizzerie", "#7c3aed", user);
+        seedSub(leisure, "Bar & Aperitivi", "#6d28d9", user);
+        seedSub(leisure, "Serate & Feste", "#5b21b6", user);
+        seedSub(leisure, "Cinema, Concerti & Eventi", "#4c1d95", user);
+        seedSub(leisure, "Sport & Hobby", "#a78bfa", user);
 
         // 4. Trasporti
-        Category transport = seedMacro("Trasporti", TransactionType.EXPENSE, "#fb923c", user);
-        seedSub(transport, "Carburante", "#f97316", user);
-        seedSub(transport, "Ricarica veicoli elettrici", "#ea580c", user);
-        seedSub(transport, "Assicurazione auto e moto", "#c2410c", user);
-        seedSub(transport, "Bollo e revisione", "#9a3412", user);
-        seedSub(transport, "Manutenzione auto e tagliando", "#431407", user);
-        seedSub(transport, "Parcheggi e strisce blu", "#ea580c", user);
-        seedSub(transport, "Pedaggi e autostrade", "#c2410c", user);
-        seedSub(transport, "Mezzi pubblici (Bus Metro)", "#9a3412", user);
-        seedSub(transport, "Treni e stazioni", "#c2410c", user);
-        seedSub(transport, "Taxi e ride sharing", "#7c2d12", user);
-        seedSub(transport, "Micromobilita e car sharing", "#f97316", user);
+        Category transport = seedMacro("Trasporti", TransactionType.EXPENSE, "#f97316", user);
+        seedSub(transport, "Carburante & Ricariche", "#ea580c", user);
+        seedSub(transport, "Mezzi Pubblici & Treni", "#c2410c", user);
+        seedSub(transport, "Auto, Moto & Manutenzione", "#9a3412", user);
+        seedSub(transport, "Taxi & Mobilità Condivisa", "#7c2d12", user);
 
-        // 5. Shopping
-        Category shopping = seedMacro("Shopping", TransactionType.EXPENSE, "#818cf8", user);
-        seedSub(shopping, "Abbigliamento e scarpe", "#6366f1", user);
-        seedSub(shopping, "Accessori e borse", "#4f46e5", user);
-        seedSub(shopping, "Elettronica e informatica", "#4338ca", user);
-        seedSub(shopping, "Marketplace online", "#3730a3", user);
-        seedSub(shopping, "Articoli per la casa", "#312e81", user);
-        seedSub(shopping, "Regali per altri", "#4f46e5", user);
+        // 5. Shopping & Personale
+        Category shopping = seedMacro("Shopping & Personale", TransactionType.EXPENSE, "#ec4899", user);
+        seedSub(shopping, "Abbigliamento & Accessori", "#db2777", user);
+        seedSub(shopping, "Cura della Persona", "#be185d", user);
+        seedSub(shopping, "Elettronica & Shopping Online", "#9d174d", user);
 
-        // 6. Cura persona
-        Category personalCare = seedMacro("Cura persona", TransactionType.EXPENSE, "#f472b6", user);
-        seedSub(personalCare, "Parrucchiere e barbiere", "#ec4899", user);
-        seedSub(personalCare, "Cosmetica e profumeria", "#db2777", user);
-        seedSub(personalCare, "Estetica e massaggi", "#be185d", user);
-        seedSub(personalCare, "Igiene personale", "#9d174d", user);
+        // 6. Salute & Benessere
+        Category health = seedMacro("Salute & Benessere", TransactionType.EXPENSE, "#14b8a6", user);
+        seedSub(health, "Farmacia & Medicinali", "#0d9488", user);
+        seedSub(health, "Visite Mediche & Dentista", "#0f766e", user);
 
-        // 7. Salute
-        Category health = seedMacro("Salute", TransactionType.EXPENSE, "#2dd4bf", user);
-        seedSub(health, "Farmacia e medicinali", "#14b8a6", user);
-        seedSub(health, "Medici e visite", "#0d9488", user);
-        seedSub(health, "Dentista", "#0f766e", user);
-        seedSub(health, "Ottico e occhiali", "#115e59", user);
-        seedSub(health, "Analisi ed esami", "#134e4a", user);
-        seedSub(health, "Fisioterapia", "#14b8a6", user);
-        seedSub(health, "Assicurazione sanitaria", "#0d9488", user);
+        // 7. Abbonamenti & Servizi
+        Category subscriptions = seedMacro("Abbonamenti & Servizi", TransactionType.EXPENSE, "#6366f1", user);
+        seedSub(subscriptions, "Streaming Video & Musica", "#4f46e5", user);
+        seedSub(subscriptions, "Software & Servizi Digitali", "#4338ca", user);
 
-        // 8. Sport e benessere
-        Category sport = seedMacro("Sport e benessere", TransactionType.EXPENSE, "#34d399", user);
-        seedSub(sport, "Palestra e corsi", "#10b981", user);
-        seedSub(sport, "Attrezzatura sportiva", "#059669", user);
-        seedSub(sport, "Piscina e sport all'aperto", "#047857", user);
+        // 8. Viaggi & Vacanze
+        Category travel = seedMacro("Viaggi & Vacanze", TransactionType.EXPENSE, "#06b6d4", user);
+        seedSub(travel, "Alloggi & Hotel", "#0891b2", user);
+        seedSub(travel, "Voli & Trasporti Vacanze", "#0e7490", user);
+        seedSub(travel, "Vacanze & Escursioni", "#155e75", user);
 
-        // 9. Intrattenimento
-        Category leisure = seedMacro("Intrattenimento", TransactionType.EXPENSE, "#4ade80", user);
-        seedSub(leisure, "Streaming video e TV", "#22c55e", user);
-        seedSub(leisure, "Streaming audio e podcast", "#16a34a", user);
-        seedSub(leisure, "Cinema concerti e teatro", "#15803d", user);
-        seedSub(leisure, "Giochi console e app", "#166534", user);
-        seedSub(leisure, "Software e abbonamenti digitali", "#14532d", user);
-        seedSub(leisure, "Hobby e collezionismo", "#15803d", user);
+        // 9. Investimenti & Risparmio
+        Category savings = seedMacro("Investimenti & Risparmio", TransactionType.EXPENSE, "#3b82f6", user);
+        seedSub(savings, "Investimenti & PAC", "#2563eb", user);
+        seedSub(savings, "Fondo Emergenza & Risparmio", "#1d4ed8", user);
 
-        // 10. Viaggi
-        Category travel = seedMacro("Viaggi", TransactionType.EXPENSE, "#06b6d4", user);
-        seedSub(travel, "Hotel e alloggi", "#0891b2", user);
-        seedSub(travel, "Voli aerei", "#0e7490", user);
-        seedSub(travel, "Treni vacanze", "#155e75", user);
-        seedSub(travel, "Noleggi auto e trasporti", "#164e63", user);
-        seedSub(travel, "Attivita e tour vacanza", "#0891b2", user);
-
-        // 11. Famiglia e animali
-        Category family = seedMacro("Famiglia e animali", TransactionType.EXPENSE, "#fb7185", user);
-        seedSub(family, "Scuola e asilo", "#f43f5e", user);
-        seedSub(family, "Materiale scolastico e libri", "#e11d48", user);
-        seedSub(family, "Cibo animali (Pet food)", "#be123c", user);
-        seedSub(family, "Veterinario e cure animali", "#9f1239", user);
-        seedSub(family, "Accessori e toelettatura animali", "#881337", user);
-
-        // 12. Istruzione
-        Category education = seedMacro("Istruzione", TransactionType.EXPENSE, "#e879f9", user);
-        seedSub(education, "Universita e master", "#d946ef", user);
-        seedSub(education, "Libri e manuali", "#c026d3", user);
-        seedSub(education, "Corsi online e certificazioni", "#a21caf", user);
-        seedSub(education, "Corsi di lingue", "#86198f", user);
-
-        // 13. Tasse e multe
-        Category taxes = seedMacro("Tasse e multe", TransactionType.EXPENSE, "#94a3b8", user);
-        seedSub(taxes, "Imposte e tasse (IRPEF, F24)", "#64748b", user);
-        seedSub(taxes, "Multe e sanzioni", "#475569", user);
-        seedSub(taxes, "Commercialista e consulenze fiscali", "#334155", user);
-        seedSub(taxes, "Bolli e tributi locali", "#1e293b", user);
-
-        // 14. Risparmio e investimenti
-        Category savings = seedMacro("Risparmio e investimenti", TransactionType.EXPENSE, "#111827", user);
-        seedSub(savings, "PAC e investimenti", "#374151", user);
-        seedSub(savings, "Fondi pensione e previdenza", "#4b5563", user);
-        seedSub(savings, "Fondo emergenza", "#6b7280", user);
-
-        // 15. Bonifici e servizi bancari
-        Category transfers = seedMacro("Bonifici e servizi bancari", TransactionType.EXPENSE, "#64748b", user);
-        seedSub(transfers, "Bonifici inviati", "#475569", user);
-        seedSub(transfers, "Prelievi contante", "#334155", user);
-        seedSub(transfers, "Commissioni e canoni bancari", "#1e293b", user);
-        seedSub(transfers, "Interessi prestiti e mutui", "#0f172a", user);
-
-        // 16. Donazioni
-        Category donations = seedMacro("Donazioni", TransactionType.EXPENSE, "#f87171", user);
-        seedSub(donations, "Beneficenza e ONLUS", "#ef4444", user);
-
-        // 17. Altro (Spese)
-        Category otherExpense = seedMacro("Altro", TransactionType.EXPENSE, "#94a3b8", user);
-        seedSub(otherExpense, "Da classificare", "#64748b", user);
-        seedSub(otherExpense, "Spese varie", "#475569", user);
-
+        // 10. Altro & Imprevisti
+        Category otherExpense = seedMacro("Altro & Imprevisti", TransactionType.EXPENSE, "#64748b", user);
+        seedSub(otherExpense, "Regali & Donazioni", "#475569", user);
+        seedSub(otherExpense, "Tasse & Spese Bancarie", "#334155", user);
+        seedSub(otherExpense, "Spese Varie", "#1e293b", user);
 
         // ==========================================
         // ENTRATE (INCOME)
@@ -176,172 +108,93 @@ public class CategoryService {
         // 1. Lavoro
         Category work = seedMacro("Lavoro", TransactionType.INCOME, "#10b981", user);
         seedSub(work, "Stipendio", "#059669", user);
-        seedSub(work, "Tredicesima e quattordicesima", "#047857", user);
-        seedSub(work, "Bonus e premi", "#065f46", user);
-        seedSub(work, "Rimborsi lavoro e trasferte", "#064e3b", user);
-        seedSub(work, "Buoni pasto e welfare", "#059669", user);
-        seedSub(work, "Tirocinio e stage", "#047857", user);
-        seedSub(work, "Indennita e sussidi", "#065f46", user);
+        seedSub(work, "Tredicesima & Quattordicesima", "#047857", user);
+        seedSub(work, "Bonus & Straordinari", "#065f46", user);
+        seedSub(work, "Lavoro Autonomo & Extra", "#064e3b", user);
 
-        // 2. Lavoro autonomo
-        Category freelance = seedMacro("Lavoro autonomo", TransactionType.INCOME, "#14b8a6", user);
-        seedSub(freelance, "Fatture e clienti", "#0d9488", user);
-        seedSub(freelance, "Prestazioni occasionali", "#0f766e", user);
-        seedSub(freelance, "Consulenze professionali", "#115e59", user);
-        seedSub(freelance, "Royalties e diritti autore", "#134e4a", user);
+        // 2. Investimenti & Rendite
+        Category investments = seedMacro("Investimenti & Rendite", TransactionType.INCOME, "#3b82f6", user);
+        seedSub(investments, "Dividendi & Interessi", "#2563eb", user);
+        seedSub(investments, "Rendite & Capital Gain", "#1d4ed8", user);
 
-        // 3. Investimenti
-        Category investments = seedMacro("Investimenti", TransactionType.INCOME, "#3b82f6", user);
-        seedSub(investments, "Dividendi", "#2563eb", user);
-        seedSub(investments, "Interessi e cedole", "#1d4ed8", user);
-        seedSub(investments, "Vendite investimenti (Capital gain)", "#1e40af", user);
-        seedSub(investments, "Rendite da affitto immobili", "#1e3a8a", user);
-        seedSub(investments, "Crypto e staking", "#2563eb", user);
+        // 3. Entrate Extra & Rimborsi
+        Category extraIncome = seedMacro("Entrate Extra & Rimborsi", TransactionType.INCOME, "#f59e0b", user);
+        seedSub(extraIncome, "Rimborsi & Splitwise", "#d97706", user);
+        seedSub(extraIncome, "Vendita Usato", "#b45309", user);
+        seedSub(extraIncome, "Regali Ricevuti & Altro", "#92400e", user);
 
-        // 4. Regali e rimborsi
-        Category gifts = seedMacro("Regali e rimborsi", TransactionType.INCOME, "#fbbf24", user);
-        seedSub(gifts, "Regali e mance", "#f59e0b", user);
-        seedSub(gifts, "Vendita oggetti usati", "#d97706", user);
-        seedSub(gifts, "Rimborsi amici (Splitwise, cene)", "#b45309", user);
-        seedSub(gifts, "Rimborsi fiscali (730, IRPEF)", "#92400e", user);
-        seedSub(gifts, "Rimborsi assicurativi", "#f59e0b", user);
-        seedSub(gifts, "Cashback e premi fedelta", "#d97706", user);
-
-        // 5. Altro (Entrate)
-        Category otherIncome = seedMacro("Altro", TransactionType.INCOME, "#94a3b8", user);
-        seedSub(otherIncome, "Entrate straordinarie", "#64748b", user);
-        seedSub(otherIncome, "Eredita e donazioni familiari", "#475569", user);
-        seedSub(otherIncome, "Entrate varie", "#334155", user);
-
-        // Seed comprehensive merchant mappings
-        seedDefaultMappings(user, food, restaurants, home, transport, shopping, personalCare, health, sport, leisure, travel, family, education, taxes, savings, transfers, donations, otherExpense, work, freelance, investments, gifts, otherIncome);
+        seedDefaultMappings(user, home, food, leisure, transport, shopping, health, subscriptions, travel, savings, otherExpense, work, investments, extraIncome);
     }
 
     private void seedDefaultMappings(User user,
-                                     Category food, Category restaurants, Category home, Category transport,
-                                     Category shopping, Category personalCare, Category health, Category sport,
-                                     Category leisure, Category travel, Category family, Category education,
-                                     Category taxes, Category savings, Category transfers, Category donations,
-                                     Category otherExpense, Category work, Category freelance, Category investments,
-                                     Category gifts, Category otherIncome) {
-
-        // Alimentari
-        seedKeywords(user, child(food, "Supermercato"), "esselunga", "conad", "coop", "carrefour", "lidl", "eurospin", "aldi", "pam", "iper", "md", "crai", "tigros", "bennet", "il gigante", "despar", "sigma", "unes", "penny market", "mercato");
-        seedKeywords(user, child(food, "Discount"), "discount", "d piu", "prix", "tuodi", "in's mercato");
-        seedKeywords(user, child(food, "Macelleria e pescheria"), "macelleria", "pescheria", "carni", "ittico", "polleria");
-        seedKeywords(user, child(food, "Panetteria e pasticceria"), "panificio", "panetteria", "forno");
-        seedKeywords(user, child(food, "Frutta e verdura"), "fruttivendolo", "ortofrutta", "verdura");
-        seedKeywords(user, child(food, "Bevande ed enoteca"), "enoteca", "vino", "birra", "tannico", "bernabei");
-        seedKeywords(user, child(food, "Farmacia alimentare e integratori"), "prozis", "myprotein", "integratori", "farmacia alimentare");
-
-        // Bar e Ristoranti
-        seedKeywords(user, child(restaurants, "Bar e caffe"), "bar", "caffe", "caffetteria", "starbucks", "autogrill", "illy", "nespresso");
-        seedKeywords(user, child(restaurants, "Ristoranti e pizzerie"), "ristorante", "trattoria", "osteria", "pizzeria", "sushi", "poke", "ramen", "burger");
-        seedKeywords(user, child(restaurants, "Fast food e street food"), "mcdonald", "burger king", "kfc", "old wild west", "five guys");
-        seedKeywords(user, child(restaurants, "Delivery e asporto"), "deliveroo", "glovo", "just eat", "ubereats", "uber eats");
-        seedKeywords(user, child(restaurants, "Aperitivi e pub"), "pub", "aperitivo", "birreria", "cocktail", "lounge");
-        seedKeywords(user, child(restaurants, "Gelaterie e dolci"), "gelateria", "gelato", "grom");
+                                     Category home, Category food, Category leisure, Category transport,
+                                     Category shopping, Category health, Category subscriptions,
+                                     Category travel, Category savings, Category otherExpense,
+                                     Category work, Category investments, Category extraIncome) {
 
         // Casa & Utenze
-        seedKeywords(user, child(home, "Bollette luce gas acqua"), "enel", "eni plenitude", "plenitude", "sorgenia", "edison", "a2a", "hera", "acea", "iren", "servizio elettrico", "nen", "octopus energy", "acquedotto", "tari");
-        seedKeywords(user, child(home, "Internet e Wi-Fi casa"), "fastweb", "eolo", "sky wifi", "open fiber", "fibra");
-        seedKeywords(user, child(home, "Telefonia mobile"), "iliad", "vodafone", "windtre", "tim", "ho mobile", "kena", "very mobile", "poste mobile", "spusu");
-        seedKeywords(user, child(home, "Arredamento e bricolage"), "ikea", "leroy merlin", "mondo convenienza", "brico", "obi", "bricocenter", "maisons du monde");
-        seedKeywords(user, child(home, "Manutenzione casa e riparazioni"), "idraulico", "elettricista", "fabbro", "caldaia", "ferramenta");
-        seedKeywords(user, child(home, "Pulizia e cura casa"), "detersivi", "lavanderia", "tintoria");
+        seedKeywords(user, child(home, "Affitto / Mutuo"), "affitto", "canone locazione", "mutuo casa", "rata mutuo");
+        seedKeywords(user, child(home, "Bollette & Utenze"), "enel", "plenitude", "eni plenitude", "sorgenia", "edison", "a2a", "hera", "acea", "iren", "servizio elettrico", "nen", "octopus energy", "acquedotto", "tari", "luce", "gas", "bolletta");
+        seedKeywords(user, child(home, "Internet & Telefono"), "fastweb", "eolo", "sky wifi", "open fiber", "iliad", "vodafone", "windtre", "tim", "ho mobile", "kena", "very mobile", "poste mobile", "fibra");
+        seedKeywords(user, child(home, "Casa & Manutenzione"), "ikea", "leroy merlin", "mondo convenienza", "brico", "obi", "idraulico", "elettricista", "ferramenta", "condominio", "spese condominiali");
+
+        // Spesa Alimentare
+        seedKeywords(user, child(food, "Supermercato & Alimentari"), "esselunga", "conad", "coop", "carrefour", "lidl", "eurospin", "aldi", "pam", "iper", "md", "crai", "tigros", "bennet", "il gigante", "despar", "sigma", "unes", "penny market", "mercato", "discount", "macelleria", "pescheria", "forno", "panettiere", "panificio", "alimentari");
+
+        // Svago & Uscite
+        seedKeywords(user, child(leisure, "Ristoranti & Pizzerie"), "ristorante", "trattoria", "osteria", "pizzeria", "sushi", "poke", "ramen", "burger", "mcdonald", "burger king", "kfc", "old wild west", "five guys", "deliveroo", "glovo", "just eat", "ubereats", "uber eats");
+        seedKeywords(user, child(leisure, "Bar & Aperitivi"), "bar", "caffe", "caffetteria", "starbucks", "autogrill", "illy", "aperitivo", "pub", "birreria", "cocktail", "gelateria", "gelato", "grom");
+        seedKeywords(user, child(leisure, "Serate & Feste"), "discoteca", "club", "festa", "festival", "serata", "night", "prive", "evento notte");
+        seedKeywords(user, child(leisure, "Cinema, Concerti & Eventi"), "cinema", "ticketone", "eventim", "teatro", "concerto", "mostra", "museo", "spettacolo");
+        seedKeywords(user, child(leisure, "Sport & Hobby"), "palestra", "fitactive", "mcfit", "virgin active", "anytime fitness", "padel", "tennis", "calcetto", "piscina", "nuoto", "sci", "decathlon", "steam", "playstation", "xbox", "nintendo");
 
         // Trasporti
-        seedKeywords(user, child(transport, "Carburante"), "eni station", "q8", "esso", "ip", "tamoil", "sarroch", "benzina", "carburante", "metano", "gpl");
-        seedKeywords(user, child(transport, "Ricarica veicoli elettrici"), "enel x way", "tesla supercharger", "ionity", "be charge", "a2a ricarica");
-        seedKeywords(user, child(transport, "Assicurazione auto e moto"), "unipolsai", "genertel", "prima assicurazioni", "allianz", "zurich", "linear", "conte.it", "axa", "quixa");
-        seedKeywords(user, child(transport, "Parcheggi e strisce blu"), "easypark", "mycicero", "parcheggio", "parking", "apcoa", "sosta");
-        seedKeywords(user, child(transport, "Pedaggi e autostrade"), "autostrade", "telepass", "pedaggio", "unipolmove");
-        seedKeywords(user, child(transport, "Mezzi pubblici (Bus Metro)"), "atm", "atac", "bus", "metro", "tpl", "gtt", "anm");
-        seedKeywords(user, child(transport, "Treni e stazioni"), "trenitalia", "italo", "trenord");
-        seedKeywords(user, child(transport, "Taxi e ride sharing"), "uber", "freenow", "taxi", "it taxi");
-        seedKeywords(user, child(transport, "Micromobilita e car sharing"), "enjoy", "share now", "lime", "dott", "tier", "cooltra");
-        seedKeywords(user, child(transport, "Manutenzione auto e tagliando"), "meccanico", "gommista", "revisione", "autofficina", "norauto", "midas", "carglass");
+        seedKeywords(user, child(transport, "Carburante & Ricariche"), "eni station", "q8", "esso", "ip", "tamoil", "benzina", "carburante", "diesel", "metano", "gpl", "enel x way", "tesla supercharger", "ionity", "be charge");
+        seedKeywords(user, child(transport, "Mezzi Pubblici & Treni"), "atm", "atac", "bus", "metro", "tpl", "gtt", "anm", "trenitalia", "italo", "trenord");
+        seedKeywords(user, child(transport, "Auto, Moto & Manutenzione"), "autostrade", "telepass", "pedaggio", "unipolmove", "easypark", "parcheggio", "parking", "meccanico", "gommista", "revisione", "autofficina", "norauto", "midas", "carglass", "unipolsai", "genertel", "prima assicurazioni", "allianz", "zurich", "linear", "bollo auto");
+        seedKeywords(user, child(transport, "Taxi & Mobilità Condivisa"), "uber", "freenow", "taxi", "it taxi", "enjoy", "share now", "lime", "dott", "tier", "cooltra");
 
-        // Shopping
-        seedKeywords(user, child(shopping, "Abbigliamento e scarpe"), "zara", "hm", "h m", "ovs", "nike", "adidas", "decathlon", "pull bear", "bershka", "primark", "zalando", "intimissimi", "calzedonia", "tezenis", "uniqlo", "mango", "stradivarius", "foot locker", "cisalfa", "snipes");
-        seedKeywords(user, child(shopping, "Elettronica e informatica"), "mediaworld", "unieuro", "apple", "eprice", "euronics", "gamestop", "trony", "expert");
-        seedKeywords(user, child(shopping, "Marketplace online"), "amazon", "ebay", "aliexpress", "temu", "vinted", "subito", "etsy", "shein", "wallapop");
+        // Shopping & Personale
+        seedKeywords(user, child(shopping, "Abbigliamento & Accessori"), "zara", "hm", "h m", "ovs", "nike", "adidas", "pull bear", "bershka", "primark", "zalando", "intimissimi", "calzedonia", "tezenis", "uniqlo", "mango", "stradivarius", "foot locker", "snipes", "cisalfa");
+        seedKeywords(user, child(shopping, "Cura della Persona"), "sephora", "douglas", "acqua sapone", "tigota", "profumeria", "kiko", "parrucchiere", "barbiere", "barber", "estetista");
+        seedKeywords(user, child(shopping, "Elettronica & Shopping Online"), "amazon", "mediaworld", "unieuro", "apple", "eprice", "euronics", "gamestop", "ebay", "aliexpress", "temu", "shein");
 
-        // Cura persona
-        seedKeywords(user, child(personalCare, "Cosmetica e profumeria"), "sephora", "douglas", "acqua sapone", "tigota", "profumeria", "kiko", "pinalli");
-        seedKeywords(user, child(personalCare, "Parrucchiere e barbiere"), "parrucchiere", "barbiere", "barber", "hair", "hairstylist");
+        // Salute & Benessere
+        seedKeywords(user, child(health, "Farmacia & Medicinali"), "farmacia", "lafarmacia", "dr max", "lloyds", "redcare", "efarma", "docpeter", "medicinali", "farmaci");
+        seedKeywords(user, child(health, "Visite Mediche & Dentista"), "studio medico", "visita medica", "dentista", "dentalpro", "synlab", "cerba", "santagostino", "ospedale", "analisi cliniche");
 
-        // Salute
-        seedKeywords(user, child(health, "Farmacia e medicinali"), "farmacia", "lafarmacia", "dr max", "lloyds", "redcare", "efarma", "docpeter");
-        seedKeywords(user, child(health, "Medici e visite"), "studio medico", "visita medica", "synlab", "cerba", "santagostino", "ospedale", "poliambulatorio");
-        seedKeywords(user, child(health, "Dentista"), "dentista", "dentalpro", "vitaldent", "studio dentistico");
-        seedKeywords(user, child(health, "Ottico e occhiali"), "ottica", "grandvision", "salmoiraghi", "nau", "occhiali");
+        // Abbonamenti & Servizi
+        seedKeywords(user, child(subscriptions, "Streaming Video & Musica"), "netflix", "spotify", "prime video", "disney", "dazn", "now tv", "youtube premium", "apple music", "apple tv", "tidal");
+        seedKeywords(user, child(subscriptions, "Software & Servizi Digitali"), "chatgpt", "openai", "icloud", "google one", "microsoft 365", "github", "canva", "notion", "adobe", "dropbox");
 
-        // Sport e benessere
-        seedKeywords(user, child(sport, "Palestra e corsi"), "palestra", "fitactive", "mcfit", "virgin active", "anytime fitness", "yoga", "crossfit", "padel", "tennis");
-        seedKeywords(user, child(sport, "Piscina e sport all'aperto"), "piscina", "nuoto", "sci");
+        // Viaggi & Vacanze
+        seedKeywords(user, child(travel, "Alloggi & Hotel"), "booking", "airbnb", "hotel", "b b", "bed breakfast", "hostel");
+        seedKeywords(user, child(travel, "Voli & Trasporti Vacanze"), "ryanair", "easyjet", "wizz", "ita airways", "lufthansa", "vueling", "noleggio auto", "rentalcars", "hertz", "avis", "sixt");
+        seedKeywords(user, child(travel, "Vacanze & Escursioni"), "viaggio", "vacanza", "tour", "escursione", "traghetto", "agenzia viaggi");
 
-        // Intrattenimento
-        seedKeywords(user, child(leisure, "Streaming video e TV"), "netflix", "disney", "prime video", "dazn", "now tv", "youtube premium", "apple tv", "crunchyroll", "paramount");
-        seedKeywords(user, child(leisure, "Streaming audio e podcast"), "spotify", "apple music", "tidal", "deezer", "audible");
-        seedKeywords(user, child(leisure, "Giochi console e app"), "steam", "playstation", "xbox", "nintendo", "epic games", "riot games", "blizzard", "gamsgo", "google play", "app store");
-        seedKeywords(user, child(leisure, "Cinema concerti e teatro"), "cinema", "ticketone", "eventim", "teatro", "concerto");
-        seedKeywords(user, child(leisure, "Software e abbonamenti digitali"), "chatgpt", "openai", "icloud", "google one", "microsoft 365", "github", "canva", "notion", "adobe", "dropbox");
+        // Investimenti & Risparmio
+        seedKeywords(user, child(savings, "Investimenti & PAC"), "directa", "moneyfarm", "trade republic", "scalable", "degiro", "fineco trading", "pac", "investimento", "etf", "roboadvisor");
+        seedKeywords(user, child(savings, "Fondo Emergenza & Risparmio"), "fondo emergenza", "risparmio", "accantonamento");
 
-        // Viaggi
-        seedKeywords(user, child(travel, "Hotel e alloggi"), "booking", "airbnb", "hotel", "b b", "bed breakfast", "hostel");
-        seedKeywords(user, child(travel, "Voli aerei"), "ryanair", "easyjet", "wizz", "ita airways", "lufthansa", "vueling");
-        seedKeywords(user, child(travel, "Noleggi auto e trasporti"), "hertz", "avis", "sixt", "rentalcars", "noleggio");
-
-        // Famiglia e animali
-        seedKeywords(user, child(family, "Cibo animali (Pet food)"), "arcaplanet", "isola dei tesori", "zooplus", "pet food");
-        seedKeywords(user, child(family, "Veterinario e cure animali"), "veterinario", "clinica veterinaria");
-
-        // Istruzione
-        seedKeywords(user, child(education, "Universita e master"), "universita", "politecnico", "unimi", "uni", "tasse universitarie");
-        seedKeywords(user, child(education, "Libri e manuali"), "libreria", "feltrinelli", "mondadori", "ibs");
-        seedKeywords(user, child(education, "Corsi online e certificazioni"), "udemy", "coursera", "edx", "corso");
-
-        // Tasse e multe
-        seedKeywords(user, child(taxes, "Imposte e tasse (IRPEF, F24)"), "agenzia entrate", "f24", "pago pa", "pagopa", "inps");
-        seedKeywords(user, child(taxes, "Multe e sanzioni"), "polizia locale", "multa", "contravvenzione", "prefettura");
-
-        // Risparmio e investimenti
-        seedKeywords(user, child(savings, "PAC e investimenti"), "directa", "fineco trading", "degiro", "trade republic", "scalable", "moneyfarm", "pac", "investimento");
-        seedKeywords(user, child(savings, "Fondo emergenza"), "fondo emergenza", "risparmio", "accantonamento");
-
-        // Bonifici e servizi bancari
-        seedKeywords(user, child(transfers, "Bonifici inviati"), "bonifico", "giroconto", "trasferimento fondi");
-        seedKeywords(user, child(transfers, "Prelievi contante"), "prelievo", "atm prelievo", "bancomat");
-        seedKeywords(user, child(transfers, "Commissioni e canoni bancari"), "commissione", "canone", "imposta di bollo", "spese bancarie");
-
-        // Donazioni
-        seedKeywords(user, child(donations, "Beneficenza e ONLUS"), "donazione", "onlus", "croce rossa", "unicef", "telethon", "airc");
+        // Altro & Imprevisti
+        seedKeywords(user, child(otherExpense, "Regali & Donazioni"), "regalo", "regali", "donazione", "onlus", "beneficenza", "croce rossa", "unicef");
+        seedKeywords(user, child(otherExpense, "Tasse & Spese Bancarie"), "f24", "agenzia entrate", "pagopa", "pago pa", "inps", "multa", "canone conto", "imposta di bollo", "commissione bancaria");
+        seedKeywords(user, child(otherExpense, "Spese Varie"), "spese varie", "pos", "sumup", "paypal", "prelievo contante", "atm prelievo");
 
         // Lavoro (Income)
         seedKeywords(user, child(work, "Stipendio"), "stipendio", "salary", "retribuzione", "cedolino", "bonifico stipendio");
-        seedKeywords(user, child(work, "Tirocinio e stage"), "tirocinio", "stage");
-        seedKeywords(user, child(work, "Bonus e premi"), "bonus", "premio produzione");
-        seedKeywords(user, child(work, "Rimborsi lavoro e trasferte"), "rimborso spese", "trasferta");
-        seedKeywords(user, child(work, "Buoni pasto e welfare"), "buoni pasto", "edenred", "welfare");
+        seedKeywords(user, child(work, "Tredicesima & Quattordicesima"), "tredicesima", "quattordicesima");
+        seedKeywords(user, child(work, "Bonus & Straordinari"), "bonus", "premio produzione", "straordinari", "buoni pasto", "edenred", "welfare");
+        seedKeywords(user, child(work, "Lavoro Autonomo & Extra"), "fattura", "parcella", "saldo fattura", "onorario", "prestazione occasionale", "consulenza");
 
-        // Lavoro autonomo (Income)
-        seedKeywords(user, child(freelance, "Fatture e clienti"), "parcella", "saldo fattura", "onorario");
+        // Investimenti & Rendite (Income)
+        seedKeywords(user, child(investments, "Dividendi & Interessi"), "dividendo", "dividend", "interessi", "interest", "cedola");
+        seedKeywords(user, child(investments, "Rendite & Capital Gain"), "capital gain", "vendita titoli", "plusvalenza", "rendita", "affitto attivo");
 
-        // Investimenti (Income)
-        seedKeywords(user, child(investments, "Dividendi"), "dividendo", "dividend");
-        seedKeywords(user, child(investments, "Interessi e cedole"), "interessi", "interest", "cedola");
-        seedKeywords(user, child(investments, "Vendite investimenti (Capital gain)"), "vendita titoli", "capital gain");
-
-        // Regali e rimborsi (Income)
-        seedKeywords(user, child(gifts, "Regali e mance"), "regalo", "gift");
-        seedKeywords(user, child(gifts, "Vendita oggetti usati"), "vinted rimborso", "subito accredito", "wallapop accredito");
-        seedKeywords(user, child(gifts, "Rimborsi amici (Splitwise, cene)"), "rimborso", "splitwise", "satispay", "bancomat pay");
-        seedKeywords(user, child(gifts, "Rimborsi fiscali (730, IRPEF)"), "rimborso irpef", "rimborso 730", "credito imposta");
-
-        // Altro
-        seedKeywords(user, child(otherIncome, "Entrate varie"), "accredito", "entrata varia");
-        seedKeywords(user, child(otherExpense, "Da classificare"), "paypal", "sumup", "pos", "stripe");
+        // Entrate Extra & Rimborsi (Income)
+        seedKeywords(user, child(extraIncome, "Rimborsi & Splitwise"), "splitwise", "rimborso", "satispay", "bancomat pay", "rimborso 730", "rimborso irpef");
+        seedKeywords(user, child(extraIncome, "Vendita Usato"), "vinted", "subito", "wallapop", "ebay vendita");
+        seedKeywords(user, child(extraIncome, "Regali Ricevuti & Altro"), "regalo ricevuto", "mancia", "mance", "accredito vario");
     }
 
     private Category seedMacro(String name, TransactionType type, String color, User user) {
@@ -385,10 +238,276 @@ public class CategoryService {
                 .build();
     }
 
-    public List<CategoryDto> getAllCategories(User user) {
-        if (categoryRepository.findByUserId(user.getId()).isEmpty()) {
+    @Transactional
+    public void ensurePragmaticDefaults(User user) {
+        List<Category> userCategories = categoryRepository.findByUserId(user.getId());
+        if (userCategories.isEmpty()) {
             seedDefaultCategories(user);
+            return;
         }
+
+        // Check if user has legacy bloated categories (e.g., contains "Bollette luce gas acqua", "Macelleria e pescheria", or > 55 categories)
+        boolean hasBloatedCategories = userCategories.size() > 55 ||
+                userCategories.stream().anyMatch(c ->
+                        c.getName().equalsIgnoreCase("Macelleria e pescheria") ||
+                        c.getName().equalsIgnoreCase("Bollette luce gas acqua") ||
+                        c.getName().equalsIgnoreCase("Panetteria e pasticceria") ||
+                        c.getName().equalsIgnoreCase("Famiglia e animali") ||
+                        c.getName().equalsIgnoreCase("Bar e Ristoranti")
+                );
+
+        if (hasBloatedCategories) {
+            migrateUserToPragmaticDefaults(user);
+        }
+    }
+
+    @Transactional
+    public void migrateUserToPragmaticDefaults(User user) {
+        // 1. Clear old keyword mappings for the user (they point to old category entities)
+        var oldMappings = mappingRepository.findByUserId(user.getId());
+        if (!oldMappings.isEmpty()) {
+            mappingRepository.deleteAll(oldMappings);
+        }
+
+        // 2. Ensure new pragmatic defaults exist
+        seedDefaultCategories(user);
+
+        // 3. Fetch refreshed categories
+        List<Category> allUserCats = categoryRepository.findByUserId(user.getId());
+        Map<String, Category> catByName = allUserCats.stream()
+                .collect(Collectors.toMap(c -> c.getName().toLowerCase(), c -> c, (a, b) -> a));
+
+        Category fallbackExpense = catByName.get("spese varie");
+        Category fallbackIncome = catByName.get("regali ricevuti & altro");
+
+        // Set of valid pragmatic category names to retain
+        Set<String> validNames = Set.of(
+                // Macro Spese
+                "casa & utenze", "spesa alimentare", "svago & uscite", "trasporti",
+                "shopping & personale", "salute & benessere", "abbonamenti & servizi",
+                "viaggi & vacanze", "investimenti & risparmio", "altro & imprevisti",
+                // Sub Spese
+                "affitto / mutuo", "bollette & utenze", "internet & telefono", "casa & manutenzione",
+                "supermercato & alimentari",
+                "ristoranti & pizzerie", "bar & aperitivi", "serate & feste", "cinema, concerti & eventi", "sport & hobby",
+                "carburante & ricariche", "mezzi pubblici & treni", "auto, moto & manutenzione", "taxi & mobilità condivisa",
+                "abbigliamento & accessori", "cura della persona", "elettronica & shopping online",
+                "farmacia & medicinali", "visite mediche & dentista",
+                "streaming video & musica", "software & servizi digitali",
+                "alloggi & hotel", "voli & trasporti vacanze", "vacanze & escursioni",
+                "investimenti & pac", "fondo emergenza & risparmio",
+                "regali & donazioni", "tasse & spese bancarie", "spese varie",
+                // Macro Entrate
+                "lavoro", "investimenti & rendite", "entrate extra & rimborsi",
+                // Sub Entrate
+                "stipendio", "tredicesima & quattordicesima", "bonus & straordinari", "lavoro autonomo & extra",
+                "dividendi & interessi", "rendite & capital gain",
+                "rimborsi & splitwise", "vendita usato", "regali ricevuti & altro"
+        );
+
+        List<Category> obsoleteCats = allUserCats.stream()
+                .filter(c -> !validNames.contains(c.getName().toLowerCase()))
+                .toList();
+
+        if (!obsoleteCats.isEmpty()) {
+            // Remap transactions
+            List<Transaction> transactions = transactionRepository.findByUserIdOrderByDateDesc(user.getId());
+            for (Transaction t : transactions) {
+                if (t.getCategory() != null && !validNames.contains(t.getCategory().getName().toLowerCase())) {
+                    String targetName = resolveNewCategoryName(t.getCategory().getName());
+                    Category replacement = targetName != null ? catByName.get(targetName.toLowerCase()) : null;
+                    if (replacement == null) {
+                        replacement = t.getType() == TransactionType.INCOME ? fallbackIncome : fallbackExpense;
+                    }
+                    t.setCategory(replacement);
+                    transactionRepository.save(t);
+                }
+            }
+
+            // Remap budgets
+            List<Budget> budgets = budgetRepository.findByUserId(user.getId());
+            for (Budget b : budgets) {
+                if (b.getCategory() != null && !validNames.contains(b.getCategory().getName().toLowerCase())) {
+                    String targetName = resolveNewCategoryName(b.getCategory().getName());
+                    Category replacement = targetName != null ? catByName.get(targetName.toLowerCase()) : null;
+                    if (replacement == null) {
+                        replacement = fallbackExpense;
+                    }
+                    b.setCategory(replacement);
+                    budgetRepository.save(b);
+                }
+            }
+
+            // Subcategories must be deleted before macro categories
+            List<Category> obsoleteSubs = obsoleteCats.stream().filter(c -> c.getParent() != null).toList();
+            List<Category> obsoleteMacros = obsoleteCats.stream().filter(c -> c.getParent() == null).toList();
+
+            categoryRepository.deleteAll(obsoleteSubs);
+            categoryRepository.deleteAll(obsoleteMacros);
+        }
+    }
+
+    private String resolveNewCategoryName(String oldName) {
+        String lower = oldName.trim().toLowerCase();
+
+        // Spesa & Alimentari
+        if (lower.contains("supermercato") || lower.contains("alimentari") || lower.contains("discount") ||
+                lower.contains("macelleria") || lower.contains("pescheria") || lower.contains("panetteria") ||
+                lower.contains("frutta") || lower.contains("verdura") || lower.contains("bevande") || lower.contains("enoteca") ||
+                lower.contains("integratori")) {
+            return "Supermercato & Alimentari";
+        }
+
+        // Ristoranti
+        if (lower.contains("ristorant") || lower.contains("pizzeri") || lower.contains("fast food") ||
+                lower.contains("delivery") || lower.contains("asporto") || lower.contains("pranz")) {
+            return "Ristoranti & Pizzerie";
+        }
+
+        // Bar & Aperitivi
+        if (lower.contains("bar") || lower.contains("caffe") || lower.contains("aperitiv") ||
+                lower.contains("pub") || lower.contains("gelater")) {
+            return "Bar & Aperitivi";
+        }
+
+        // Serate & Feste
+        if (lower.contains("feste") || lower.contains("serate") || lower.contains("discotec") || lower.contains("club")) {
+            return "Serate & Feste";
+        }
+
+        // Cinema & Eventi
+        if (lower.contains("cinema") || lower.contains("concert") || lower.contains("teatro") || lower.contains("mostr")) {
+            return "Cinema, Concerti & Eventi";
+        }
+
+        // Sport & Hobby
+        if (lower.contains("palestra") || lower.contains("sport") || lower.contains("cors") || lower.contains("piscina") ||
+                lower.contains("giochi") || lower.contains("console") || lower.contains("hobby")) {
+            return "Sport & Hobby";
+        }
+
+        // Casa & Utenze
+        if (lower.contains("affitto") || lower.contains("mutuo")) {
+            return "Affitto / Mutuo";
+        }
+        if (lower.contains("bollett") || lower.contains("luce") || lower.contains("gas") || lower.contains("acqua") || lower.contains("rifiuti") || lower.contains("tari")) {
+            return "Bollette & Utenze";
+        }
+        if (lower.contains("internet") || lower.contains("wi-fi") || lower.contains("telefonia") || lower.contains("mobile") || lower.contains("fibra")) {
+            return "Internet & Telefono";
+        }
+        if (lower.contains("casa") || lower.contains("manutenzion") || lower.contains("arredamento") || lower.contains("bricolage") ||
+                lower.contains("pulizia") || lower.contains("condomin") || lower.contains("animal") || lower.contains("scuola")) {
+            return "Casa & Manutenzione";
+        }
+
+        // Trasporti
+        if (lower.contains("carburant") || lower.contains("benzina") || lower.contains("diesel") || lower.contains("ricarica")) {
+            return "Carburante & Ricariche";
+        }
+        if (lower.contains("mezzi") || lower.contains("bus") || lower.contains("metro") || lower.contains("tren")) {
+            return "Mezzi Pubblici & Treni";
+        }
+        if (lower.contains("taxi") || lower.contains("sharing") || lower.contains("uber")) {
+            return "Taxi & Mobilità Condivisa";
+        }
+        if (lower.contains("auto") || lower.contains("moto") || lower.contains("pedagg") || lower.contains("parchegg") ||
+                lower.contains("tagliando") || lower.contains("meccanico") || lower.contains("bollo") || lower.contains("assicurazion")) {
+            return "Auto, Moto & Manutenzione";
+        }
+
+        // Shopping & Personale
+        if (lower.contains("abbigliamento") || lower.contains("scarpe") || lower.contains("accessori") || lower.contains("borse")) {
+            return "Abbigliamento & Accessori";
+        }
+        if (lower.contains("parrucchier") || lower.contains("barbier") || lower.contains("cosmetica") || lower.contains("profumeria") ||
+                lower.contains("estetica") || lower.contains("igiene") || lower.contains("cura persona")) {
+            return "Cura della Persona";
+        }
+        if (lower.contains("elettronica") || lower.contains("informatica") || lower.contains("marketplace") || lower.contains("shopping")) {
+            return "Elettronica & Shopping Online";
+        }
+
+        // Salute
+        if (lower.contains("farmacia") || lower.contains("medicinal") || lower.contains("farmac")) {
+            return "Farmacia & Medicinali";
+        }
+        if (lower.contains("medic") || lower.contains("visite") || lower.contains("dentista") || lower.contains("ottico") ||
+                lower.contains("analisi") || lower.contains("fisioterapia") || lower.contains("salute")) {
+            return "Visite Mediche & Dentista";
+        }
+
+        // Abbonamenti
+        if (lower.contains("streaming") || lower.contains("tv") || lower.contains("musica") || lower.contains("audio") || lower.contains("podcast")) {
+            return "Streaming Video & Musica";
+        }
+        if (lower.contains("software") || lower.contains("abbonament") || lower.contains("digital") || lower.contains("istruzion") ||
+                lower.contains("universit") || lower.contains("master") || lower.contains("libri") || lower.contains("corsi")) {
+            return "Software & Servizi Digitali";
+        }
+
+        // Viaggi
+        if (lower.contains("hotel") || lower.contains("allogg") || lower.contains("b&b") || lower.contains("airbnb")) {
+            return "Alloggi & Hotel";
+        }
+        if (lower.contains("vol") || lower.contains("aere") || lower.contains("nolegg")) {
+            return "Voli & Trasporti Vacanze";
+        }
+        if (lower.contains("viagg") || lower.contains("vacanz") || lower.contains("tour") || lower.contains("escursion")) {
+            return "Vacanze & Escursioni";
+        }
+
+        // Investimenti & Risparmio
+        if (lower.contains("pac") || lower.contains("investiment") || lower.contains("previdenz") || lower.contains("fondi")) {
+            return "Investimenti & PAC";
+        }
+        if (lower.contains("fondo emergenza") || lower.contains("risparmio")) {
+            return "Fondo Emergenza & Risparmio";
+        }
+
+        // Regali, Tasse, Altro
+        if (lower.contains("regal") || lower.contains("donazion") || lower.contains("beneficenza") || lower.contains("onlus")) {
+            return "Regali & Donazioni";
+        }
+        if (lower.contains("tasse") || lower.contains("multe") || lower.contains("impost") || lower.contains("f24") ||
+                lower.contains("commercialista") || lower.contains("bancar") || lower.contains("commission") || lower.contains("canon") || lower.contains("interess")) {
+            return "Tasse & Spese Bancarie";
+        }
+
+        // ENTRATE
+        if (lower.contains("stipendio") || lower.contains("salary") || lower.contains("retribuzion") || lower.contains("cedolino") || lower.contains("stage") || lower.contains("tirocinio")) {
+            return "Stipendio";
+        }
+        if (lower.contains("tredicesima") || lower.contains("quattordicesima")) {
+            return "Tredicesima & Quattordicesima";
+        }
+        if (lower.contains("bonus") || lower.contains("prem") || lower.contains("straordinar") || lower.contains("welfare") || lower.contains("buoni pasto") || lower.contains("trasfert")) {
+            return "Bonus & Straordinari";
+        }
+        if (lower.contains("fattur") || lower.contains("autonom") || lower.contains("client") || lower.contains("prestazion") || lower.contains("consulenz") || lower.contains("freelance")) {
+            return "Lavoro Autonomo & Extra";
+        }
+        if (lower.contains("dividend") || lower.contains("cedol") || lower.contains("interess")) {
+            return "Dividendi & Interessi";
+        }
+        if (lower.contains("capital gain") || lower.contains("rendit") || lower.contains("affitto attiv") || lower.contains("crypto") || lower.contains("plusvalenz")) {
+            return "Rendite & Capital Gain";
+        }
+        if (lower.contains("splitwise") || lower.contains("rimbors") || lower.contains("cashback")) {
+            return "Rimborsi & Splitwise";
+        }
+        if (lower.contains("usat") || lower.contains("vinted") || lower.contains("subito")) {
+            return "Vendita Usato";
+        }
+        if (lower.contains("regal") || lower.contains("manc") || lower.contains("eredit") || lower.contains("straordinari")) {
+            return "Regali Ricevuti & Altro";
+        }
+
+        return null;
+    }
+
+    public List<CategoryDto> getAllCategories(User user) {
+        ensurePragmaticDefaults(user);
         return categoryRepository.findByUserId(user.getId())
                 .stream()
                 .map(categoryMapper::toDto)
@@ -396,6 +515,7 @@ public class CategoryService {
     }
 
     public List<CategoryDto> getCategoriesByType(User user, TransactionType type) {
+        ensurePragmaticDefaults(user);
         return categoryRepository.findByUserIdAndType(user.getId(), type)
                 .stream()
                 .map(categoryMapper::toDto)

@@ -24,6 +24,12 @@ public class CategoryController extends BaseController {
         return ResponseEntity.ok(categoryService.getAllCategories(getCurrentUser(authentication)));
     }
 
+    @PostMapping("/seed-defaults")
+    public ResponseEntity<List<CategoryDto>> seedDefaults(Authentication authentication) {
+        categoryService.seedDefaultCategories(getCurrentUser(authentication));
+        return ResponseEntity.ok(categoryService.getAllCategories(getCurrentUser(authentication)));
+    }
+
     @GetMapping("/type/{type}")
     public ResponseEntity<List<CategoryDto>> getCategoriesByType(
             Authentication authentication,

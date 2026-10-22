@@ -18,7 +18,7 @@ export interface AuthResponse {
 export type TransactionType = 'INCOME' | 'EXPENSE';
 export type MovementType = TransactionType | 'TRANSFER';
 export type AccountType = 'CHECKING' | 'SAVINGS' | 'CASH' | 'CARD' | 'INVESTMENT' | 'OTHER';
-export type InvestmentType = 'ETF' | 'STOCK' | 'FUND' | 'CRYPTO' | 'PENSION' | 'BOND' | 'OTHER';
+export type InvestmentType = 'ETF' | 'STOCK' | 'FUND' | 'CRYPTO' | 'PENSION' | 'BOND' | 'ROBO_ADVISOR' | 'OTHER';
 
 export interface Account {
     id: number;
@@ -71,6 +71,7 @@ export interface Investment {
     recurringAmount?: number | null;
     recurringDay?: number | null;
     pacActive: boolean;
+    trackingFrequency?: 'YEARLY' | 'MONTHLY';
     stocksPercent?: number | null;
     bondsPercent?: number | null;
     governmentBondsPercent?: number | null;

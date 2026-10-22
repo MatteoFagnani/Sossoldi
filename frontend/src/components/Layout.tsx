@@ -56,7 +56,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
     const [collapsed, setCollapsed] = useState(false);
 
     const currentPage = allNavItems.find((i) => i.to === location.pathname)?.label ?? pageTitles[location.pathname] ?? 'Dashboard';
-    const userInitial = user?.username?.charAt(0).toUpperCase() ?? '?';
+    const userDisplayName = user?.firstName
+        ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}`
+        : user?.username ?? 'Profilo';
+    const userInitial = (user?.firstName?.charAt(0) || user?.username?.charAt(0) || '?').toUpperCase();
 
     return (
         <div className="flex h-screen bg-gray-50 text-gray-900">
@@ -136,11 +139,20 @@ export default function Layout({ children }: { children: React.ReactNode }) {
                     <h1 className="text-base font-semibold text-gray-900">{currentPage}</h1>
                     <button
                         onClick={() => navigate('/profile')}
-                        className="w-9 h-9 rounded-full bg-gray-900 text-white text-sm font-semibold flex items-center justify-center hover:bg-black transition-colors"
+                        className="w-9 h-9 rounded-full bg-gray-900 text-white text-sm font-semibold flex items-center justify-center hover:opacity-90 overflow-hidden transition-all border border-gray-200 cursor-pointer"
                         aria-label="Apri profilo"
-                        title={user?.username ?? 'Profilo'}
+                        title={userDisplayName}
                     >
-                        {userInitial}
+                        {user?.avatarUrl ? (
+                            <img
+                                src={user.avatarUrl}
+                                alt={userDisplayName}
+                                className="w-full h-full object-cover"
+                                referrerPolicy="no-referrer"
+                            />
+                        ) : (
+                            userInitial
+                        )}
                     </button>
                 </header>
 

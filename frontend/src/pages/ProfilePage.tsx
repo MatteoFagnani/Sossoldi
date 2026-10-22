@@ -17,6 +17,8 @@ export default function ProfilePage() {
     // Profile Info State
     const [profileForm, setProfileForm] = useState({
         username: user?.username || '',
+        firstName: user?.firstName || '',
+        lastName: user?.lastName || '',
         email: user?.email || '',
         geminiApiKey: user?.geminiApiKey || '',
     });
@@ -104,16 +106,53 @@ export default function ProfilePage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Informazioni Profilo */}
                 <section className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
-                    <div className="flex items-center gap-3 mb-6">
-                        <div className="p-2 bg-gray-100 text-gray-900 rounded-lg">
-                            <Icons.User size={20} />
+                    <div className="flex items-center gap-4 mb-6 pb-5 border-b border-gray-100">
+                        {user?.avatarUrl ? (
+                            <img
+                                src={user.avatarUrl}
+                                alt={user.username}
+                                className="w-14 h-14 rounded-2xl object-cover border border-gray-100 shadow-2xs"
+                                referrerPolicy="no-referrer"
+                            />
+                        ) : (
+                            <div className="w-14 h-14 rounded-2xl bg-gray-900 text-white text-xl font-bold flex items-center justify-center">
+                                {(user?.firstName?.charAt(0) || user?.username?.charAt(0) || '?').toUpperCase()}
+                            </div>
+                        )}
+                        <div className="min-w-0">
+                            <h2 className="text-base font-bold text-gray-900 truncate">
+                                {user?.firstName ? `${user.firstName}${user.lastName ? ` ${user.lastName}` : ''}` : user?.username}
+                            </h2>
+                            <p className="text-xs text-gray-400 truncate">@{user?.username} • {user?.email}</p>
                         </div>
-                        <h2 className="text-lg font-semibold text-gray-800">Informazioni Personali</h2>
                     </div>
 
                     <form onSubmit={handleUpdateProfile} className="space-y-4">
+                        <div className="grid grid-cols-2 gap-3">
+                            <div>
+                                <label className={labelClass}>Nome</label>
+                                <input
+                                    type="text"
+                                    value={profileForm.firstName}
+                                    onChange={(e) => setProfileForm({ ...profileForm, firstName: e.target.value })}
+                                    className={inputClass}
+                                    placeholder="Es. Mario"
+                                />
+                            </div>
+                            <div>
+                                <label className={labelClass}>Cognome</label>
+                                <input
+                                    type="text"
+                                    value={profileForm.lastName}
+                                    onChange={(e) => setProfileForm({ ...profileForm, lastName: e.target.value })}
+                                    className={inputClass}
+                                    placeholder="Es. Rossi"
+                                />
+                            </div>
+                        </div>
+
                         <div>
-                            <label className={labelClass}>Nome Utente</label>
+                            <label className={labelClass}>Nome Utente (Username)</label>
                             <input
                                 type="text"
                                 value={profileForm.username}

@@ -2,6 +2,9 @@ export interface User {
     id: number;
     username: string;
     email: string;
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
     role: 'USER' | 'ADMIN';
     geminiApiKey?: string;
     geminiConfigured?: boolean;

@@ -13,4 +13,7 @@ public class GoogleLoginRequest {
     private String idToken;
     private String email;
     private String name;
+    private String givenName;
+    private String familyName;
+    private String picture;
 }

@@ -87,14 +87,16 @@ class AuthenticationServiceTest {
         String email = "nuovo.utente@gmail.com";
         User savedUser = User.builder()
                 .id(2L)
-                .username("nuovoutente")
+                .username("nuovo.utente")
+                .firstName("Nuovo")
+                .lastName("Utente")
                 .email(email)
                 .role(Role.USER)
                 .build();
-        UserDto userDto = UserDto.builder().id(2L).username("nuovoutente").email(email).role(Role.USER).build();
+        UserDto userDto = UserDto.builder().id(2L).username("nuovo.utente").firstName("Nuovo").lastName("Utente").email(email).role(Role.USER).build();
 
         when(repository.findByEmail(email)).thenReturn(Optional.empty());
-        when(repository.existsByUsername("nuovoutente")).thenReturn(false);
+        when(repository.existsByUsername("nuovo.utente")).thenReturn(false);
         when(passwordEncoder.encode(any())).thenReturn("hashed-random-password");
         when(repository.save(any(User.class))).thenReturn(savedUser);
         when(jwtService.generateToken(savedUser)).thenReturn("jwt-token-456");

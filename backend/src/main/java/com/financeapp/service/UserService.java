@@ -34,6 +34,16 @@ public class UserService {
 
     @Transactional
     public UserDto updateProfile(User user, ProfileUpdateRequest request) {
+        if (request.getFirstName() != null) {
+            String fName = request.getFirstName().trim();
+            user.setFirstName(fName.isEmpty() ? null : fName);
+        }
+
+        if (request.getLastName() != null) {
+            String lName = request.getLastName().trim();
+            user.setLastName(lName.isEmpty() ? null : lName);
+        }
+
         if (request.getUsername() != null && !request.getUsername().equals(user.getUsername())) {
             if (userRepository.existsByUsernameAndIdNot(request.getUsername(), user.getId())) {
                 throw new IllegalArgumentException("Username già in uso");

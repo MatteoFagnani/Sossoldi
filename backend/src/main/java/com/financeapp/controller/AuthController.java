@@ -83,7 +83,14 @@ public class AuthController {
         try {
             String redirectUri = buildRedirectUri(request);
             var userInfo = googleAuthService.exchangeCode(code, redirectUri);
-            AuthResponse authResponse = service.authenticateWithGoogle(userInfo.email(), userInfo.name(), userInfo.sub());
+            AuthResponse authResponse = service.authenticateWithGoogle(
+                    userInfo.email(),
+                    userInfo.name(),
+                    userInfo.givenName(),
+                    userInfo.familyName(),
+                    userInfo.picture(),
+                    userInfo.sub()
+            );
             setJwtCookie(request, response, authResponse.getToken());
             response.sendRedirect("/");
         } catch (Exception e) {
@@ -113,22 +120,31 @@ public class AuthController {
 
         String email;
         String name;
+        String givenName = null;
+        String familyName = null;
+        String picture = null;
         String sub;
 
         if (request.getIdToken() != null && !request.getIdToken().isBlank()) {
             var userInfo = googleAuthService.verifyToken(request.getIdToken());
             email = userInfo.email();
             name = userInfo.name();
+            givenName = userInfo.givenName();
+            familyName = userInfo.familyName();
+            picture = userInfo.picture();
             sub = userInfo.sub();
         } else if (request.getEmail() != null && !request.getEmail().isBlank()) {
             email = request.getEmail().trim().toLowerCase();
             name = request.getName() != null && !request.getName().isBlank() ? request.getName() : "Utente Google";
+            givenName = request.getGivenName();
+            familyName = request.getFamilyName();
+            picture = request.getPicture();
             sub = "local-google-" + email.hashCode();
         } else {
             throw new IllegalArgumentException("Token Google mancante o configurazione incompleta.");
         }
 
-        AuthResponse authResponse = service.authenticateWithGoogle(email, name, sub);
+        AuthResponse authResponse = service.authenticateWithGoogle(email, name, givenName, familyName, picture, sub);
         setJwtCookie(httpRequest, response, authResponse.getToken());
         authResponse.setToken(null);
         return ResponseEntity.ok(authResponse);

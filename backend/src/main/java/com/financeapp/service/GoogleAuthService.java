@@ -103,11 +103,13 @@ public class GoogleAuthService {
                         JsonNode claims = objectMapper.readTree(decoded);
                         String email = claims.has("email") ? claims.get("email").asText() : null;
                         String name = claims.has("name") ? claims.get("name").asText() : "";
+                        String givenName = extractGivenName(claims, name);
+                        String familyName = extractFamilyName(claims, name);
                         String sub = claims.has("sub") ? claims.get("sub").asText() : "";
                         String picture = claims.has("picture") ? claims.get("picture").asText() : "";
                         boolean emailVerified = claims.has("email_verified") && claims.get("email_verified").asBoolean(true);
                         if (email != null && !email.isBlank() && emailVerified) {
-                            return new GoogleUserInfo(email, name, sub, picture);
+                            return new GoogleUserInfo(email, name, givenName, familyName, sub, picture);
                         }
                     }
                 } catch (Exception ex) {
@@ -128,9 +130,11 @@ public class GoogleAuthService {
                 JsonNode userinfo = objectMapper.readTree(userinfoResp.body());
                 String email = userinfo.has("email") ? userinfo.get("email").asText() : null;
                 String name = userinfo.has("name") ? userinfo.get("name").asText() : "";
+                String givenName = extractGivenName(userinfo, name);
+                String familyName = extractFamilyName(userinfo, name);
                 String sub = userinfo.has("sub") ? userinfo.get("sub").asText() : "";
                 String picture = userinfo.has("picture") ? userinfo.get("picture").asText() : "";
-                return new GoogleUserInfo(email, name, sub, picture);
+                return new GoogleUserInfo(email, name, givenName, familyName, sub, picture);
             }
 
             throw new IllegalArgumentException("Risposta di Google priva di informazioni utente.");
@@ -165,6 +169,8 @@ public class GoogleAuthService {
 
             String email = root.has("email") ? root.get("email").asText() : null;
             String name = root.has("name") ? root.get("name").asText() : "";
+            String givenName = extractGivenName(root, name);
+            String familyName = extractFamilyName(root, name);
             String sub = root.has("sub") ? root.get("sub").asText() : "";
             String picture = root.has("picture") ? root.get("picture").asText() : "";
             boolean emailVerified = root.has("email_verified") && root.get("email_verified").asBoolean(true);
@@ -173,7 +179,7 @@ public class GoogleAuthService {
                 throw new IllegalArgumentException("L'account Google non ha un'email verificata.");
             }
 
-            return new GoogleUserInfo(email, name, sub, picture);
+            return new GoogleUserInfo(email, name, givenName, familyName, sub, picture);
         } catch (IllegalArgumentException e) {
             throw e;
         } catch (Exception e) {
@@ -182,5 +188,28 @@ public class GoogleAuthService {
         }
     }
 
-    public record GoogleUserInfo(String email, String name, String sub, String picture) {}
+    private String extractGivenName(JsonNode node, String fullName) {
+        if (node.hasNonNull("given_name") && !node.get("given_name").asText().isBlank()) {
+            return node.get("given_name").asText().trim();
+        }
+        if (fullName != null && !fullName.isBlank()) {
+            return fullName.trim().split("\\s+")[0];
+        }
+        return "";
+    }
+
+    private String extractFamilyName(JsonNode node, String fullName) {
+        if (node.hasNonNull("family_name") && !node.get("family_name").asText().isBlank()) {
+            return node.get("family_name").asText().trim();
+        }
+        if (fullName != null && !fullName.isBlank()) {
+            String[] parts = fullName.trim().split("\\s+", 2);
+            if (parts.length > 1) {
+                return parts[1].trim();
+            }
+        }
+        return "";
+    }
+
+    public record GoogleUserInfo(String email, String name, String givenName, String familyName, String sub, String picture) {}
 }

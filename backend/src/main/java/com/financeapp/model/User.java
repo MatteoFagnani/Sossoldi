@@ -25,6 +25,15 @@ public class User implements UserDetails {
     @Column(unique = true, nullable = false)
     private String username;
 
+    @Column(name = "first_name")
+    private String firstName;
+
+    @Column(name = "last_name")
+    private String lastName;
+
+    @Column(name = "avatar_url", length = 1000)
+    private String avatarUrl;
+
     @Column(unique = true, nullable = false)
     private String email;
 

@@ -186,6 +186,10 @@ public class GeminiService {
         }
     }
 
+    private static double round1(double val) {
+        return Math.round(val * 10.0) / 10.0;
+    }
+
     public AiFinancialInsightsDto generateFinancialAdvice(User user, AdvancedAnalyticsDto analytics) {
         String apiKey = getActiveApiKey(user);
         if (apiKey == null || apiKey.trim().isEmpty()) {
@@ -206,30 +210,30 @@ public class GeminiService {
         profiloUtente.put("fondoEmergenzaMesiMassimo", analytics.getIdealRunwayMonthsMax());
         anonymizedProfile.put("impostazioniStrategiaProfilo", profiloUtente);
 
-        anonymizedProfile.put("tassoDiRisparmioPercentuale", Math.round(analytics.getSavingsRate() * 10.0) / 10.0);
+        anonymizedProfile.put("tassoDiRisparmioPercentuale", round1(analytics.getSavingsRate()));
 
         Map<String, Object> rule503020 = new LinkedHashMap<>();
-        rule503020.put("speseNecessitaPercentualeEffettiva", Math.round(analytics.getNeedsPercent() * 10.0) / 10.0);
+        rule503020.put("speseNecessitaPercentualeEffettiva", round1(analytics.getNeedsPercent()));
         rule503020.put("speseNecessitaTargetIdealeProfilo", analytics.getTargetNeedsPercent());
-        rule503020.put("speseDesideriSvagoPercentualeEffettiva", Math.round(analytics.getWantsPercent() * 10.0) / 10.0);
+        rule503020.put("speseDesideriSvagoPercentualeEffettiva", round1(analytics.getWantsPercent()));
         rule503020.put("speseDesideriSvagoTargetIdealeProfilo", analytics.getTargetWantsPercent());
-        rule503020.put("risparmioInvestimentiPercentualeEffettiva", Math.round(analytics.getSavingsInvestPercent() * 10.0) / 10.0);
+        rule503020.put("risparmioInvestimentiPercentualeEffettiva", round1(analytics.getSavingsInvestPercent()));
         rule503020.put("risparmioInvestimentiTargetIdealeProfilo", analytics.getTargetSavingsPercent());
         anonymizedProfile.put("ripartizioneSpeseVsTargetProfilo", rule503020);
 
         Map<String, Object> rigiditaSpese = new LinkedHashMap<>();
-        rigiditaSpese.put("speseFisseRicorrentiPercentuale", Math.round(analytics.getFixedExpensesPercent() * 10.0) / 10.0);
-        rigiditaSpese.put("speseVariabiliVoluttuariePercentuale", Math.round(analytics.getVariableExpensesPercent() * 10.0) / 10.0);
+        rigiditaSpese.put("speseFisseRicorrentiPercentuale", round1(analytics.getFixedExpensesPercent()));
+        rigiditaSpese.put("speseVariabiliVoluttuariePercentuale", round1(analytics.getVariableExpensesPercent()));
         anonymizedProfile.put("strutturaSpese", rigiditaSpese);
 
-        anonymizedProfile.put("coperturaFondoEmergenzaMesi", Math.round(analytics.getEmergencyRunwayMonths() * 10.0) / 10.0);
-        anonymizedProfile.put("quotaRedditoInPacInvestimentiPercentuale", Math.round(analytics.getPacInvestedPercentOfIncome() * 10.0) / 10.0);
+        anonymizedProfile.put("coperturaFondoEmergenzaMesi", round1(analytics.getEmergencyRunwayMonths()));
+        anonymizedProfile.put("quotaRedditoInPacInvestimentiPercentuale", round1(analytics.getPacInvestedPercentOfIncome()));
 
         if (analytics.getIncomeChangePct() != null) {
-            anonymizedProfile.put("variazioneEntrateMoMPercentuale", Math.round(analytics.getIncomeChangePct() * 10.0) / 10.0);
+            anonymizedProfile.put("variazioneEntrateMoMPercentuale", round1(analytics.getIncomeChangePct()));
         }
         if (analytics.getExpenseChangePct() != null) {
-            anonymizedProfile.put("variazioneUsciteMoMPercentuale", Math.round(analytics.getExpenseChangePct() * 10.0) / 10.0);
+            anonymizedProfile.put("variazioneUsciteMoMPercentuale", round1(analytics.getExpenseChangePct()));
         }
 
         // Top categories weights (only category name and % weight)
@@ -238,7 +242,7 @@ public class GeminiService {
             for (var c : analytics.getExpenseDestinations().stream().limit(6).toList()) {
                 Map<String, Object> cw = new LinkedHashMap<>();
                 cw.put("categoria", c.getCategoryName());
-                cw.put("pesoSuUsciteTotaliPercentuale", Math.round(c.getPercentage() * 10.0) / 10.0);
+                cw.put("pesoSuUsciteTotaliPercentuale", round1(c.getPercentage()));
                 topWeights.add(cw);
             }
         }
@@ -251,7 +255,7 @@ public class GeminiService {
                 if (ch.getDeltaPercent() != null && Math.abs(ch.getDeltaPercent()) >= 15.0) {
                     Map<String, Object> cm = new LinkedHashMap<>();
                     cm.put("categoria", ch.getCategoryName());
-                    cm.put("variazionePercentuale", Math.round(ch.getDeltaPercent() * 10.0) / 10.0);
+                    cm.put("variazionePercentuale", round1(ch.getDeltaPercent()));
                     cm.put("direzione", ch.isIncrease() ? "AUMENTO" : "DIMINUZIONE");
                     changes.add(cm);
                 }

@@ -11,13 +11,7 @@ echo.
 
 :: 1. Arresto di eventuali istanze in esecuzione sulla porta 10000
 echo [1/3] Verifica e arresto istanze attive di Sossoldi...
-for /f "tokens=5" %%a in ('netstat -aon ^| findstr ":10000" ^| findstr "LISTENING"') do (
-    echo       Termino processo attivo (PID: %%a)...
-    taskkill /F /PID %%a >nul 2>&1
-)
-wmic process where "name='javaw.exe' and commandline like '%%backend-0.0.1-SNAPSHOT.jar%%'" call terminate >nul 2>&1
-wmic process where "name='java.exe' and commandline like '%%backend-0.0.1-SNAPSHOT.jar%%'" call terminate >nul 2>&1
-echo [OK] Servizi arrestati.
+call "%~dp0scripts\ferma.bat" --no-wait
 echo.
 
 :: 2. Compilazione Frontend
@@ -68,4 +62,3 @@ if /i "%START_NOW%"=="n" (
 echo Avvio di Sossoldi in corso...
 start "" avvia.bat
 exit /b 0
-

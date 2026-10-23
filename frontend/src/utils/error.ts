@@ -14,3 +14,4 @@ export const extractApiError = (err: unknown, fallback = 'Si è verificato un er
     if (err instanceof Error && err.message) return err.message;
     return fallback;
 };
+

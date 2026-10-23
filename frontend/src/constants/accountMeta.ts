@@ -43,3 +43,4 @@ export const getAccountColor = (type: AccountType): string => {
             return '#64748b';
     }
 };
+

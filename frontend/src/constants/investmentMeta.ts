@@ -32,3 +32,4 @@ export const investmentTypes: { value: InvestmentType; label: string; icon: type
     { value: 'CRYPTO', label: 'Crypto', icon: Coins, desc: 'Bitcoin, Ethereum e crypto' },
     { value: 'OTHER', label: 'Altro', icon: Layers, desc: 'Beni rifugio, oro, liquidità' },
 ];
+

@@ -17,3 +17,4 @@ export const getSelectableYears = (startYear = 2020, futureYears = 0): number[] 
     const endYear = new Date().getFullYear() + futureYears;
     return Array.from({ length: Math.max(1, endYear - startYear + 1) }, (_, i) => startYear + i);
 };
+

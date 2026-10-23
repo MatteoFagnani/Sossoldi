@@ -1,4 +1,4 @@
-package com.financeapp.service.pattern.strategy;
+package com.financeapp.service.report;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -18,7 +18,6 @@ public class ReportContext {
         if ("YEARLY".equalsIgnoreCase(type)) {
             return yearlyReportStrategy;
         }
-        // Default to monthly timeline
         return monthlyReportStrategy;
     }
 }

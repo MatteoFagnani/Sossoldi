@@ -20,6 +20,5 @@ public class UserDto {
     private String email;
     private Role role;
     private FinancialProfileType financialProfile;
-    private String geminiApiKey;
     private Boolean geminiConfigured;
 }

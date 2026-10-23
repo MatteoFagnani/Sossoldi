@@ -1,4 +1,4 @@
-package com.financeapp.service.pattern.strategy;
+package com.financeapp.service.report;
 
 import com.financeapp.dto.ReportDto;
 import com.financeapp.model.Transaction;
@@ -24,29 +24,15 @@ public class CategoryReportStrategy implements ReportStrategy {
         List<Transaction> transactions = transactionRepository
                 .findByUserIdAndDateBetweenOrderByDateDesc(user.getId(), startDate, endDate);
 
-        double totalIncome = 0.0;
-        double totalExpense = 0.0;
-
-        // DataPoints: Map "CategoryName" -> "Total Amount for that category"
         Map<String, Double> categoryTotals = new LinkedHashMap<>();
 
         for (Transaction t : transactions) {
-            String categoryName = t.getCategory().getName();
-            double amount = t.getAmount();
-
-            if (t.getType() == TransactionType.INCOME) {
-                totalIncome += amount;
-            } else {
-                totalExpense += amount;
-                categoryTotals.put(categoryName, categoryTotals.getOrDefault(categoryName, 0.0) + amount);
+            if (t.getType() == TransactionType.EXPENSE && t.getCategory() != null) {
+                categoryTotals.merge(t.getCategory().getName(), t.getAmount(), Double::sum);
             }
         }
 
         return ReportDto.builder()
-                .title("Category Financial Report")
-                .totalIncome(totalIncome)
-                .totalExpense(totalExpense)
-                .netBalance(totalIncome - totalExpense)
                 .dataPoints(categoryTotals)
                 .build();
     }

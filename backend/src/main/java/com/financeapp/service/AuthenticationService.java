@@ -24,17 +24,12 @@ public class AuthenticationService {
     private final AccountService accountService;
     private final BudgetService budgetService;
 
-    public AuthResponse authenticateWithGoogle(String email, String name, String googleSub) {
-        return authenticateWithGoogle(email, name, null, null, null, googleSub);
-    }
-
     public AuthResponse authenticateWithGoogle(
             String email,
             String name,
             String givenName,
             String familyName,
-            String picture,
-            String googleSub) {
+            String picture) {
 
         var userOptional = repository.findByEmail(email);
         User user;

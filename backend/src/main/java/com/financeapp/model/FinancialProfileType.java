@@ -11,8 +11,7 @@ public enum FinancialProfileType {
             15.0,
             15.0,
             2.0,
-            3.0,
-            "Focus su contenimento del burn rate quotidiano, tracciamento uscite universitarie e costruzione di un micro-cuscinetto per imprevisti, senza pressione su investimenti aggressivi."
+            3.0
     ),
     BALANCED_50_30_20(
             "Lavoratore Standard (50/30/20)",
@@ -21,8 +20,7 @@ public enum FinancialProfileType {
             30.0,
             20.0,
             3.0,
-            6.0,
-            "Approccio bilanciato classico di Elizabeth Warren: 50% bisogni primari, 30% desideri/svago, 20% risparmio e investimenti con fondo emergenza di 3-6 mesi."
+            6.0
     ),
     FREELANCER(
             "Freelance / Partita IVA",
@@ -31,8 +29,7 @@ public enum FinancialProfileType {
             20.0,
             20.0,
             6.0,
-            12.0,
-            "Income smoothing: entrate fluttuanti, gestione preventiva delle scadenze fiscali/INPS e necessità di un fondo emergenza solido di 6-12 mesi di spese vive."
+            12.0
     ),
     FIRE_SEEKER(
             "FIRE Seeker (Risparmio Aggressivo)",
@@ -41,8 +38,7 @@ public enum FinancialProfileType {
             15.0,
             50.0,
             6.0,
-            12.0,
-            "Movimento Financial Independence, Retire Early: massimizzazione del savings rate (>50%), eliminazione del superfluo e orientamento all'interesse composto in ETF/asset produttivi."
+            12.0
     ),
     FAMILY(
             "Famiglia & Genitori",
@@ -51,8 +47,7 @@ public enum FinancialProfileType {
             15.0,
             20.0,
             4.0,
-            6.0,
-            "Focus sulla protezione e gestione di spese fisse alte per figli, casa, salute e scuola, abbinato a un fondo imprevisti robusto e tutela del futuro."
+            6.0
     ),
     DEBT_REPAYMENT(
             "Ripartenza & Ripianamento Debiti",
@@ -61,8 +56,7 @@ public enum FinancialProfileType {
             10.0,
             20.0,
             1.0,
-            2.0,
-            "Debt-free framework: prioritizzazione assoluta dell'estinzione debiti e finanziamenti con metodo a valanga/neve, riducendo lo svago al minimo sostenibile."
+            2.0
     );
 
     private final String displayName;
@@ -72,7 +66,6 @@ public enum FinancialProfileType {
     private final double targetSavingsPercent;
     private final double runwayMonthsMin;
     private final double runwayMonthsMax;
-    private final String focusPrompt;
 
     FinancialProfileType(
             String displayName,
@@ -81,8 +74,7 @@ public enum FinancialProfileType {
             double targetWantsPercent,
             double targetSavingsPercent,
             double runwayMonthsMin,
-            double runwayMonthsMax,
-            String focusPrompt) {
+            double runwayMonthsMax) {
         this.displayName = displayName;
         this.description = description;
         this.targetNeedsPercent = targetNeedsPercent;
@@ -90,7 +82,5 @@ public enum FinancialProfileType {
         this.targetSavingsPercent = targetSavingsPercent;
         this.runwayMonthsMin = runwayMonthsMin;
         this.runwayMonthsMax = runwayMonthsMax;
-        this.focusPrompt = focusPrompt;
     }
 }
-

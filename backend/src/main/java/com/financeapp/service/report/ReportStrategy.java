@@ -1,8 +1,7 @@
-package com.financeapp.service.pattern.strategy;
+package com.financeapp.service.report;
 
 import com.financeapp.dto.ReportDto;
 import com.financeapp.model.User;
-
 import java.time.LocalDate;
 
 public interface ReportStrategy {

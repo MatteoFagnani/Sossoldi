@@ -8,6 +8,7 @@ import com.financeapp.mapper.BudgetMapper;
 import com.financeapp.model.Budget;
 import com.financeapp.model.BudgetOverride;
 import com.financeapp.model.Category;
+import com.financeapp.model.FinancialProfileType;
 import com.financeapp.model.Transaction;
 import com.financeapp.model.TransactionType;
 import com.financeapp.model.User;
@@ -15,7 +16,6 @@ import com.financeapp.repository.BudgetOverrideRepository;
 import com.financeapp.repository.BudgetRepository;
 import com.financeapp.repository.CategoryRepository;
 import com.financeapp.repository.TransactionRepository;
-import com.financeapp.service.pattern.state.BudgetContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
@@ -23,6 +23,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.YearMonth;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -38,14 +39,23 @@ public class BudgetService {
     private final TransactionRepository transactionRepository;
     private final BudgetOverrideRepository budgetOverrideRepository;
 
+    public static String resolveStatus(double percentageUsed) {
+        if (percentageUsed >= 100) {
+            return "EXCEEDED";
+        }
+        if (percentageUsed >= 80) {
+            return "WARNING";
+        }
+        return "OK";
+    }
+
     public List<BudgetStatusDto> getBudgetStatusesByMonthAndYear(User user, Integer month, Integer year) {
         List<Budget> budgets = budgetRepository.findByUserId(user.getId());
-        if (budgets.size() < 5) {
+        if (budgets.isEmpty()) {
             seedDefaultBudgets(user);
             budgets = budgetRepository.findByUserId(user.getId());
         }
 
-        // Clean out any orphaned budgets if category is null
         budgets = budgets.stream()
                 .filter(b -> b.getCategory() != null)
                 .collect(Collectors.toList());
@@ -56,17 +66,24 @@ public class BudgetService {
         LocalDate startOfMonth = LocalDate.of(year, month, 1);
         LocalDate endOfMonth = YearMonth.of(year, month).atEndOfMonth();
 
-        BudgetContext budgetContext = new BudgetContext();
-
         List<Transaction> monthTransactions = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(
                 user.getId(), startOfMonth, endOfMonth);
+
+        return computeBudgetStatuses(budgets, overrides, monthTransactions, month, year);
+    }
+
+    public List<BudgetStatusDto> computeBudgetStatuses(
+            List<Budget> budgets,
+            List<BudgetOverride> overrides,
+            List<Transaction> monthTransactions,
+            Integer month,
+            Integer year) {
 
         double totalIncome = monthTransactions.stream()
                 .filter(t -> t.getType() == TransactionType.INCOME)
                 .mapToDouble(Transaction::getAmount)
                 .sum();
 
-        // Roll up spending: if transaction has a subcategory, credit both subcategory and parent macro category
         Map<Long, Double> spendingByCategoryId = new HashMap<>();
         for (Transaction t : monthTransactions) {
             if (t.getType() == TransactionType.EXPENSE && t.getCategory() != null) {
@@ -85,44 +102,31 @@ public class BudgetService {
 
         return budgets.stream().map(budget -> {
             Double effectiveLimit = budget.getLimitAmount();
-
-            // Check for override
             BudgetOverride override = overrideByBudgetId.get(budget.getId());
 
             if (override != null) {
                 if (override.getAmount() != null) {
                     effectiveLimit = override.getAmount();
                 } else if (override.getPercentageOfIncome() != null) {
-                    if (totalIncome > 0) {
-                        effectiveLimit = totalIncome * (override.getPercentageOfIncome() / 100.0);
-                    } else {
-                        effectiveLimit = budget.getLimitAmount() != null ? budget.getLimitAmount() : 0.0;
-                    }
+                    effectiveLimit = totalIncome > 0
+                            ? totalIncome * (override.getPercentageOfIncome() / 100.0)
+                            : (budget.getLimitAmount() != null ? budget.getLimitAmount() : 0.0);
                 }
             } else if (budget.getPercentageOfIncome() != null) {
-                if (totalIncome > 0) {
-                    effectiveLimit = totalIncome * (budget.getPercentageOfIncome() / 100.0);
-                } else {
-                    effectiveLimit = budget.getLimitAmount() != null ? budget.getLimitAmount() : 0.0;
-                }
+                effectiveLimit = totalIncome > 0
+                        ? totalIncome * (budget.getPercentageOfIncome() / 100.0)
+                        : (budget.getLimitAmount() != null ? budget.getLimitAmount() : 0.0);
             }
 
-            if (effectiveLimit == null) {
-                effectiveLimit = 0.0;
-            }
-
-            final Double limit = effectiveLimit; // effectiveLimit is effectively final for lambda
-
+            final double limit = effectiveLimit != null ? effectiveLimit : 0.0;
             double currentSpending = spendingByCategoryId.getOrDefault(budget.getCategory().getId(), 0.0);
-
             double percentageUsed = limit > 0 ? (currentSpending / limit) * 100 : 0;
 
-            Double effectivePct = budget.getPercentageOfIncome();
-            if (override != null && override.getPercentageOfIncome() != null) {
-                effectivePct = override.getPercentageOfIncome();
-            }
+            Double effectivePct = (override != null && override.getPercentageOfIncome() != null)
+                    ? override.getPercentageOfIncome()
+                    : budget.getPercentageOfIncome();
 
-            BudgetStatusDto statusDto = BudgetStatusDto.builder()
+            return BudgetStatusDto.builder()
                     .id(budget.getId())
                     .categoryId(budget.getCategory().getId())
                     .categoryName(budget.getCategory().getName())
@@ -136,19 +140,17 @@ public class BudgetService {
                     .remainingAmount(limit - currentSpending)
                     .percentageUsed(percentageUsed)
                     .overridden(override != null)
+                    .status(resolveStatus(percentageUsed))
                     .build();
-
-            budgetContext.applyState(statusDto);
-            return statusDto;
         }).collect(Collectors.toList());
     }
 
     public record ProfileBudgetRec(double percentageOfIncome, double baselineAmount) {}
 
-    public static Map<String, ProfileBudgetRec> getRecommendationsForProfile(com.financeapp.model.FinancialProfileType profile) {
-        Map<String, ProfileBudgetRec> map = new java.util.LinkedHashMap<>();
+    public static Map<String, ProfileBudgetRec> getRecommendationsForProfile(FinancialProfileType profile) {
+        Map<String, ProfileBudgetRec> map = new LinkedHashMap<>();
         if (profile == null) {
-            profile = com.financeapp.model.FinancialProfileType.BALANCED_50_30_20;
+            profile = FinancialProfileType.BALANCED_50_30_20;
         }
 
         switch (profile) {
@@ -221,9 +223,9 @@ public class BudgetService {
         applyFinancialProfileBudgets(user, user.getFinancialProfile());
     }
 
-    public void applyFinancialProfileBudgets(User user, com.financeapp.model.FinancialProfileType profile) {
+    public void applyFinancialProfileBudgets(User user, FinancialProfileType profile) {
         if (profile == null) {
-            profile = com.financeapp.model.FinancialProfileType.BALANCED_50_30_20;
+            profile = FinancialProfileType.BALANCED_50_30_20;
         }
 
         Map<String, ProfileBudgetRec> recs = getRecommendationsForProfile(profile);
@@ -233,7 +235,6 @@ public class BudgetService {
             String catName = entry.getKey();
             ProfileBudgetRec rec = entry.getValue();
 
-            // Find matching category (prefer top-level macro category)
             expenseCategories.stream()
                     .filter(c -> c.getParent() == null && c.getName().equalsIgnoreCase(catName))
                     .findFirst()
@@ -252,22 +253,6 @@ public class BudgetService {
         }
     }
 
-    public List<BudgetDto> getBudgets(User user) {
-        if (budgetRepository.findByUserId(user.getId()).size() < 5) {
-            seedDefaultBudgets(user);
-        }
-        return budgetRepository.findByUserId(user.getId())
-                .stream()
-                .filter(b -> b.getCategory() != null)
-                .map(budgetMapper::toDto)
-                .collect(Collectors.toList());
-    }
-
-    public BudgetDto getBudgetById(User user, Long id) {
-        Budget budget = getBudgetAndVerifyOwner(id, user);
-        return budgetMapper.toDto(budget);
-    }
-
     public BudgetDto createBudget(User user, BudgetDto budgetDto) {
         Category category = categoryService.getCategoryAndVerifyOwner(budgetDto.getCategoryId(), user);
 
@@ -275,10 +260,8 @@ public class BudgetService {
             throw new IllegalArgumentException("Budgets can only be set for EXPENSE categories");
         }
 
-        if (budgetRepository.findByUserIdAndCategoryId(
-                user.getId(), category.getId()).isPresent()) {
-            throw new IllegalArgumentException(
-                    "A budget already exists for this category");
+        if (budgetRepository.findByUserIdAndCategoryId(user.getId(), category.getId()).isPresent()) {
+            throw new IllegalArgumentException("A budget already exists for this category");
         }
 
         Budget budget = budgetMapper.toEntity(budgetDto);
@@ -292,12 +275,7 @@ public class BudgetService {
     public BudgetDto updateBudget(User user, Long id, BudgetUpdateDto budgetDto) {
         Budget budget = getBudgetAndVerifyOwner(id, user);
 
-        if (budgetDto.getType() == BudgetUpdateDto.UpdateType.PERMANENT) {
-            budget.setLimitAmount(budgetDto.getLimitAmount());
-            budget.setPercentageOfIncome(budgetDto.getPercentageOfIncome());
-            budget.setAutomatic(budgetDto.isAutomatic());
-            budgetRepository.save(budget);
-        } else if (budgetDto.getType() == BudgetUpdateDto.UpdateType.TEMPORARY) {
+        if (budgetDto.getType() == BudgetUpdateDto.UpdateType.TEMPORARY) {
             if (budgetDto.getMonth() == null || budgetDto.getYear() == null) {
                 throw new IllegalArgumentException("Month and year are required for temporary budget overrides");
             }
@@ -318,7 +296,6 @@ public class BudgetService {
                 budgetOverrideRepository.save(override);
             }
         } else {
-            // Default fallback if type is not provided, act as permanent update
             budget.setLimitAmount(budgetDto.getLimitAmount());
             budget.setPercentageOfIncome(budgetDto.getPercentageOfIncome());
             budget.setAutomatic(budgetDto.isAutomatic());

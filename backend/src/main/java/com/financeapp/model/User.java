@@ -44,21 +44,6 @@ public class User implements UserDetails {
     @Column(nullable = false)
     private Role role;
 
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Category> categories;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Transaction> transactions;
-
-    @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Budget> budgets;
-
-    @Column(name = "failed_login_attempts")
-    private Integer failedLoginAttempts;
-
-    @Column(name = "account_locked_until")
-    private java.time.LocalDateTime accountLockedUntil;
-
     @Column(name = "gemini_api_key", length = 500)
     private String geminiApiKey;
 
@@ -82,10 +67,7 @@ public class User implements UserDetails {
 
     @Override
     public boolean isAccountNonLocked() {
-        if (accountLockedUntil == null) {
-            return true;
-        }
-        return accountLockedUntil.isBefore(java.time.LocalDateTime.now());
+        return true;
     }
 
     @Override

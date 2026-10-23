@@ -2,7 +2,6 @@ package com.financeapp.controller;
 
 import com.financeapp.dto.AdvancedAnalyticsDto;
 import com.financeapp.dto.AiFinancialInsightsDto;
-import com.financeapp.dto.CashFlowDto;
 import com.financeapp.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -15,18 +14,6 @@ import org.springframework.web.bind.annotation.*;
 public class AnalyticsController extends BaseController {
 
     private final AnalyticsService analyticsService;
-
-    @GetMapping("/cash-flow")
-    public ResponseEntity<CashFlowDto> getCashFlow(
-            Authentication authentication,
-            @RequestParam(required = false) Integer month,
-            @RequestParam int year) {
-
-        if (month != null) {
-            return ResponseEntity.ok(analyticsService.getMonthlyCashFlow(getCurrentUser(authentication), year, month));
-        }
-        return ResponseEntity.ok(analyticsService.getYearlyCashFlow(getCurrentUser(authentication), year));
-    }
 
     @GetMapping("/advanced")
     public ResponseEntity<AdvancedAnalyticsDto> getAdvancedAnalytics(

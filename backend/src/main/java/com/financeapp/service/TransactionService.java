@@ -37,6 +37,13 @@ public class TransactionService {
                 .toList();
     }
 
+    public List<TransactionDto> getRecentTransactions(User user) {
+        return transactionRepository.findTop5ByUserIdOrderByDateDescIdDesc(user.getId())
+                .stream()
+                .map(transactionMapper::toDto)
+                .toList();
+    }
+
     public List<AccountMovementDto> getMovements(User user, Long accountId) {
         if (accountId != null) accountService.getAccountAndVerifyOwner(accountId, user);
 
@@ -53,11 +60,6 @@ public class TransactionService {
                 )
                 .sorted(Comparator.comparing(AccountMovementDto::getDate).reversed().thenComparing(Comparator.comparing(AccountMovementDto::getId).reversed()))
                 .toList();
-    }
-
-    public TransactionDto getTransactionById(User user, Long id) {
-        Transaction transaction = getTransactionAndVerifyOwner(id, user);
-        return transactionMapper.toDto(transaction);
     }
 
     public TransactionDto createTransaction(User user, TransactionDto transactionDto) {

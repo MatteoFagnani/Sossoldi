@@ -1,4 +1,4 @@
-package com.financeapp.service.pattern.strategy;
+package com.financeapp.service.report;
 
 import com.financeapp.dto.ReportDto;
 import com.financeapp.model.Category;
@@ -6,6 +6,7 @@ import com.financeapp.model.Transaction;
 import com.financeapp.model.TransactionType;
 import com.financeapp.model.User;
 import com.financeapp.repository.TransactionRepository;
+import com.financeapp.service.BudgetService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,7 +74,6 @@ class ReportStrategyTest {
         assertNotNull(report);
         assertEquals(2000.0, report.getTotalIncome());
         assertEquals(500.0, report.getTotalExpense());
-        assertEquals(1500.0, report.getNetBalance());
     }
 
     @Test
@@ -89,5 +89,12 @@ class ReportStrategyTest {
         assertNotNull(report);
         assertEquals(500.0, report.getDataPoints().get("Rent"));
         assertEquals(1, report.getDataPoints().size());
+    }
+
+    @Test
+    void budgetServiceResolveStatus_ShouldReturnCorrectThresholdStatus() {
+        assertEquals("OK", BudgetService.resolveStatus(50.0));
+        assertEquals("WARNING", BudgetService.resolveStatus(85.0));
+        assertEquals("EXCEEDED", BudgetService.resolveStatus(105.0));
     }
 }

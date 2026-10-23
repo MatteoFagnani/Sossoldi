@@ -1,11 +1,9 @@
 package com.financeapp.exception;
 
-import com.financeapp.security.AuthErrorMessages;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -31,18 +29,11 @@ public class GlobalExceptionHandler {
         return ResponseEntity.badRequest().body(errors);
     }
 
-    @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, String>> handleIllegalArgumentException(IllegalArgumentException ex) {
+    @ExceptionHandler({IllegalArgumentException.class, IllegalStateException.class})
+    public ResponseEntity<Map<String, String>> handleBadRequestExceptions(RuntimeException ex) {
         Map<String, String> error = new HashMap<>();
         error.put("error", ex.getMessage());
         return ResponseEntity.badRequest().body(error);
-    }
-
-    @ExceptionHandler(BadCredentialsException.class)
-    public ResponseEntity<Map<String, String>> handleBadCredentialsException(BadCredentialsException ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", AuthErrorMessages.GENERIC_AUTH_ERROR);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
@@ -79,16 +70,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleGenericException(Exception ex) {
         Map<String, String> error = new HashMap<>();
         error.put("error", "Si è verificato un errore inaspettato sul server. Riprova più tardi.");
-        // Log the actual exception for developers
         log.error("Errore generico non gestito: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
-    }
-
-    @ExceptionHandler(org.springframework.security.authentication.LockedException.class)
-    public ResponseEntity<Map<String, String>> handleLockedException(
-            org.springframework.security.authentication.LockedException ex) {
-        Map<String, String> error = new HashMap<>();
-        error.put("error", AuthErrorMessages.GENERIC_AUTH_ERROR);
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
     }
 }

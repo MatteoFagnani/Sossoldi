@@ -23,13 +23,13 @@ public class Budget {
     @JoinColumn(name = "category_id", nullable = false)
     private Category category;
 
-
     @Column(nullable = true)
     private Double limitAmount;
 
     @Column(name = "percentage_of_income")
     private Double percentageOfIncome;
 
+    @Builder.Default
     @Column(nullable = false)
     private boolean automatic = false;
 

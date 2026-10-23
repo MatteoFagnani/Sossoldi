@@ -2,23 +2,47 @@ package com.financeapp.mapper;
 
 import com.financeapp.dto.TransactionDto;
 import com.financeapp.model.Transaction;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
+import org.springframework.stereotype.Component;
 
-@Mapper(componentModel = "spring")
-public interface TransactionMapper {
-    @Mapping(source = "category.id", target = "categoryId")
-    @Mapping(source = "category.name", target = "categoryName")
-    @Mapping(source = "category.color", target = "categoryColor")
-    @Mapping(source = "account.id", target = "accountId")
-    @Mapping(source = "account.name", target = "accountName")
-    @Mapping(source = "investment.id", target = "investmentId")
-    @Mapping(source = "investment.name", target = "investmentName")
-    TransactionDto toDto(Transaction transaction);
+@Component
+public class TransactionMapper {
 
-    @Mapping(target = "category", ignore = true)
-    @Mapping(target = "user", ignore = true)
-    @Mapping(target = "account", ignore = true)
-    @Mapping(target = "investment", ignore = true)
-    Transaction toEntity(TransactionDto dto);
+    public TransactionDto toDto(Transaction transaction) {
+        if (transaction == null) {
+            return null;
+        }
+        TransactionDto dto = new TransactionDto();
+        dto.setId(transaction.getId());
+        dto.setAmount(transaction.getAmount());
+        dto.setType(transaction.getType());
+        dto.setDate(transaction.getDate());
+        dto.setDescription(transaction.getDescription());
+        if (transaction.getCategory() != null) {
+            dto.setCategoryId(transaction.getCategory().getId());
+            dto.setCategoryName(transaction.getCategory().getName());
+            dto.setCategoryColor(transaction.getCategory().getColor());
+        }
+        if (transaction.getAccount() != null) {
+            dto.setAccountId(transaction.getAccount().getId());
+            dto.setAccountName(transaction.getAccount().getName());
+        }
+        if (transaction.getInvestment() != null) {
+            dto.setInvestmentId(transaction.getInvestment().getId());
+            dto.setInvestmentName(transaction.getInvestment().getName());
+        }
+        return dto;
+    }
+
+    public Transaction toEntity(TransactionDto dto) {
+        if (dto == null) {
+            return null;
+        }
+        Transaction transaction = new Transaction();
+        transaction.setId(dto.getId());
+        transaction.setAmount(dto.getAmount());
+        transaction.setType(dto.getType());
+        transaction.setDate(dto.getDate());
+        transaction.setDescription(dto.getDescription());
+        return transaction;
+    }
 }

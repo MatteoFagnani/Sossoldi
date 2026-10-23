@@ -62,6 +62,14 @@ public class User implements UserDetails {
     @Column(name = "gemini_api_key", length = 500)
     private String geminiApiKey;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "financial_profile")
+    private FinancialProfileType financialProfile;
+
+    public FinancialProfileType getFinancialProfile() {
+        return financialProfile != null ? financialProfile : FinancialProfileType.BALANCED_50_30_20;
+    }
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return List.of(new SimpleGrantedAuthority("ROLE_" + role.name()));

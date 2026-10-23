@@ -1,6 +1,8 @@
 package com.financeapp.controller;
 
 import com.financeapp.dto.BudgetDto;
+import com.financeapp.dto.BudgetStatusDto;
+import com.financeapp.dto.BudgetUpdateDto;
 import com.financeapp.service.BudgetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -9,7 +11,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
-import com.financeapp.dto.BudgetStatusDto;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -51,7 +52,7 @@ public class BudgetController extends BaseController {
     public ResponseEntity<BudgetDto> updateBudget(
             Authentication authentication,
             @PathVariable Long id,
-            @Valid @RequestBody com.financeapp.dto.BudgetUpdateDto budgetDto) {
+            @Valid @RequestBody BudgetUpdateDto budgetDto) {
         return ResponseEntity.ok(budgetService.updateBudget(getCurrentUser(authentication), id, budgetDto));
     }
 
@@ -61,5 +62,19 @@ public class BudgetController extends BaseController {
             @PathVariable Long id) {
         budgetService.deleteBudget(getCurrentUser(authentication), id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/sync-profile")
+    public ResponseEntity<List<BudgetStatusDto>> syncBudgetsWithProfile(
+            Authentication authentication,
+            @RequestParam(required = false) Integer month,
+            @RequestParam(required = false) Integer year) {
+
+        int rMonth = month != null ? month : LocalDate.now().getMonthValue();
+        int rYear = year != null ? year : LocalDate.now().getYear();
+
+        var user = getCurrentUser(authentication);
+        budgetService.applyFinancialProfileBudgets(user, user.getFinancialProfile());
+        return ResponseEntity.ok(budgetService.getBudgetStatusesByMonthAndYear(user, rMonth, rYear));
     }
 }

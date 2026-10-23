@@ -1,3 +1,11 @@
+export type FinancialProfileType =
+    | 'STUDENT'
+    | 'BALANCED_50_30_20'
+    | 'FREELANCER'
+    | 'FIRE_SEEKER'
+    | 'FAMILY'
+    | 'DEBT_REPAYMENT';
+
 export interface User {
     id: number;
     username: string;
@@ -6,6 +14,7 @@ export interface User {
     lastName?: string;
     avatarUrl?: string;
     role: 'USER' | 'ADMIN';
+    financialProfile?: FinancialProfileType;
     geminiApiKey?: string;
     geminiConfigured?: boolean;
 }
@@ -216,6 +225,87 @@ export interface CashFlowData {
     incomeSources: CategoryFlowItem[];
     expenseDestinations: CategoryFlowItem[];
     monthlyTrend: MonthlyPoint[];
+}
+
+export interface CategoryMoMChange {
+    categoryId: number;
+    categoryName: string;
+    categoryColor: string;
+    currentAmount: number;
+    prevAmount: number;
+    deltaAmount: number;
+    deltaPercent: number | null;
+    increase: boolean;
+}
+
+export interface AdvancedAnalyticsData extends CashFlowData {
+    year: number;
+    month?: number | null;
+    periodLabel: string;
+
+    // Previous period comparison
+    prevTotalIncome: number;
+    prevTotalExpense: number;
+    prevNetFlow: number;
+    prevSavingsRate: number;
+    incomeChangePct?: number | null;
+    expenseChangePct?: number | null;
+    netFlowChangePct?: number | null;
+    categoryChanges: CategoryMoMChange[];
+
+    // Financial Profile Strategy
+    financialProfile?: FinancialProfileType;
+    financialProfileName?: string;
+    financialProfileDescription?: string;
+    targetNeedsPercent: number;
+    targetWantsPercent: number;
+    targetSavingsPercent: number;
+    idealRunwayMonthsMin: number;
+    idealRunwayMonthsMax: number;
+
+    // Budget Allocation
+    needsAmount: number;
+    needsPercent: number;
+    wantsAmount: number;
+    wantsPercent: number;
+    savingsInvestAmount: number;
+    savingsInvestPercent: number;
+    ruleHealthStatus: 'BALANCED' | 'NEEDS_HIGH' | 'WANTS_HIGH' | 'SAVINGS_LOW';
+
+    // Fixed vs Variable
+    fixedExpensesAmount: number;
+    fixedExpensesPercent: number;
+    variableExpensesAmount: number;
+    variableExpensesPercent: number;
+
+    // Liquidity & Safety
+    liquidCapital: number;
+    averageMonthlyExpense: number;
+    emergencyRunwayMonths: number;
+    dailyBurnRate: number;
+
+    // Investments & PAC
+    pacInvestedAmount: number;
+    pacInvestedPercentOfIncome: number;
+    totalInvestedPortfolioValue: number;
+}
+
+export interface ActionableTip {
+    title: string;
+    category: string;
+    advice: string;
+    priority: 'HIGH' | 'MEDIUM' | 'LOW';
+    potentialImpact: string;
+}
+
+export interface AiFinancialInsights {
+    overallHealth: 'OTTIMA' | 'BUONA' | 'STABILE' | 'ATTENZIONE' | 'CRITICA';
+    summary: string;
+    rule50_30_20Analysis: string;
+    emergencyFundAnalysis: string;
+    keyStrengths: string[];
+    actionableTips: ActionableTip[];
+    disclaimer: string;
 }
 
 export interface DashboardOverview {

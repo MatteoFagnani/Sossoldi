@@ -93,10 +93,22 @@ public class BudgetService {
                 if (override.getAmount() != null) {
                     effectiveLimit = override.getAmount();
                 } else if (override.getPercentageOfIncome() != null) {
-                    effectiveLimit = totalIncome * (override.getPercentageOfIncome() / 100.0);
+                    if (totalIncome > 0) {
+                        effectiveLimit = totalIncome * (override.getPercentageOfIncome() / 100.0);
+                    } else {
+                        effectiveLimit = budget.getLimitAmount() != null ? budget.getLimitAmount() : 0.0;
+                    }
                 }
             } else if (budget.getPercentageOfIncome() != null) {
-                effectiveLimit = totalIncome * (budget.getPercentageOfIncome() / 100.0);
+                if (totalIncome > 0) {
+                    effectiveLimit = totalIncome * (budget.getPercentageOfIncome() / 100.0);
+                } else {
+                    effectiveLimit = budget.getLimitAmount() != null ? budget.getLimitAmount() : 0.0;
+                }
+            }
+
+            if (effectiveLimit == null) {
+                effectiveLimit = 0.0;
             }
 
             final Double limit = effectiveLimit; // effectiveLimit is effectively final for lambda
@@ -131,29 +143,113 @@ public class BudgetService {
         }).collect(Collectors.toList());
     }
 
-    public void seedDefaultBudgets(User user) {
-        seedBudget(user, "Casa & Utenze", 25);
-        seedBudget(user, "Spesa Alimentare", 15);
-        seedBudget(user, "Trasporti", 7);
-        seedBudget(user, "Salute & Benessere", 3);
-        seedBudget(user, "Shopping & Personale", 10);
-        seedBudget(user, "Svago & Uscite", 15);
-        seedBudget(user, "Abbonamenti & Servizi", 5);
-        seedBudget(user, "Viaggi & Vacanze", 5);
-        seedBudget(user, "Investimenti & Risparmio", 15);
+    public record ProfileBudgetRec(double percentageOfIncome, double baselineAmount) {}
+
+    public static Map<String, ProfileBudgetRec> getRecommendationsForProfile(com.financeapp.model.FinancialProfileType profile) {
+        Map<String, ProfileBudgetRec> map = new java.util.LinkedHashMap<>();
+        if (profile == null) {
+            profile = com.financeapp.model.FinancialProfileType.BALANCED_50_30_20;
+        }
+
+        switch (profile) {
+            case STUDENT -> {
+                map.put("Casa & Utenze", new ProfileBudgetRec(35.0, 350.0));
+                map.put("Spesa Alimentare", new ProfileBudgetRec(20.0, 200.0));
+                map.put("Trasporti", new ProfileBudgetRec(10.0, 60.0));
+                map.put("Salute & Benessere", new ProfileBudgetRec(5.0, 40.0));
+                map.put("Svago & Uscite", new ProfileBudgetRec(8.0, 80.0));
+                map.put("Shopping & Personale", new ProfileBudgetRec(4.0, 40.0));
+                map.put("Abbonamenti & Servizi", new ProfileBudgetRec(3.0, 20.0));
+                map.put("Investimenti & Risparmio", new ProfileBudgetRec(15.0, 50.0));
+            }
+            case BALANCED_50_30_20 -> {
+                map.put("Casa & Utenze", new ProfileBudgetRec(25.0, 500.0));
+                map.put("Spesa Alimentare", new ProfileBudgetRec(15.0, 300.0));
+                map.put("Trasporti", new ProfileBudgetRec(7.0, 150.0));
+                map.put("Salute & Benessere", new ProfileBudgetRec(3.0, 60.0));
+                map.put("Svago & Uscite", new ProfileBudgetRec(14.0, 250.0));
+                map.put("Shopping & Personale", new ProfileBudgetRec(8.0, 150.0));
+                map.put("Abbonamenti & Servizi", new ProfileBudgetRec(4.0, 50.0));
+                map.put("Viaggi & Vacanze", new ProfileBudgetRec(4.0, 100.0));
+                map.put("Investimenti & Risparmio", new ProfileBudgetRec(20.0, 400.0));
+            }
+            case FREELANCER -> {
+                map.put("Casa & Utenze", new ProfileBudgetRec(30.0, 600.0));
+                map.put("Spesa Alimentare", new ProfileBudgetRec(18.0, 350.0));
+                map.put("Trasporti", new ProfileBudgetRec(8.0, 160.0));
+                map.put("Salute & Benessere", new ProfileBudgetRec(4.0, 80.0));
+                map.put("Svago & Uscite", new ProfileBudgetRec(10.0, 200.0));
+                map.put("Shopping & Personale", new ProfileBudgetRec(5.0, 100.0));
+                map.put("Abbonamenti & Servizi", new ProfileBudgetRec(5.0, 100.0));
+                map.put("Investimenti & Risparmio", new ProfileBudgetRec(20.0, 450.0));
+            }
+            case FIRE_SEEKER -> {
+                map.put("Casa & Utenze", new ProfileBudgetRec(18.0, 400.0));
+                map.put("Spesa Alimentare", new ProfileBudgetRec(10.0, 200.0));
+                map.put("Trasporti", new ProfileBudgetRec(5.0, 100.0));
+                map.put("Salute & Benessere", new ProfileBudgetRec(2.0, 50.0));
+                map.put("Svago & Uscite", new ProfileBudgetRec(8.0, 150.0));
+                map.put("Shopping & Personale", new ProfileBudgetRec(4.0, 80.0));
+                map.put("Abbonamenti & Servizi", new ProfileBudgetRec(3.0, 40.0));
+                map.put("Investimenti & Risparmio", new ProfileBudgetRec(50.0, 1200.0));
+            }
+            case FAMILY -> {
+                map.put("Casa & Utenze", new ProfileBudgetRec(32.0, 800.0));
+                map.put("Spesa Alimentare", new ProfileBudgetRec(20.0, 500.0));
+                map.put("Trasporti", new ProfileBudgetRec(8.0, 200.0));
+                map.put("Salute & Benessere", new ProfileBudgetRec(5.0, 120.0));
+                map.put("Svago & Uscite", new ProfileBudgetRec(7.0, 150.0));
+                map.put("Shopping & Personale", new ProfileBudgetRec(5.0, 120.0));
+                map.put("Abbonamenti & Servizi", new ProfileBudgetRec(3.0, 50.0));
+                map.put("Investimenti & Risparmio", new ProfileBudgetRec(20.0, 400.0));
+            }
+            case DEBT_REPAYMENT -> {
+                map.put("Casa & Utenze", new ProfileBudgetRec(35.0, 500.0));
+                map.put("Spesa Alimentare", new ProfileBudgetRec(20.0, 300.0));
+                map.put("Trasporti", new ProfileBudgetRec(10.0, 150.0));
+                map.put("Salute & Benessere", new ProfileBudgetRec(5.0, 70.0));
+                map.put("Svago & Uscite", new ProfileBudgetRec(5.0, 80.0));
+                map.put("Shopping & Personale", new ProfileBudgetRec(3.0, 50.0));
+                map.put("Abbonamenti & Servizi", new ProfileBudgetRec(2.0, 30.0));
+                map.put("Investimenti & Risparmio", new ProfileBudgetRec(20.0, 300.0));
+            }
+        }
+        return map;
     }
 
-    private void seedBudget(User user, String categoryName, double percentageOfIncome) {
-        categoryRepository.findByUserIdAndType(user.getId(), TransactionType.EXPENSE).stream()
-                .filter(category -> category.getParent() == null && category.getName().equalsIgnoreCase(categoryName))
-                .findFirst()
-                .ifPresent(category -> budgetRepository.findByUserIdAndCategoryId(user.getId(), category.getId())
-                        .orElseGet(() -> budgetRepository.save(Budget.builder()
-                                .user(user)
-                                .category(category)
-                                .percentageOfIncome(percentageOfIncome)
-                                .automatic(true)
-                                .build())));
+    public void seedDefaultBudgets(User user) {
+        applyFinancialProfileBudgets(user, user.getFinancialProfile());
+    }
+
+    public void applyFinancialProfileBudgets(User user, com.financeapp.model.FinancialProfileType profile) {
+        if (profile == null) {
+            profile = com.financeapp.model.FinancialProfileType.BALANCED_50_30_20;
+        }
+
+        Map<String, ProfileBudgetRec> recs = getRecommendationsForProfile(profile);
+        List<Category> expenseCategories = categoryRepository.findByUserIdAndType(user.getId(), TransactionType.EXPENSE);
+
+        for (Map.Entry<String, ProfileBudgetRec> entry : recs.entrySet()) {
+            String catName = entry.getKey();
+            ProfileBudgetRec rec = entry.getValue();
+
+            // Find matching category (prefer top-level macro category)
+            expenseCategories.stream()
+                    .filter(c -> c.getParent() == null && c.getName().equalsIgnoreCase(catName))
+                    .findFirst()
+                    .ifPresent(category -> {
+                        Budget budget = budgetRepository.findByUserIdAndCategoryId(user.getId(), category.getId())
+                                .orElse(Budget.builder()
+                                        .user(user)
+                                        .category(category)
+                                        .build());
+
+                        budget.setPercentageOfIncome(rec.percentageOfIncome());
+                        budget.setLimitAmount(rec.baselineAmount());
+                        budget.setAutomatic(true);
+                        budgetRepository.save(budget);
+                    });
+        }
     }
 
     public List<BudgetDto> getBudgets(User user) {

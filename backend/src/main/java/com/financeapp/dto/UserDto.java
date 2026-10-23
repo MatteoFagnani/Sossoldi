@@ -1,5 +1,6 @@
 package com.financeapp.dto;
 
+import com.financeapp.model.FinancialProfileType;
 import com.financeapp.model.Role;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -18,6 +19,7 @@ public class UserDto {
     private String avatarUrl;
     private String email;
     private Role role;
+    private FinancialProfileType financialProfile;
     private String geminiApiKey;
     private Boolean geminiConfigured;
 }

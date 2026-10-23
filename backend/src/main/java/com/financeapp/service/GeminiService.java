@@ -3,6 +3,8 @@ package com.financeapp.service;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.financeapp.dto.AdvancedAnalyticsDto;
+import com.financeapp.dto.AiFinancialInsightsDto;
 import com.financeapp.dto.AiStatusDto;
 import com.financeapp.dto.CategorizeMerchantRequest;
 import com.financeapp.model.Category;
@@ -181,6 +183,126 @@ public class GeminiService {
         } catch (Exception e) {
             log.error("Failed to categorize merchants via Gemini: {}", e.getMessage(), e);
             throw new RuntimeException("Errore durante la categorizzazione AI con Gemini: " + mapFriendlyErrorMessage(e.getMessage()), e);
+        }
+    }
+
+    public AiFinancialInsightsDto generateFinancialAdvice(User user, AdvancedAnalyticsDto analytics) {
+        String apiKey = getActiveApiKey(user);
+        if (apiKey == null || apiKey.trim().isEmpty()) {
+            throw new IllegalStateException("Chiave API Gemini non configurata. Inserisci la tua API key nel Profilo o nel file .env.");
+        }
+
+        // STRICT PRIVACY PROTECTION: Build anonymized profile with ONLY ratios and percentages!
+        Map<String, Object> anonymizedProfile = new LinkedHashMap<>();
+        anonymizedProfile.put("periodo", analytics.getPeriodLabel() != null ? analytics.getPeriodLabel() : "Periodo di riferimento");
+
+        Map<String, Object> profiloUtente = new LinkedHashMap<>();
+        profiloUtente.put("profiloFinanziario", analytics.getFinancialProfileName() != null ? analytics.getFinancialProfileName() : "Lavoratore Standard");
+        profiloUtente.put("descrizioneProfilo", analytics.getFinancialProfileDescription());
+        profiloUtente.put("targetNecessitaPercentuale", analytics.getTargetNeedsPercent());
+        profiloUtente.put("targetDesideriPercentuale", analytics.getTargetWantsPercent());
+        profiloUtente.put("targetRisparmioInvestimentiPercentuale", analytics.getTargetSavingsPercent());
+        profiloUtente.put("fondoEmergenzaMesiMinimo", analytics.getIdealRunwayMonthsMin());
+        profiloUtente.put("fondoEmergenzaMesiMassimo", analytics.getIdealRunwayMonthsMax());
+        anonymizedProfile.put("impostazioniStrategiaProfilo", profiloUtente);
+
+        anonymizedProfile.put("tassoDiRisparmioPercentuale", Math.round(analytics.getSavingsRate() * 10.0) / 10.0);
+
+        Map<String, Object> rule503020 = new LinkedHashMap<>();
+        rule503020.put("speseNecessitaPercentualeEffettiva", Math.round(analytics.getNeedsPercent() * 10.0) / 10.0);
+        rule503020.put("speseNecessitaTargetIdealeProfilo", analytics.getTargetNeedsPercent());
+        rule503020.put("speseDesideriSvagoPercentualeEffettiva", Math.round(analytics.getWantsPercent() * 10.0) / 10.0);
+        rule503020.put("speseDesideriSvagoTargetIdealeProfilo", analytics.getTargetWantsPercent());
+        rule503020.put("risparmioInvestimentiPercentualeEffettiva", Math.round(analytics.getSavingsInvestPercent() * 10.0) / 10.0);
+        rule503020.put("risparmioInvestimentiTargetIdealeProfilo", analytics.getTargetSavingsPercent());
+        anonymizedProfile.put("ripartizioneSpeseVsTargetProfilo", rule503020);
+
+        Map<String, Object> rigiditaSpese = new LinkedHashMap<>();
+        rigiditaSpese.put("speseFisseRicorrentiPercentuale", Math.round(analytics.getFixedExpensesPercent() * 10.0) / 10.0);
+        rigiditaSpese.put("speseVariabiliVoluttuariePercentuale", Math.round(analytics.getVariableExpensesPercent() * 10.0) / 10.0);
+        anonymizedProfile.put("strutturaSpese", rigiditaSpese);
+
+        anonymizedProfile.put("coperturaFondoEmergenzaMesi", Math.round(analytics.getEmergencyRunwayMonths() * 10.0) / 10.0);
+        anonymizedProfile.put("quotaRedditoInPacInvestimentiPercentuale", Math.round(analytics.getPacInvestedPercentOfIncome() * 10.0) / 10.0);
+
+        if (analytics.getIncomeChangePct() != null) {
+            anonymizedProfile.put("variazioneEntrateMoMPercentuale", Math.round(analytics.getIncomeChangePct() * 10.0) / 10.0);
+        }
+        if (analytics.getExpenseChangePct() != null) {
+            anonymizedProfile.put("variazioneUsciteMoMPercentuale", Math.round(analytics.getExpenseChangePct() * 10.0) / 10.0);
+        }
+
+        // Top categories weights (only category name and % weight)
+        List<Map<String, Object>> topWeights = new ArrayList<>();
+        if (analytics.getExpenseDestinations() != null) {
+            for (var c : analytics.getExpenseDestinations().stream().limit(6).toList()) {
+                Map<String, Object> cw = new LinkedHashMap<>();
+                cw.put("categoria", c.getCategoryName());
+                cw.put("pesoSuUsciteTotaliPercentuale", Math.round(c.getPercentage() * 10.0) / 10.0);
+                topWeights.add(cw);
+            }
+        }
+        anonymizedProfile.put("categorieSpesaPrincipaliPesi", topWeights);
+
+        // Significant variations MoM (+/- 15%)
+        List<Map<String, Object>> changes = new ArrayList<>();
+        if (analytics.getCategoryChanges() != null) {
+            for (var ch : analytics.getCategoryChanges()) {
+                if (ch.getDeltaPercent() != null && Math.abs(ch.getDeltaPercent()) >= 15.0) {
+                    Map<String, Object> cm = new LinkedHashMap<>();
+                    cm.put("categoria", ch.getCategoryName());
+                    cm.put("variazionePercentuale", Math.round(ch.getDeltaPercent() * 10.0) / 10.0);
+                    cm.put("direzione", ch.isIncrease() ? "AUMENTO" : "DIMINUZIONE");
+                    changes.add(cm);
+                }
+            }
+        }
+        anonymizedProfile.put("anomalieEVariazioniSignificative", changes);
+
+        try {
+            String profileJson = objectMapper.writerWithDefaultPrettyPrinter().writeValueAsString(anonymizedProfile);
+
+            String prompt = "Sei un consulente ed educatore finanziario personale indipendente.\n"
+                    + "Ti viene fornito un profilo finanziario rigorosamente anonimizzato basato ESCLUSIVAMENTE su proporzioni, percentuali, rapporti e variazioni relative. Per motivi di privacy dell'utente, NON è presente alcuna cifra monetaria assoluta in euro.\n\n"
+                    + "PROFILO FINANZIARIO ANALIZZATO (PERCENTUALI E PROPORZIONI):\n"
+                    + profileJson + "\n\n"
+                    + "Il tuo compito è fornire una consulenza di finanza personale di alto livello, strategica, motivante e pratica in lingua italiana.\n"
+                    + "IMPORTANTE: Adatta SEMPRE i tuoi consigli al Profilo Finanziario impostato dall'utente (es. se Studente, tieni conto che non ha entrate stabili e focalizzati sul controllo dei costi, micro-risparmio e burn rate senza forzare investimenti azionari; se Freelance, focalizzati sulla variabilità del reddito, accantonamento tasse e fondo emergenza di 6-12 mesi; se FIRE, focalizzati su massimizzazione del savings rate e PAC).\n"
+                    + "Valuta con obiettività l'equilibrio delle spese rispetto ai target del profilo, l'adeguatezza del fondo emergenza, l'impegno verso investimenti e PAC, e offri spunti concreti di ottimizzazione.\n\n"
+                    + "Rispondi ESCLUSIVAMENTE con un oggetto JSON valido strutturato così:\n"
+                    + "{\n"
+                    + "  \"overallHealth\": \"OTTIMA | BUONA | STABILE | ATTENZIONE | CRITICA\",\n"
+                    + "  \"summary\": \"2 o 3 frasi concise che riassumono lo stato di salute finanziaria del periodo in relazione al profilo dell'utente.\",\n"
+                    + "  \"rule50_30_20Analysis\": \"Analisi della ripartizione tra Bisogni primari, Desideri e Svago e Risparmio/Investimenti rispetto ai target raccomandati per il suo profilo.\",\n"
+                    + "  \"emergencyFundAnalysis\": \"Valutazione della capienza del fondo di emergenza espresso in mesi di autonomia rispetto al fabbisogno del suo profilo.\",\n"
+                    + "  \"keyStrengths\": [\n"
+                    + "    \"Punto di forza 1\",\n"
+                    + "    \"Punto di forza 2\"\n"
+                    + "  ],\n"
+                    + "  \"actionableTips\": [\n"
+                    + "    {\n"
+                    + "      \"title\": \"Titolo del consiglio\",\n"
+                    + "      \"category\": \"Nome categoria o Area finanziaria\",\n"
+                    + "      \"advice\": \"Consiglio pratico, chiaro e attuabile per migliorare o ottimizzare.\",\n"
+                    + "      \"priority\": \"HIGH | MEDIUM | LOW\",\n"
+                    + "      \"potentialImpact\": \"Impatto stimato in termini percentuali o qualitativi (es. +4% sul tasso di risparmio)\"\n"
+                    + "    }\n"
+                    + "  ],\n"
+                    + "  \"disclaimer\": \"Analisi generata nel pieno rispetto della tua privacy: nessun importo o cifra monetaria in euro è mai stata condivisa con l'intelligenza artificiale.\"\n"
+                    + "}";
+
+            String response = executeGeminiCall(apiKey, defaultModel, prompt, true);
+            JsonNode root = objectMapper.readTree(response);
+            String candidateText = extractCandidateText(root);
+
+            AiFinancialInsightsDto insights = objectMapper.readValue(candidateText, AiFinancialInsightsDto.class);
+            if (insights.getDisclaimer() == null || insights.getDisclaimer().isBlank()) {
+                insights.setDisclaimer("Analisi generata nel pieno rispetto della tua privacy: nessun importo o cifra monetaria in euro è mai stata condivisa con l'intelligenza artificiale.");
+            }
+            return insights;
+        } catch (Exception e) {
+            log.error("Failed to generate financial advice via Gemini: {}", e.getMessage(), e);
+            throw new RuntimeException("Errore durante la generazione dei consigli finanziari AI: " + mapFriendlyErrorMessage(e.getMessage()), e);
         }
     }
 

@@ -9,6 +9,8 @@ import type {
     Category,
     CategoryPayload,
     CashFlowData,
+    AdvancedAnalyticsData,
+    AiFinancialInsights,
     Investment,
     InvestmentPayload,
     Transaction,
@@ -40,6 +42,16 @@ export const analyticsService = {
         const params = new URLSearchParams({ year: String(year) });
         if (month !== undefined) params.append('month', String(month));
         return (await api.get(`/analytics/cash-flow?${params.toString()}`)).data;
+    },
+    async getAdvanced(year: number, month?: number): Promise<AdvancedAnalyticsData> {
+        const params = new URLSearchParams({ year: String(year) });
+        if (month !== undefined) params.append('month', String(month));
+        return (await api.get(`/analytics/advanced?${params.toString()}`)).data;
+    },
+    async getAiInsights(year: number, month?: number): Promise<AiFinancialInsights> {
+        const params = new URLSearchParams({ year: String(year) });
+        if (month !== undefined) params.append('month', String(month));
+        return (await api.post(`/analytics/ai-insights?${params.toString()}`)).data;
     },
 };
 
@@ -106,6 +118,12 @@ export const budgetService = {
     async create(data: BudgetPayload): Promise<Budget> { return (await api.post('/budgets', data)).data; },
     async update(id: number, data: BudgetUpdateRequest): Promise<Budget> { return (await api.put(`/budgets/${id}`, data)).data; },
     async remove(id: number): Promise<void> { return (await api.delete(`/budgets/${id}`)).data; },
+    async syncWithProfile(month?: number, year?: number): Promise<BudgetStatus[]> {
+        const params = new URLSearchParams();
+        if (month !== undefined) params.append('month', String(month));
+        if (year !== undefined) params.append('year', String(year));
+        return (await api.post(`/budgets/sync-profile?${params.toString()}`)).data;
+    },
 };
 
 export const dashboardService = {

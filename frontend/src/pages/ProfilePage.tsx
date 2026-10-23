@@ -18,11 +18,113 @@ import {
     User as UserIcon,
     Camera,
     RefreshCw,
+    GraduationCap,
+    Scale,
+    Briefcase,
+    Rocket,
+    Users,
+    ShieldAlert,
+    CheckCircle2,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
 import { aiService } from '../services/services';
-import type { AiStatus, User } from '../types';
+import type { AiStatus, FinancialProfileType, User } from '../types';
+
+interface FinancialProfileOption {
+    id: FinancialProfileType;
+    title: string;
+    subtitle: string;
+    badge: string;
+    icon: typeof GraduationCap;
+    color: string;
+    bgColor: string;
+    borderColor: string;
+    description: string;
+    split: { needs: number; wants: number; savings: number };
+    buffer: string;
+}
+
+const FINANCIAL_PROFILES: FinancialProfileOption[] = [
+    {
+        id: 'STUDENT',
+        title: 'Studente / Fuorisede',
+        subtitle: 'Sussistenza & Controllo Uscite',
+        badge: 'Regola 70 / 15 / 15',
+        icon: GraduationCap,
+        color: 'text-amber-600',
+        bgColor: 'bg-amber-50',
+        borderColor: 'border-amber-200',
+        description: 'Per chi ha entrate minime o assenti (borse di studio, paghette familiari) e deve focalizzarsi sul contenimento del burn rate quotidiano ed evitare debiti.',
+        split: { needs: 70, wants: 15, savings: 15 },
+        buffer: '2-3 mesi (o 500-1000€)',
+    },
+    {
+        id: 'BALANCED_50_30_20',
+        title: 'Lavoratore Standard',
+        subtitle: 'Classica Regola 50 / 30 / 20',
+        badge: 'Regola 50 / 30 / 20',
+        icon: Scale,
+        color: 'text-indigo-600',
+        bgColor: 'bg-indigo-50',
+        borderColor: 'border-indigo-200',
+        description: 'Ideale per dipendenti con stipendio fisso mensile. Equilibrio perfetto tra 50% bisogni, 30% desideri/svago e 20% risparmio e investimenti.',
+        split: { needs: 50, wants: 30, savings: 20 },
+        buffer: '3-6 mesi',
+    },
+    {
+        id: 'FREELANCER',
+        title: 'Freelance & Partita IVA',
+        subtitle: 'Income Smoothing & Buffer Esteso',
+        badge: 'Regola 60 / 20 / 20',
+        icon: Briefcase,
+        color: 'text-blue-600',
+        bgColor: 'bg-blue-50',
+        borderColor: 'border-blue-200',
+        description: 'Per entrate fluttuanti e scadenze fiscali periodiche. Richiede un cuscinetto liquidità esteso a 6-12 mesi e isolamento preventivo delle tasse.',
+        split: { needs: 60, wants: 20, savings: 20 },
+        buffer: '6-12 mesi',
+    },
+    {
+        id: 'FIRE_SEEKER',
+        title: 'FIRE Seeker',
+        subtitle: 'Risparmio & Investimento Aggressivo',
+        badge: 'Savings Rate > 50%',
+        icon: Rocket,
+        color: 'text-rose-600',
+        bgColor: 'bg-rose-50',
+        borderColor: 'border-rose-200',
+        description: 'Orientato all\'indipendenza finanziaria e pensione anticipata. Massimizzazione del PAC in ETF e riduzione consapevole delle spese superflue.',
+        split: { needs: 35, wants: 15, savings: 50 },
+        buffer: '6-12 mesi',
+    },
+    {
+        id: 'FAMILY',
+        title: 'Famiglia & Genitori',
+        subtitle: 'Protezione & Spese Strutturate',
+        badge: 'Regola 65 / 15 / 20',
+        icon: Users,
+        color: 'text-emerald-600',
+        bgColor: 'bg-emerald-50',
+        borderColor: 'border-emerald-200',
+        description: 'Focalizzato su spese fisse importanti per figli, casa, salute e scuola, abbinato a un fondo imprevisti robusto e tutela del futuro.',
+        split: { needs: 65, wants: 15, savings: 20 },
+        buffer: '4-6 mesi',
+    },
+    {
+        id: 'DEBT_REPAYMENT',
+        title: 'Ripartenza & Debiti',
+        subtitle: 'Estinzione Accelerata Passività',
+        badge: 'Regola 70 / 10 / 20',
+        icon: ShieldAlert,
+        color: 'text-red-600',
+        bgColor: 'bg-red-50',
+        borderColor: 'border-red-200',
+        description: 'Priorità ad abbattere finanziamenti e rate con metodo valanga/neve, riducendo lo svago al minimo essenziale fino al pareggio.',
+        split: { needs: 70, wants: 10, savings: 20 },
+        buffer: '1-2 mesi',
+    },
+];
 
 const apiErrorMessage = (error: unknown, fallback: string) =>
     axios.isAxiosError(error) && typeof error.response?.data?.message === 'string'
@@ -31,6 +133,13 @@ const apiErrorMessage = (error: unknown, fallback: string) =>
 
 export default function ProfilePage() {
     const { user, setAuth, logout } = useAuthStore();
+
+    // Financial Profile State
+    const [selectedProfile, setSelectedProfile] = useState<FinancialProfileType>(
+        user?.financialProfile || 'BALANCED_50_30_20'
+    );
+    const [savingProfileType, setSavingProfileType] = useState(false);
+    const [financialProfileSuccess, setFinancialProfileSuccess] = useState<string | null>(null);
 
     // Profile Info State
     const [profileForm, setProfileForm] = useState({
@@ -63,6 +172,9 @@ export default function ProfilePage() {
             const freshUser = res.data;
             if (freshUser) {
                 setAuth(freshUser);
+                if (freshUser.financialProfile) {
+                    setSelectedProfile(freshUser.financialProfile);
+                }
                 setProfileForm({
                     username: freshUser.username || '',
                     firstName: freshUser.firstName || '',
@@ -86,6 +198,26 @@ export default function ProfilePage() {
             .then((status) => setAiStatus(status))
             .catch((err) => console.warn('Failed to load AI status:', err));
     }, []);
+
+    const handleSelectFinancialProfile = async (profileType: FinancialProfileType) => {
+        if (selectedProfile === profileType && !savingProfileType) return;
+        setSelectedProfile(profileType);
+        setSavingProfileType(true);
+        setFinancialProfileSuccess(null);
+        try {
+            const res = await api.put<User>('/users/profile', {
+                financialProfile: profileType,
+            });
+            setAuth(res.data);
+            const opt = FINANCIAL_PROFILES.find((p) => p.id === profileType);
+            setFinancialProfileSuccess(`Profilo finanziario impostato su: ${opt?.title || profileType}`);
+            setTimeout(() => setFinancialProfileSuccess(null), 4000);
+        } catch (err: unknown) {
+            console.error('Errore durante il salvataggio del profilo finanziario:', err);
+        } finally {
+            setSavingProfileType(false);
+        }
+    };
 
     const handleUpdateProfile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -251,7 +383,95 @@ export default function ProfilePage() {
                 </div>
             </div>
 
-            {/* 2. GRID: PERSONAL DATA & GOOGLE SECURITY */}
+            {/* 2. PROFILO FINANZIARIO & FILOSOFIA DI BUDGET */}
+            <section className="bg-white rounded-2xl border border-gray-200 p-6 shadow-2xs">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-5 pb-4 border-b border-gray-100">
+                    <div>
+                        <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center">
+                                <Scale size={18} />
+                            </div>
+                            <h2 className="text-sm font-semibold text-gray-900">
+                                Profilo Finanziario & Regola di Budget
+                            </h2>
+                            <span className="text-[10px] bg-indigo-100 text-indigo-700 font-bold px-2 py-0.5 rounded-full">
+                                Personalizza Analisi & AI
+                            </span>
+                        </div>
+                        <p className="text-[11px] text-gray-400 mt-1">
+                            Seleziona la tua situazione economica attuale: la pagina <strong>Analisi</strong>, le percentuali target e i consigli dell&apos;<strong>AI Coach</strong> si adatteranno al tuo profilo.
+                        </p>
+                    </div>
+
+                    {financialProfileSuccess && (
+                        <div className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs font-semibold rounded-xl animate-in fade-in shrink-0">
+                            <CheckCircle2 size={14} className="text-emerald-600" />
+                            <span>{financialProfileSuccess}</span>
+                        </div>
+                    )}
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                    {FINANCIAL_PROFILES.map((p) => {
+                        const Icon = p.icon;
+                        const isSelected = selectedProfile === p.id;
+                        return (
+                            <div
+                                key={p.id}
+                                onClick={() => handleSelectFinancialProfile(p.id)}
+                                className={`group relative p-4 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
+                                    isSelected
+                                        ? 'border-indigo-600 bg-indigo-50/20 ring-2 ring-indigo-600/15 shadow-sm'
+                                        : 'border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50/50'
+                                }`}
+                            >
+                                <div>
+                                    <div className="flex items-start justify-between gap-2 mb-3">
+                                        <div className="flex items-center gap-2.5">
+                                            <div className={`w-9 h-9 rounded-xl flex items-center justify-center ${p.bgColor} ${p.color}`}>
+                                                <Icon size={18} />
+                                            </div>
+                                            <div>
+                                                <h3 className="text-xs font-bold text-gray-900 group-hover:text-indigo-600 transition-colors">
+                                                    {p.title}
+                                                </h3>
+                                                <p className="text-[10px] text-gray-500 font-medium">
+                                                    {p.subtitle}
+                                                </p>
+                                            </div>
+                                        </div>
+
+                                        <div className="shrink-0 mt-0.5">
+                                            {isSelected ? (
+                                                <div className="w-5 h-5 rounded-full bg-indigo-600 text-white flex items-center justify-center">
+                                                    <CheckCircle2 size={13} />
+                                                </div>
+                                            ) : (
+                                                <div className="w-5 h-5 rounded-full border border-gray-300 group-hover:border-gray-400" />
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <p className="text-xs text-gray-600 leading-relaxed mb-4">
+                                        {p.description}
+                                    </p>
+                                </div>
+
+                                <div className="pt-3 border-t border-gray-100 flex flex-wrap items-center justify-between gap-2 text-[11px]">
+                                    <span className="font-semibold text-gray-700 bg-gray-100 px-2 py-0.5 rounded-md">
+                                        {p.badge}
+                                    </span>
+                                    <span className="text-gray-500 font-medium">
+                                        {p.buffer}
+                                    </span>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </section>
+
+            {/* 3. GRID: PERSONAL DATA & GOOGLE SECURITY */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Dati Personali Form */}
                 <section className="bg-white p-6 rounded-2xl border border-gray-200 shadow-2xs">

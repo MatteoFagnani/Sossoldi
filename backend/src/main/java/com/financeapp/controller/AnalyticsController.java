@@ -1,5 +1,7 @@
 package com.financeapp.controller;
 
+import com.financeapp.dto.AdvancedAnalyticsDto;
+import com.financeapp.dto.AiFinancialInsightsDto;
 import com.financeapp.dto.CashFlowDto;
 import com.financeapp.service.AnalyticsService;
 import lombok.RequiredArgsConstructor;
@@ -24,5 +26,21 @@ public class AnalyticsController extends BaseController {
             return ResponseEntity.ok(analyticsService.getMonthlyCashFlow(getCurrentUser(authentication), year, month));
         }
         return ResponseEntity.ok(analyticsService.getYearlyCashFlow(getCurrentUser(authentication), year));
+    }
+
+    @GetMapping("/advanced")
+    public ResponseEntity<AdvancedAnalyticsDto> getAdvancedAnalytics(
+            Authentication authentication,
+            @RequestParam(required = false) Integer month,
+            @RequestParam int year) {
+        return ResponseEntity.ok(analyticsService.getAdvancedAnalytics(getCurrentUser(authentication), year, month));
+    }
+
+    @PostMapping("/ai-insights")
+    public ResponseEntity<AiFinancialInsightsDto> getAiFinancialInsights(
+            Authentication authentication,
+            @RequestParam(required = false) Integer month,
+            @RequestParam int year) {
+        return ResponseEntity.ok(analyticsService.getAiFinancialInsights(getCurrentUser(authentication), year, month));
     }
 }

@@ -1,5 +1,6 @@
 package com.financeapp.dto;
 
+import com.financeapp.model.FinancialProfileType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -15,5 +16,6 @@ public class ProfileUpdateRequest {
     private String lastName;
     private String avatarUrl;
     private String email;
+    private FinancialProfileType financialProfile;
     private String geminiApiKey;
 }

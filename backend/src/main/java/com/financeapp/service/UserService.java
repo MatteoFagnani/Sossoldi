@@ -24,6 +24,7 @@ public class UserService {
     private final CategoryRepository categoryRepository;
     private final UserMapper userMapper;
     private final GeminiService geminiService;
+    private final BudgetService budgetService;
 
     @Transactional(readOnly = true)
     public UserDto getProfile(User user) {
@@ -68,7 +69,15 @@ public class UserService {
             user.setGeminiApiKey(cleanKey.isEmpty() ? null : cleanKey);
         }
 
+        if (request.getFinancialProfile() != null) {
+            user.setFinancialProfile(request.getFinancialProfile());
+        }
+
         User savedUser = userRepository.save(user);
+
+        if (request.getFinancialProfile() != null) {
+            budgetService.applyFinancialProfileBudgets(savedUser, request.getFinancialProfile());
+        }
         UserDto dto = userMapper.toDto(savedUser);
         dto.setGeminiConfigured(geminiService.isConfigured(savedUser));
         return dto;

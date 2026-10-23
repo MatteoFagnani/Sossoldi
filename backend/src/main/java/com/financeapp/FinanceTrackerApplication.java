@@ -12,7 +12,9 @@ public class FinanceTrackerApplication {
 
 	public static void main(String[] args) {
 		loadDotEnv();
-		SpringApplication.run(FinanceTrackerApplication.class, args);
+		SpringApplication app = new SpringApplication(FinanceTrackerApplication.class);
+		app.setHeadless(false);
+		app.run(args);
 	}
 
 	private static void loadDotEnv() {

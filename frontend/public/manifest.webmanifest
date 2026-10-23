@@ -1,0 +1,20 @@
+{
+  "name": "Sossoldi - Gestione Finanze Personali",
+  "short_name": "Sossoldi",
+  "description": "Tracker locale e privato delle finanze personali.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#090d16",
+  "theme_color": "#111827",
+  "lang": "it-IT",
+  "icons": [
+    {
+      "src": "/app-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
+

@@ -47,11 +47,13 @@ Include un sistema di **seeding automatico** delle categorie standard in italian
 ## Installazione e Avvio Rapido
 
 ### Modalità 1: Avvio Immediato su PC (Consigliato per uso personale)
-Non richiede Docker né PostgreSQL. I dati vengono salvati localmente nella cartella `./data/`.
+Non richiede Docker né PostgreSQL. I dati vengono salvati localmente nella cartella `./data/` e i log in `./data/sossoldi.log`.
 
-- Esegui `.\scripts\avvia.ps1` in PowerShell (oppure `avvia.bat` se il pacchetto JAR è già compilato con `build.bat`).
-- L'applicazione sarà disponibile all'indirizzo: **http://localhost:10000**
-- Per arrestare il servizio: `scripts\ferma.bat`.
+- **Avvio silenzioso in background**: Fai doppio clic su `avvia.bat` (oppure esegui `.\scripts\avvia.ps1` per l'avvio interattivo).
+- **Icona System Tray**: Una volta avviato, Sossoldi mostra un'icona nella barra di sistema di Windows (vicino all'orologio) con doppio clic per aprire **http://localhost:10000** e menu contestuale rapido (*Apri Sossoldi*, *Console Database H2*, *Ferma Sossoldi*).
+- **Avvio automatico all'accensione di Windows**: Esegui `scripts\installa-avvio-automatico.bat` (registra l'attività con avvio ritardato di 10s e auto-restart). Per rimuoverlo: `scripts\rimuovi-avvio-automatico.bat`.
+- **App Desktop (PWA)**: Da Chrome o Edge su `http://localhost:10000`, clicca su **Installa Sossoldi** nella barra degli indirizzi per usarla come finestra desktop dedicata.
+- Per arrestare il servizio manualmente: `scripts\ferma.bat` (oppure *Ferma Sossoldi* dall'icona nella System Tray).
 
 ---
 

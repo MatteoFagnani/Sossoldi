@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { budgetService, categoryService } from '../services/services';
+import { extractApiError } from '../utils/error';
 import type { Category, BudgetStatus } from '../types';
 
 export function useBudgets(month: number, year: number) {
@@ -32,9 +33,8 @@ export function useBudgets(month: number, year: number) {
         try {
             const limit = form.limitAmount ? parseFloat(form.limitAmount) : null;
             const pct = form.percentageOfIncome ? parseFloat(form.percentageOfIncome) : null;
-            
+
             if (id) {
-                // Update
                 const payload = {
                     categoryId: parseInt(form.categoryId),
                     limitAmount: limit,
@@ -46,7 +46,6 @@ export function useBudgets(month: number, year: number) {
                 };
                 await budgetService.update(id, payload);
             } else {
-                // Create
                 const payload = {
                     categoryId: parseInt(form.categoryId),
                     limitAmount: limit,
@@ -58,8 +57,7 @@ export function useBudgets(month: number, year: number) {
             await loadData();
             return true;
         } catch (err: unknown) {
-            const data = (err as { response?: { data?: Record<string, string> } })?.response?.data;
-            setError(data ? Object.values(data).join('. ') : 'Errore durante il salvataggio del budget');
+            setError(extractApiError(err, 'Errore durante il salvataggio del budget'));
             return false;
         } finally {
             setSaving(false);

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, useNavigate, useLocation } from 'react-router-dom';
 import { LayoutDashboard, Tags, ArrowLeftRight, Target, ChevronsLeft, Wallet, TrendingUp, BarChart2 } from 'lucide-react';
-import { useAuthStore } from '../store/authStore';
+import { useAuthStore } from '../../store/authStore';
 
 interface NavItem {
     to: string;

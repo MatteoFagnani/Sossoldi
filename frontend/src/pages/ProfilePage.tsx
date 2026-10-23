@@ -1,5 +1,4 @@
-import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
     CheckCircle,
     XCircle,
@@ -27,9 +26,9 @@ import {
     CheckCircle2,
 } from 'lucide-react';
 import { useAuthStore } from '../store/authStore';
-import api from '../services/api';
-import { aiService } from '../services/services';
-import type { AiStatus, FinancialProfileType, User } from '../types';
+import { aiService, userService } from '../services/services';
+import { extractApiError } from '../utils/error';
+import type { AiStatus, FinancialProfileType } from '../types';
 
 interface FinancialProfileOption {
     id: FinancialProfileType;
@@ -126,10 +125,7 @@ const FINANCIAL_PROFILES: FinancialProfileOption[] = [
     },
 ];
 
-const apiErrorMessage = (error: unknown, fallback: string) =>
-    axios.isAxiosError(error) && typeof error.response?.data?.message === 'string'
-        ? error.response.data.message
-        : fallback;
+const apiErrorMessage = extractApiError;
 
 export default function ProfilePage() {
     const { user, setAuth, logout } = useAuthStore();
@@ -148,7 +144,7 @@ export default function ProfilePage() {
         lastName: user?.lastName || '',
         avatarUrl: user?.avatarUrl || '',
         email: user?.email || '',
-        geminiApiKey: user?.geminiApiKey || '',
+        geminiApiKey: '',
     });
     const [showApiKey, setShowApiKey] = useState(false);
     const [profileLoading, setProfileLoading] = useState(false);
@@ -165,31 +161,30 @@ export default function ProfilePage() {
     const [deleteLoading, setDeleteLoading] = useState(false);
 
     // Fetch fresh profile from backend on mount to ensure avatar and Google data are completely synced
-    const fetchFreshProfile = async () => {
+    const fetchFreshProfile = useCallback(async () => {
         try {
             setRefreshingProfile(true);
-            const res = await api.get<User>('/users/me');
-            const freshUser = res.data;
+            const freshUser = await userService.getMe();
             if (freshUser) {
                 setAuth(freshUser);
                 if (freshUser.financialProfile) {
                     setSelectedProfile(freshUser.financialProfile);
                 }
-                setProfileForm({
+                setProfileForm((prev) => ({
+                    ...prev,
                     username: freshUser.username || '',
                     firstName: freshUser.firstName || '',
                     lastName: freshUser.lastName || '',
                     avatarUrl: freshUser.avatarUrl || '',
                     email: freshUser.email || '',
-                    geminiApiKey: freshUser.geminiApiKey || '',
-                });
+                }));
             }
         } catch (err) {
             console.warn('Impossibile aggiornare i dati profilo:', err);
         } finally {
             setRefreshingProfile(false);
         }
-    };
+    }, [setAuth]);
 
     useEffect(() => {
         fetchFreshProfile();
@@ -197,7 +192,7 @@ export default function ProfilePage() {
             .getStatus()
             .then((status) => setAiStatus(status))
             .catch((err) => console.warn('Failed to load AI status:', err));
-    }, []);
+    }, [fetchFreshProfile]);
 
     const handleSelectFinancialProfile = async (profileType: FinancialProfileType) => {
         if (selectedProfile === profileType && !savingProfileType) return;
@@ -205,10 +200,10 @@ export default function ProfilePage() {
         setSavingProfileType(true);
         setFinancialProfileSuccess(null);
         try {
-            const res = await api.put<User>('/users/profile', {
+            const updatedUser = await userService.updateProfile({
                 financialProfile: profileType,
             });
-            setAuth(res.data);
+            setAuth(updatedUser);
             const opt = FINANCIAL_PROFILES.find((p) => p.id === profileType);
             setFinancialProfileSuccess(`Profilo finanziario impostato su: ${opt?.title || profileType}`);
             setTimeout(() => setFinancialProfileSuccess(null), 4000);
@@ -224,9 +219,13 @@ export default function ProfilePage() {
         setProfileLoading(true);
         setProfileStatus(null);
         try {
-            const response = await api.put('/users/profile', profileForm);
-            const updatedUser = response.data;
+            const payload = {
+                ...profileForm,
+                geminiApiKey: profileForm.geminiApiKey.trim() || undefined,
+            };
+            const updatedUser = await userService.updateProfile(payload);
             setAuth(updatedUser);
+            setProfileForm((prev) => ({ ...prev, geminiApiKey: '' }));
             setProfileStatus({ type: 'success', message: 'Profilo e configurazione aggiornati con successo!' });
             const freshStatus = await aiService.getStatus();
             setAiStatus(freshStatus);
@@ -266,7 +265,7 @@ export default function ProfilePage() {
     const handleDeleteAccount = async () => {
         setDeleteLoading(true);
         try {
-            await api.delete('/users/me');
+            await userService.deleteAccount();
             await logout();
         } catch (error: unknown) {
             console.error('Delete account error:', error);
@@ -677,7 +676,9 @@ export default function ProfilePage() {
                                     placeholder={
                                         aiStatus?.maskedKey
                                             ? `Attualmente attiva: ${aiStatus.maskedKey}`
-                                            : 'Incolla la tua chiave API (es. AIzaSy...)'
+                                            : user?.geminiConfigured
+                                              ? 'Chiave personale salvata (inserisci per sostituire)'
+                                              : 'Incolla la tua chiave API (es. AIzaSy...)'
                                     }
                                     className={`${inputClass} pr-20 font-mono text-xs`}
                                 />
@@ -690,7 +691,7 @@ export default function ProfilePage() {
                                 </button>
                             </div>
                             <p className="text-[11px] text-gray-400 mt-1.5">
-                                La chiave viene salvata nel tuo profilo in modo sicuro. Se il campo è vuoto, viene utilizzata la configurazione globale.
+                                La chiave viene salvata nel tuo profilo in modo sicuro. Se il campo è vuoto, viene mantenuta la configurazione attuale.
                             </p>
                         </div>
 

@@ -15,17 +15,21 @@ export interface User {
     avatarUrl?: string;
     role: 'USER' | 'ADMIN';
     financialProfile?: FinancialProfileType;
-    geminiApiKey?: string;
     geminiConfigured?: boolean;
 }
 
-export interface AuthResponse {
-    token: string;
-    user: User;
+export interface UpdateProfilePayload {
+    username?: string;
+    firstName?: string;
+    lastName?: string;
+    avatarUrl?: string;
+    email?: string;
+    financialProfile?: FinancialProfileType;
+    geminiApiKey?: string;
 }
 
 export type TransactionType = 'INCOME' | 'EXPENSE';
-export type MovementType = TransactionType | 'TRANSFER';
+type MovementType = TransactionType | 'TRANSFER';
 export type AccountType = 'CHECKING' | 'SAVINGS' | 'CASH' | 'CARD' | 'INVESTMENT' | 'OTHER';
 export type InvestmentType = 'ETF' | 'STOCK' | 'FUND' | 'CRYPTO' | 'PENSION' | 'BOND' | 'ROBO_ADVISOR' | 'OTHER';
 
@@ -36,8 +40,6 @@ export interface Account {
     initialBalance: number;
     currentBalance: number;
     archived: boolean;
-    color?: string;
-    icon?: string;
 }
 
 export type AccountPayload = Omit<Account, 'id' | 'currentBalance'>;
@@ -88,17 +90,15 @@ export interface Investment {
     otherPercent?: number | null;
     components?: InvestmentComponent[];
     snapshots?: InvestmentSnapshot[];
-    lastUpdateDate?: string;
     gainLoss: number;
     gainLossPercent: number;
-    allocationPercent: number;
     accountId?: number | null;
     accountName?: string | null;
     accountBalance?: number | null;
     lastPacExecutionMonth?: string | null;
 }
 
-export type InvestmentPayload = Omit<Investment, 'id' | 'gainLoss' | 'gainLossPercent' | 'allocationPercent'>;
+export type InvestmentPayload = Omit<Investment, 'id' | 'gainLoss' | 'gainLossPercent'>;
 
 export interface Category {
     id: number;
@@ -143,11 +143,8 @@ export interface AccountMovement {
     categoryColor?: string | null;
     accountId?: number | null;
     accountName?: string | null;
-    fromAccountId?: number | null;
     fromAccountName?: string | null;
-    toAccountId?: number | null;
     toAccountName?: string | null;
-    transferDirection?: 'IN' | 'OUT' | 'NEUTRAL' | null;
 }
 
 export interface TransactionCategoryMapping {
@@ -193,38 +190,16 @@ export interface BudgetUpdateRequest extends BudgetPayload {
 }
 
 export interface ReportDto {
-    title: string;
-    totalIncome: number;
-    totalExpense: number;
-    netBalance: number;
     dataPoints: Record<string, number>;
     incomeDataPoints: Record<string, number>;
     expenseDataPoints: Record<string, number>;
 }
 
-export interface CategoryFlowItem {
-    categoryId: number;
-    categoryName: string;
-    categoryColor: string;
-    amount: number;
-    percentage: number;
-}
-
-export interface MonthlyPoint {
+interface MonthlyPoint {
     label: string;
     income: number;
     expense: number;
     net: number;
-}
-
-export interface CashFlowData {
-    totalIncome: number;
-    totalExpense: number;
-    netFlow: number;
-    savingsRate: number;
-    incomeSources: CategoryFlowItem[];
-    expenseDestinations: CategoryFlowItem[];
-    monthlyTrend: MonthlyPoint[];
 }
 
 export interface CategoryMoMChange {
@@ -238,10 +213,15 @@ export interface CategoryMoMChange {
     increase: boolean;
 }
 
-export interface AdvancedAnalyticsData extends CashFlowData {
+export interface AdvancedAnalyticsData {
     year: number;
     month?: number | null;
     periodLabel: string;
+    totalIncome: number;
+    totalExpense: number;
+    netFlow: number;
+    savingsRate: number;
+    monthlyTrend: MonthlyPoint[];
 
     // Previous period comparison
     prevTotalIncome: number;
@@ -290,7 +270,7 @@ export interface AdvancedAnalyticsData extends CashFlowData {
     totalInvestedPortfolioValue: number;
 }
 
-export interface ActionableTip {
+interface ActionableTip {
     title: string;
     category: string;
     advice: string;
@@ -322,14 +302,10 @@ export interface DashboardOverview {
 export interface AiStatus {
     configured: boolean;
     source: 'USER' | 'SYSTEM' | 'NONE';
-    model: string;
     maskedKey?: string;
-    message?: string;
 }
 
 export interface CategorizeMerchantResponse {
     mapped: TransactionCategoryMapping[];
-    totalProcessed: number;
     newlyMapped: number;
-    message: string;
 }

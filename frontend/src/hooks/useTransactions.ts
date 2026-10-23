@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { transactionService, categoryService, accountService } from '../services/services';
+import { extractApiError } from '../utils/error';
 import type { Transaction, Category, Account, AccountMovement } from '../types';
 
 export function useTransactions() {
@@ -54,8 +55,7 @@ export function useTransactions() {
             await loadData(accountFilter);
             return true;
         } catch (err: unknown) {
-            const resData = (err as { response?: { data?: Record<string, string> } })?.response?.data;
-            setError(resData ? Object.values(resData).join('. ') : 'Errore durante il salvataggio della transazione');
+            setError(extractApiError(err, 'Errore durante il salvataggio della transazione'));
             return false;
         } finally {
             setSaving(false);

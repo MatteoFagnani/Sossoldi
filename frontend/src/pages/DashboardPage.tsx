@@ -10,31 +10,22 @@ import {
     PiggyBank,
     ArrowRightLeft,
     Plus,
-    X,
-    Loader2
 } from 'lucide-react';
 import { useDashboard } from '../hooks/useDashboard';
-import { StatCard } from '../components/UI';
+import { StatCard } from '../components/ui/UI';
 import DashboardCharts from '../components/dashboard/DashboardCharts';
 import DashboardRecentTransactions from '../components/dashboard/DashboardRecentTransactions';
 import DashboardBudgetOverview from '../components/dashboard/DashboardBudgetOverview';
 import DashboardAccountsOverview from '../components/dashboard/DashboardAccountsOverview';
 import TransactionForm from '../components/transactions/TransactionForm';
-import { transactionService, accountTransferService } from '../services/services';
+import TransferFormModal from '../components/transfers/TransferFormModal';
+import { transactionService } from '../services/services';
 import { useAuthStore } from '../store/authStore';
-
-const MONTHS = [
-    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre',
-];
-
-const MONTH_KEYS = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic'];
+import { MONTHS, MONTH_KEYS, getSelectableYears } from '../constants/dateConstants';
 
 const CURRENT_YEAR = new Date().getFullYear();
 const CURRENT_MONTH = new Date().getMonth() + 1; // 1-indexed
-const YEARS = Array.from({ length: CURRENT_YEAR - 2019 }, (_, i) => 2020 + i).concat([CURRENT_YEAR]);
-
-const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all';
+const YEARS = getSelectableYears(2020, 0);
 
 export default function DashboardPage() {
     const navigate = useNavigate();
@@ -72,15 +63,6 @@ export default function DashboardPage() {
 
     // Quick transfer modal state
     const [showTransferModal, setShowTransferModal] = useState(false);
-    const [transferForm, setTransferForm] = useState({
-        fromAccountId: '',
-        toAccountId: '',
-        amount: '',
-        date: new Date().toISOString().slice(0, 10),
-        description: '',
-    });
-    const [savingTransfer, setSavingTransfer] = useState(false);
-    const [transferError, setTransferError] = useState('');
 
     // Period navigation
     const prevMonth = () => {
@@ -116,18 +98,6 @@ export default function DashboardPage() {
         setShowTxModal(true);
     };
 
-    const openTransferModal = () => {
-        setTransferForm({
-            fromAccountId: activeAccounts[0] ? String(activeAccounts[0].id) : '',
-            toAccountId: activeAccounts[1] ? String(activeAccounts[1].id) : '',
-            amount: '',
-            date: new Date().toISOString().slice(0, 10),
-            description: '',
-        });
-        setTransferError('');
-        setShowTransferModal(true);
-    };
-
     const handleSaveTransaction = async (form: { amount: string; date: string; description: string; categoryId: string; accountId: string }) => {
         if (!form.categoryId) {
             setTxError('Seleziona una categoria.');
@@ -149,35 +119,6 @@ export default function DashboardPage() {
             setTxError('Errore durante il salvataggio della transazione.');
         } finally {
             setSavingTx(false);
-        }
-    };
-
-    const handleSaveTransfer = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!transferForm.fromAccountId || !transferForm.toAccountId) {
-            setTransferError('Seleziona entrambi i conti.');
-            return;
-        }
-        if (transferForm.fromAccountId === transferForm.toAccountId) {
-            setTransferError('Il conto di origine e di destinazione devono essere diversi.');
-            return;
-        }
-        setSavingTransfer(true);
-        setTransferError('');
-        try {
-            await accountTransferService.create({
-                fromAccountId: parseInt(transferForm.fromAccountId),
-                toAccountId: parseInt(transferForm.toAccountId),
-                amount: parseFloat(transferForm.amount),
-                date: transferForm.date,
-                description: transferForm.description || undefined,
-            });
-            setShowTransferModal(false);
-            await refetch();
-        } catch {
-            setTransferError('Errore durante la registrazione del trasferimento.');
-        } finally {
-            setSavingTransfer(false);
         }
     };
 
@@ -322,7 +263,7 @@ export default function DashboardPage() {
                     {/* Quick Action Buttons */}
                     <div className="flex items-center gap-1.5">
                         <button
-                            onClick={openTransferModal}
+                            onClick={() => setShowTransferModal(true)}
                             disabled={activeAccounts.length < 2}
                             className="flex items-center gap-1.5 px-3 py-2 bg-white hover:bg-gray-50 border border-gray-200 disabled:opacity-50 text-gray-700 hover:text-gray-900 text-xs font-semibold rounded-xl shadow-2xs transition-colors"
                             title={activeAccounts.length < 2 ? 'Servono almeno 2 conti per fare un giroconto' : 'Registra un giroconto tra conti'}
@@ -347,7 +288,7 @@ export default function DashboardPage() {
                 <StatCard
                     label="Patrimonio netto"
                     value={fmt(netWorth)}
-                    sub={`Totale conti`}
+                    sub="Totale conti"
                     icon={<Landmark size={16} />}
                     color="#111827"
                     onClick={() => navigate('/wealth')}
@@ -414,110 +355,16 @@ export default function DashboardPage() {
 
             {/* Quick Transfer Modal */}
             {showTransferModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-2xs px-4 py-8">
-                    <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-xl p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <h2 className="text-base font-semibold text-gray-900">Giroconto rapido</h2>
-                            <button
-                                type="button"
-                                onClick={() => setShowTransferModal(false)}
-                                className="p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors"
-                                title="Chiudi"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-
-                        {transferError && (
-                            <div className="mb-4 px-3.5 py-2.5 bg-rose-50 border border-rose-100 rounded-xl text-xs text-rose-600 font-medium">
-                                {transferError}
-                            </div>
-                        )}
-
-                        <form onSubmit={handleSaveTransfer} className="space-y-4">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Dal conto (origine)</label>
-                                <select
-                                    value={transferForm.fromAccountId}
-                                    onChange={e => setTransferForm({ ...transferForm, fromAccountId: e.target.value })}
-                                    required
-                                    className={inputClass}
-                                >
-                                    <option value="">Seleziona conto</option>
-                                    {activeAccounts.map(account => (
-                                        <option key={account.id} value={account.id}>
-                                            {account.name} ({fmt(account.currentBalance)})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Al conto (destinazione)</label>
-                                <select
-                                    value={transferForm.toAccountId}
-                                    onChange={e => setTransferForm({ ...transferForm, toAccountId: e.target.value })}
-                                    required
-                                    className={inputClass}
-                                >
-                                    <option value="">Seleziona conto</option>
-                                    {activeAccounts.map(account => (
-                                        <option key={account.id} value={account.id}>
-                                            {account.name} ({fmt(account.currentBalance)})
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Importo (€)</label>
-                                    <input
-                                        type="number"
-                                        min="0.01"
-                                        step="0.01"
-                                        value={transferForm.amount}
-                                        onChange={e => setTransferForm({ ...transferForm, amount: e.target.value })}
-                                        required
-                                        placeholder="0.00"
-                                        className={inputClass}
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Data</label>
-                                    <input
-                                        type="date"
-                                        value={transferForm.date}
-                                        onChange={e => setTransferForm({ ...transferForm, date: e.target.value })}
-                                        required
-                                        className={inputClass}
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Causale / Nota (opzionale)</label>
-                                <input
-                                    value={transferForm.description}
-                                    onChange={e => setTransferForm({ ...transferForm, description: e.target.value })}
-                                    className={inputClass}
-                                    placeholder="Es. Giroconto su carta"
-                                />
-                            </div>
-
-                            <div className="pt-2">
-                                <button
-                                    type="submit"
-                                    disabled={savingTransfer || activeAccounts.length < 2}
-                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
-                                >
-                                    {savingTransfer ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightLeft size={15} />}
-                                    Conferma trasferimento
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <TransferFormModal
+                    accounts={activeAccounts}
+                    title="Giroconto rapido"
+                    placeholderDescription="Es. Giroconto su carta"
+                    onClose={() => setShowTransferModal(false)}
+                    onSuccess={async () => {
+                        setShowTransferModal(false);
+                        await refetch();
+                    }}
+                />
             )}
         </div>
     );

@@ -1,10 +1,11 @@
 import * as XLSX from 'xlsx';
+import { extractApiError } from './error';
 import type { TransactionType } from '../types';
 
 export type SheetRow = unknown[];
 export type CategoryMappings = Record<string, number>;
 
-export const readText = (value: unknown): string => {
+const readText = (value: unknown): string => {
     if (value && typeof value === 'object' && 'v' in value) return String((value as { v?: unknown }).v ?? '').trim();
     return String(value ?? '').trim();
 };
@@ -42,7 +43,7 @@ export const cleanDescription = (value: unknown): string => {
 
     // 7. Remove card tokens / reference numbers / terminal codes
     text = text.replace(/\b(PAN|CARTA|C\.ES|AUT|AUTH|TERMINALE|POS|OPERAZIONE|DIV|REF|ID|TRX|N\.|NUM)\b[:.\s]*\w+/gi, ' ');
-    text = text.replace(/[\*\d]{6,}/g, ' ');
+    text = text.replace(/[*\d]{6,}/g, ' ');
     text = text.replace(/\*{3,}\d+/g, ' ');
     text = text.replace(/\bN\.\s*\d+/gi, ' ');
     text = text.replace(/\b(EUR|EURO)\b|[€]/gi, ' ');
@@ -76,7 +77,7 @@ export const transactionImportKey = (accountId: number | string | null | undefin
 export const transactionLooseKey = (accountId: number | string | null | undefined, type: TransactionType, date: string, amount: number): string =>
     `${accountId ?? ''}:${type}:${date}:${Math.round(amount * 100)}`;
 
-export const legacyMappingKeys = ['transaction-category-mappings', 'transactionCategoryMappings', 'categoryMappings'];
+const legacyMappingKeys = ['transaction-category-mappings', 'transactionCategoryMappings', 'categoryMappings'];
 
 export const readLegacyMappings = (): { key: string; mappings: CategoryMappings } | null => {
     for (const key of legacyMappingKeys) {
@@ -92,7 +93,7 @@ export const readLegacyMappings = (): { key: string; mappings: CategoryMappings 
     return null;
 };
 
-export const normalizeHeader = (value: unknown): string => readText(value)
+const normalizeHeader = (value: unknown): string => readText(value)
     .toLowerCase()
     .normalize('NFD')
     .replace(/[\u0300-\u036f]/g, '')
@@ -142,20 +143,7 @@ export const parseSignedAmount = (...values: unknown[]): number => {
     return 0;
 };
 
-export const parseAmount = (...values: unknown[]): number => {
-    for (const value of values) {
-        if (typeof value === 'number') return Math.abs(value);
-        const text = readText(value);
-        const normalized = text
-            .replace(/[()]/g, '')
-            .replace(/[^\d,.-]/g, '')
-            .replace(/\.(?=\d{3}(\D|$))/g, '')
-            .replace(',', '.');
-        const amount = Number.parseFloat(normalized);
-        if (Number.isFinite(amount)) return Math.abs(amount);
-    }
-    return 0;
-};
+export const parseAmount = (...values: unknown[]): number => Math.abs(parseSignedAmount(...values));
 
 export const parseExcelDate = (...values: unknown[]): string => {
     for (const value of values) {
@@ -177,7 +165,4 @@ export const parseExcelDate = (...values: unknown[]): string => {
     return '';
 };
 
-export const apiErrorMessage = (err: unknown): string => {
-    const data = (err as { response?: { data?: Record<string, string> } })?.response?.data;
-    return data ? Object.values(data).join('. ') : err instanceof Error ? err.message : 'Errore sconosciuto';
-};
+export const apiErrorMessage = (err: unknown): string => extractApiError(err, 'Errore sconosciuto');

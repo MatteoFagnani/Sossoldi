@@ -10,11 +10,8 @@ import {
     CalendarDays,
     Bot,
     Wallet,
-    Layers,
     BarChart2,
     PieChart as PieChartIcon,
-    Coins,
-    ShieldCheck,
     Landmark,
     Search,
     RefreshCw,
@@ -23,7 +20,6 @@ import {
     ArrowRightLeft,
     CheckCircle2,
     Play,
-    X,
 } from 'lucide-react';
 import {
     ResponsiveContainer,
@@ -38,21 +34,13 @@ import {
     Cell,
 } from 'recharts';
 import { formatCurrency } from '../utils/formatters';
-import { accountService, accountTransferService, investmentService } from '../services/services';
+import { accountService, investmentService } from '../services/services';
+import { typeMetadata } from '../constants/investmentMeta';
+import { extractApiError } from '../utils/error';
 import InvestmentForm from '../components/investments/InvestmentForm';
 import InvestmentReportModal from '../components/investments/InvestmentReportModal';
-import type { Account, Investment, InvestmentPayload, InvestmentType } from '../types';
-
-const typeMetadata: Record<InvestmentType, { label: string; icon: typeof Wallet; color: string; bg: string }> = {
-    ROBO_ADVISOR: { label: 'Roboadvisor', icon: Bot, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200' },
-    ETF: { label: 'ETF', icon: BarChart2, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
-    STOCK: { label: 'Azioni', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
-    FUND: { label: 'Fondi', icon: PieChartIcon, color: 'text-violet-600', bg: 'bg-violet-50 border-violet-200' },
-    CRYPTO: { label: 'Crypto', icon: Coins, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
-    PENSION: { label: 'Pensione', icon: ShieldCheck, color: 'text-cyan-600', bg: 'bg-cyan-50 border-cyan-200' },
-    BOND: { label: 'Obbligazioni', icon: Landmark, color: 'text-slate-600', bg: 'bg-slate-50 border-slate-200' },
-    OTHER: { label: 'Altro', icon: Layers, color: 'text-gray-600', bg: 'bg-gray-50 border-gray-200' },
-};
+import TransferFormModal from '../components/transfers/TransferFormModal';
+import type { Account, Investment, InvestmentPayload } from '../types';
 
 const CHART_COLORS = [
     '#111827', // dark
@@ -81,18 +69,7 @@ export default function InvestmentsPage() {
 
     // PAC and Transfer states
     const [executingPacId, setExecutingPacId] = useState<number | null>(null);
-    const [transferModal, setTransferModal] = useState<{ open: boolean; investment: Investment | null }>({
-        open: false,
-        investment: null,
-    });
-    const [transferForm, setTransferForm] = useState({
-        fromAccountId: '',
-        toAccountId: '',
-        amount: '',
-        date: new Date().toISOString().slice(0, 10),
-        description: '',
-    });
-    const [savingTransfer, setSavingTransfer] = useState(false);
+    const [transferInvestment, setTransferInvestment] = useState<Investment | null>(null);
 
     // Filters and Search
     const [searchTerm, setSearchTerm] = useState('');
@@ -324,8 +301,7 @@ export default function InvestmentsPage() {
             handleCloseForm();
             await loadInvestments();
         } catch (err: unknown) {
-            const data = (err as { response?: { data?: Record<string, string> } })?.response?.data;
-            setError(data ? Object.values(data).join('. ') : 'Errore durante il salvataggio.');
+            setError(extractApiError(err, 'Errore durante il salvataggio.'));
         } finally {
             setSaving(false);
         }
@@ -340,7 +316,7 @@ export default function InvestmentsPage() {
             }
             await loadInvestments();
         } catch {
-            setError('Impossibile eliminare l\'investimento.');
+            setError("Impossibile eliminare l'investimento.");
         }
     };
 
@@ -358,11 +334,7 @@ export default function InvestmentsPage() {
             await loadInvestments();
             setTimeout(() => setSuccessMessage(''), 6000);
         } catch (err: unknown) {
-            const msg =
-                (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
-                (err as Error)?.message ||
-                'Errore durante l\'esecuzione della rata PAC.';
-            setError(msg);
+            setError(extractApiError(err, "Errore durante l'esecuzione della rata PAC."));
         } finally {
             setExecutingPacId(null);
         }
@@ -370,53 +342,7 @@ export default function InvestmentsPage() {
 
     const handleOpenTransfer = (investment: Investment) => {
         if (!investment.accountId) return;
-        const activeAccounts = accounts.filter((a) => !a.archived);
-        const sourceAcc = activeAccounts.find((a) => a.id !== investment.accountId);
-        setTransferForm({
-            fromAccountId: sourceAcc ? String(sourceAcc.id) : '',
-            toAccountId: String(investment.accountId),
-            amount: investment.recurringAmount ? String(investment.recurringAmount) : '',
-            date: new Date().toISOString().slice(0, 10),
-            description: `Giroconto per ${investment.name}`,
-        });
-        setTransferModal({ open: true, investment });
-    };
-
-    const handleSaveTransfer = async (e: React.FormEvent) => {
-        e.preventDefault();
-        if (!transferForm.fromAccountId || !transferForm.toAccountId) {
-            setError('Seleziona entrambi i conti.');
-            return;
-        }
-        const amountNum = Number.parseFloat(transferForm.amount);
-        if (!amountNum || amountNum <= 0) {
-            setError('Inserisci un importo valido.');
-            return;
-        }
-
-        setSavingTransfer(true);
-        setError('');
-        try {
-            await accountTransferService.create({
-                fromAccountId: Number(transferForm.fromAccountId),
-                toAccountId: Number(transferForm.toAccountId),
-                amount: amountNum,
-                date: transferForm.date,
-                description: transferForm.description.trim() || undefined,
-            });
-            setSuccessMessage(
-                `Giroconto di ${formatCurrency(amountNum)} effettuato con successo verso ${
-                    transferModal.investment?.accountName
-                }!`
-            );
-            setTransferModal({ open: false, investment: null });
-            await loadInvestments();
-            setTimeout(() => setSuccessMessage(''), 6000);
-        } catch {
-            setError('Errore durante l\'esecuzione del giroconto.');
-        } finally {
-            setSavingTransfer(false);
-        }
+        setTransferInvestment(investment);
     };
 
     return (
@@ -1080,127 +1006,33 @@ export default function InvestmentsPage() {
             )}
 
             {/* Quick Giroconto Modal for Linked Account */}
-            {transferModal.open && transferModal.investment && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-2xs px-4 py-8 animate-in fade-in duration-150">
-                    <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-xl p-6">
-                        <div className="flex items-center justify-between mb-4">
-                            <div className="flex items-center gap-2.5">
-                                <div className="w-9 h-9 rounded-xl bg-indigo-50 text-indigo-600 flex items-center justify-center shrink-0">
-                                    <ArrowRightLeft size={16} />
-                                </div>
-                                <div>
-                                    <h2 className="text-sm font-bold text-gray-900">Giroconto verso investimento</h2>
-                                    <p className="text-[11px] text-gray-500">
-                                        Trasferisci liquidità su {transferModal.investment.accountName}
-                                    </p>
-                                </div>
-                            </div>
-                            <button
-                                type="button"
-                                onClick={() => setTransferModal({ open: false, investment: null })}
-                                className="p-1.5 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
-                            >
-                                <X size={16} />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleSaveTransfer} className="space-y-3.5">
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Da quale conto prelevare <span className="text-red-500">*</span>
-                                </label>
-                                <select
-                                    value={transferForm.fromAccountId}
-                                    onChange={(e) => setTransferForm({ ...transferForm, fromAccountId: e.target.value })}
-                                    required
-                                    className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                                >
-                                    <option value="">-- Seleziona conto di origine --</option>
-                                    {accounts
-                                        .filter((a) => !a.archived && String(a.id) !== transferForm.toAccountId)
-                                        .map((a) => (
-                                            <option key={a.id} value={a.id}>
-                                                {a.name} ({formatCurrency(a.currentBalance)})
-                                            </option>
-                                        ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Conto di destinazione (collegato all&apos;investimento)
-                                </label>
-                                <div className="w-full px-3.5 py-2.5 bg-gray-100 border border-gray-200 rounded-xl text-xs text-gray-700 font-semibold flex items-center justify-between">
-                                    <span>{transferModal.investment.accountName}</span>
-                                    <span className="text-gray-500 font-normal">
-                                        Saldo attuale: {formatCurrency(transferModal.investment.accountBalance || 0)}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                        Importo (€) <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        min="0.01"
-                                        required
-                                        value={transferForm.amount}
-                                        onChange={(e) => setTransferForm({ ...transferForm, amount: e.target.value })}
-                                        placeholder="0.00"
-                                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                                        Data <span className="text-red-500">*</span>
-                                    </label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={transferForm.date}
-                                        onChange={(e) => setTransferForm({ ...transferForm, date: e.target.value })}
-                                        className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
-                                    Descrizione / Note
-                                </label>
-                                <input
-                                    type="text"
-                                    value={transferForm.description}
-                                    onChange={(e) => setTransferForm({ ...transferForm, description: e.target.value })}
-                                    placeholder="Es. Versamento per PAC Roboadvisor"
-                                    className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-xs text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-900"
-                                />
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 pt-2">
-                                <button
-                                    type="button"
-                                    onClick={() => setTransferModal({ open: false, investment: null })}
-                                    className="px-4 py-2 text-xs font-semibold text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-xl transition-colors cursor-pointer"
-                                >
-                                    Annulla
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={savingTransfer}
-                                    className="inline-flex items-center gap-1.5 px-5 py-2 text-xs font-semibold text-white bg-gray-900 hover:bg-black rounded-xl transition-colors cursor-pointer disabled:opacity-60 shadow-xs"
-                                >
-                                    {savingTransfer && <Loader2 size={13} className="animate-spin" />}
-                                    Conferma Giroconto
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+            {transferInvestment && transferInvestment.accountId && (
+                <TransferFormModal
+                    accounts={accounts}
+                    initialData={{
+                        amount: transferInvestment.recurringAmount ? String(transferInvestment.recurringAmount) : '',
+                        description: `Giroconto per ${transferInvestment.name}`,
+                    }}
+                    lockedToAccount={{
+                        id: transferInvestment.accountId,
+                        name: transferInvestment.accountName || 'Conto collegato',
+                        balance: transferInvestment.accountBalance || 0,
+                    }}
+                    title="Giroconto verso investimento"
+                    subtitle={`Trasferisci liquidità su ${transferInvestment.accountName}`}
+                    submitLabel="Conferma Giroconto"
+                    placeholderDescription="Es. Versamento per PAC Roboadvisor"
+                    onClose={() => setTransferInvestment(null)}
+                    onSuccess={async (amountNum) => {
+                        const accountName = transferInvestment.accountName;
+                        setTransferInvestment(null);
+                        setSuccessMessage(
+                            `Giroconto di ${formatCurrency(amountNum)} effettuato con successo verso ${accountName}!`
+                        );
+                        await loadInvestments();
+                        setTimeout(() => setSuccessMessage(''), 6000);
+                    }}
+                />
             )}
         </div>
     );

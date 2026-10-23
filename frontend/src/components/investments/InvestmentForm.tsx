@@ -6,32 +6,14 @@ import {
     Trash2,
     Calendar,
     CalendarDays,
-    Bot,
-    Wallet,
-    Layers,
-    BarChart2,
-    TrendingUp,
-    PieChart,
-    Coins,
-    ShieldCheck,
     Landmark,
     RefreshCw,
     Sparkles,
 } from 'lucide-react';
 import { accountService } from '../../services/services';
 import { formatCurrency } from '../../utils/formatters';
+import { investmentTypes } from '../../constants/investmentMeta';
 import type { Account, Investment, InvestmentComponent, InvestmentPayload, InvestmentSnapshot, InvestmentType } from '../../types';
-
-export const investmentTypes: { value: InvestmentType; label: string; icon: typeof Wallet; desc: string }[] = [
-    { value: 'ROBO_ADVISOR', label: 'Roboadvisor', icon: Bot, desc: 'Moneyfarm, Tinaba, Euclidea' },
-    { value: 'ETF', label: 'ETF', icon: BarChart2, desc: 'Fondi indicizzati (VWCE, SWDA)' },
-    { value: 'STOCK', label: 'Azioni', icon: TrendingUp, desc: 'Singoli titoli azionari' },
-    { value: 'FUND', label: 'Fondi Comuni', icon: PieChart, desc: 'Gestioni attive e fondi SICAV' },
-    { value: 'BOND', label: 'Obbligazioni', icon: Landmark, desc: 'BTP, BOT, titoli governativi' },
-    { value: 'PENSION', label: 'Fondo Pensione', icon: ShieldCheck, desc: 'PIP e fondi pensione negoziali' },
-    { value: 'CRYPTO', label: 'Crypto', icon: Coins, desc: 'Bitcoin, Ethereum e crypto' },
-    { value: 'OTHER', label: 'Altro', icon: Layers, desc: 'Beni rifugio, oro, liquidità' },
-];
 
 const componentAssetClasses = [
     'Azioni',

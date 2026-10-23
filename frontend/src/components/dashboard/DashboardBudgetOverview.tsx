@@ -1,7 +1,7 @@
 import { useNavigate } from 'react-router-dom';
 import { ChevronRight } from 'lucide-react';
 import type { DashboardOverview } from '../../types';
-import { ProgressBar } from '../UI';
+import { ProgressBar } from '../ui/UI';
 import { formatCurrency } from '../../utils/formatters';
 
 interface DashboardBudgetOverviewProps {

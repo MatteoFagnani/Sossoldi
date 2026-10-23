@@ -5,13 +5,6 @@ import {
     TrendingDown,
     Calendar,
     Pencil,
-    Bot,
-    Wallet,
-    Layers,
-    BarChart2,
-    PieChart,
-    Coins,
-    ShieldCheck,
     Landmark,
     RefreshCw,
 } from 'lucide-react';
@@ -26,7 +19,8 @@ import {
 } from 'recharts';
 import { formatCurrency } from '../../utils/formatters';
 import { investmentService } from '../../services/services';
-import type { Investment, InvestmentType, Transaction } from '../../types';
+import { typeMetadata } from '../../constants/investmentMeta';
+import type { Investment, Transaction } from '../../types';
 
 interface InvestmentReportModalProps {
     investment: Investment | null;
@@ -34,16 +28,14 @@ interface InvestmentReportModalProps {
     onEdit: (investment: Investment) => void;
 }
 
-const typeLabels: Record<InvestmentType, { label: string; icon: typeof Wallet; color: string; bg: string }> = {
-    ROBO_ADVISOR: { label: 'Roboadvisor', icon: Bot, color: 'text-indigo-600', bg: 'bg-indigo-50 border-indigo-200' },
-    ETF: { label: 'ETF', icon: BarChart2, color: 'text-blue-600', bg: 'bg-blue-50 border-blue-200' },
-    STOCK: { label: 'Azioni', icon: TrendingUp, color: 'text-emerald-600', bg: 'bg-emerald-50 border-emerald-200' },
-    FUND: { label: 'Fondi', icon: PieChart, color: 'text-violet-600', bg: 'bg-violet-50 border-violet-200' },
-    CRYPTO: { label: 'Crypto', icon: Coins, color: 'text-amber-600', bg: 'bg-amber-50 border-amber-200' },
-    PENSION: { label: 'Pensione', icon: ShieldCheck, color: 'text-cyan-600', bg: 'bg-cyan-50 border-cyan-200' },
-    BOND: { label: 'Obbligazioni', icon: Landmark, color: 'text-slate-600', bg: 'bg-slate-50 border-slate-200' },
-    OTHER: { label: 'Altro', icon: Layers, color: 'text-gray-600', bg: 'bg-gray-50 border-gray-200' },
-};
+interface ProcessedSnapshotRow {
+    period: string;
+    contribution: number;
+    cumulativeInvested: number;
+    endValue: number;
+    periodReturnVal: number;
+    periodReturnPct: number;
+}
 
 export default function InvestmentReportModal({ investment, onClose, onEdit }: InvestmentReportModalProps) {
     const [pacHistory, setPacHistory] = useState<Transaction[]>([]);
@@ -54,42 +46,56 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
         }
     }, [investment?.id]);
 
-    if (!investment) return null;
-
-    const typeMeta = typeLabels[investment.type] || typeLabels.OTHER;
-    const TypeIcon = typeMeta.icon;
-    const isYearly = investment.trackingFrequency === 'YEARLY' || (!investment.trackingFrequency && investment.type === 'ROBO_ADVISOR');
-
     // Parse and sort snapshots
-    const processedSnapshots = useMemo(() => {
+    const processedSnapshots = useMemo<ProcessedSnapshotRow[]>(() => {
+        if (!investment) return [];
         const snaps = [...(investment.snapshots || [])]
             .filter((s) => s.month && s.month.trim() !== '')
             .sort((a, b) => a.month.localeCompare(b.month));
 
-        let cumulativeInvested = 0;
-        let previousVal = 0;
+        return snaps.reduce<{
+            rows: ProcessedSnapshotRow[];
+            cumulativeInvested: number;
+            previousVal: number;
+        }>(
+            (acc, snap) => {
+                const contribution = snap.investedCapital || 0;
+                const cumulativeInvested = acc.cumulativeInvested + contribution;
+                const endVal =
+                    snap.currentValue != null
+                        ? snap.currentValue
+                        : snap.value != null
+                          ? snap.value
+                          : acc.previousVal + contribution;
 
-        return snaps.map((snap) => {
-            const contribution = snap.investedCapital || 0;
-            cumulativeInvested += contribution;
-            const endVal = snap.currentValue != null ? snap.currentValue : (snap.value != null ? snap.value : previousVal + contribution);
-            
-            // Period return
-            const base = previousVal === 0 ? contribution : previousVal;
-            const periodReturnVal = previousVal === 0 ? endVal - contribution : (endVal - contribution) - previousVal;
-            const periodReturnPct = base > 0 ? (previousVal === 0 ? (endVal / base - 1) * 100 : ((endVal - contribution) / base - 1) * 100) : 0;
+                const base = acc.previousVal === 0 ? contribution : acc.previousVal;
+                const periodReturnVal =
+                    acc.previousVal === 0 ? endVal - contribution : endVal - contribution - acc.previousVal;
+                const periodReturnPct =
+                    base > 0
+                        ? acc.previousVal === 0
+                            ? (endVal / base - 1) * 100
+                            : ((endVal - contribution) / base - 1) * 100
+                        : 0;
 
-            previousVal = endVal;
-
-            return {
-                period: snap.month,
-                contribution,
-                cumulativeInvested,
-                endValue: endVal,
-                periodReturnVal,
-                periodReturnPct,
-            };
-        });
+                return {
+                    cumulativeInvested,
+                    previousVal: endVal,
+                    rows: [
+                        ...acc.rows,
+                        {
+                            period: snap.month,
+                            contribution,
+                            cumulativeInvested,
+                            endValue: endVal,
+                            periodReturnVal,
+                            periodReturnPct,
+                        },
+                    ],
+                };
+            },
+            { rows: [], cumulativeInvested: 0, previousVal: 0 }
+        ).rows;
     }, [investment]);
 
     const chartData = useMemo(() => {
@@ -100,6 +106,11 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
         }));
     }, [processedSnapshots]);
 
+    if (!investment) return null;
+
+    const typeMeta = typeMetadata[investment.type] || typeMetadata.OTHER;
+    const TypeIcon = typeMeta.icon;
+    const isYearly = investment.trackingFrequency === 'YEARLY' || (!investment.trackingFrequency && investment.type === 'ROBO_ADVISOR');
     const isPositive = investment.gainLoss >= 0;
 
     return (
@@ -418,4 +429,3 @@ export default function InvestmentReportModal({ investment, onClose, onEdit }: I
         </div>
     );
 }
-

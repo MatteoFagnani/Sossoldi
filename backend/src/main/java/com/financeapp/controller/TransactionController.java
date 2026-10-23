@@ -29,13 +29,6 @@ public class TransactionController extends BaseController {
         return ResponseEntity.ok(transactionService.getMovements(getCurrentUser(authentication), accountId));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<TransactionDto> getTransactionById(
-            Authentication authentication,
-            @PathVariable Long id) {
-        return ResponseEntity.ok(transactionService.getTransactionById(getCurrentUser(authentication), id));
-    }
-
     @PostMapping
     public ResponseEntity<TransactionDto> createTransaction(
             Authentication authentication,

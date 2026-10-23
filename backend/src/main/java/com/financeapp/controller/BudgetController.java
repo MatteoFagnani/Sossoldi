@@ -33,13 +33,6 @@ public class BudgetController extends BaseController {
         return ResponseEntity.ok(budgetService.getBudgetStatusesByMonthAndYear(getCurrentUser(authentication), rMonth, rYear));
     }
 
-    @GetMapping("/{id}")
-    public ResponseEntity<BudgetDto> getBudgetById(
-            Authentication authentication,
-            @PathVariable Long id) {
-        return ResponseEntity.ok(budgetService.getBudgetById(getCurrentUser(authentication), id));
-    }
-
     @PostMapping
     public ResponseEntity<BudgetDto> createBudget(
             Authentication authentication,

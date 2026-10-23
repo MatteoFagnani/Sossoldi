@@ -1,4 +1,4 @@
-package com.financeapp.service.pattern.strategy;
+package com.financeapp.service.report;
 
 import com.financeapp.dto.ReportDto;
 import com.financeapp.model.Transaction;
@@ -29,18 +29,14 @@ public class YearlyReportStrategy implements ReportStrategy {
         double totalIncome = 0.0;
         double totalExpense = 0.0;
 
-        // DataPoints: Map "Month" -> "Net Balance", "Cumulative Income", "Cumulative Expense"
-        Map<String, Double> monthlyBalances = new LinkedHashMap<>();
         Map<String, Double> incomeDataPoints = new LinkedHashMap<>();
         Map<String, Double> expenseDataPoints = new LinkedHashMap<>();
 
-        // Initialize map with all 12 months using the given year
         int year = startDate.getYear();
         for (int i = 1; i <= 12; i++) {
             String monthName = LocalDate.of(year, i, 1)
                     .getMonth()
                     .getDisplayName(TextStyle.SHORT, Locale.ITALIAN);
-            monthlyBalances.put(monthName, 0.0);
             incomeDataPoints.put(monthName, 0.0);
             expenseDataPoints.put(monthName, 0.0);
         }
@@ -51,23 +47,16 @@ public class YearlyReportStrategy implements ReportStrategy {
 
             if (t.getType() == TransactionType.INCOME) {
                 totalIncome += amount;
-                monthlyBalances.put(monthName, monthlyBalances.getOrDefault(monthName, 0.0) + amount);
                 incomeDataPoints.put(monthName, incomeDataPoints.getOrDefault(monthName, 0.0) + amount);
             } else {
                 totalExpense += amount;
-                monthlyBalances.put(monthName, monthlyBalances.getOrDefault(monthName, 0.0) - amount);
                 expenseDataPoints.put(monthName, expenseDataPoints.getOrDefault(monthName, 0.0) + amount);
             }
         }
 
-        // Apply cumulative logic
-        double runningBalance = 0.0;
         double runningIncome = 0.0;
         double runningExpense = 0.0;
-        for (String month : monthlyBalances.keySet()) {
-            runningBalance += monthlyBalances.get(month);
-            monthlyBalances.put(month, runningBalance);
-
+        for (String month : incomeDataPoints.keySet()) {
             runningIncome += incomeDataPoints.get(month);
             incomeDataPoints.put(month, runningIncome);
 
@@ -76,11 +65,9 @@ public class YearlyReportStrategy implements ReportStrategy {
         }
 
         return ReportDto.builder()
-                .title("Annual Financial Report " + year)
                 .totalIncome(totalIncome)
                 .totalExpense(totalExpense)
-                .netBalance(totalIncome - totalExpense)
-                .dataPoints(monthlyBalances)
+                .dataPoints(incomeDataPoints)
                 .incomeDataPoints(incomeDataPoints)
                 .expenseDataPoints(expenseDataPoints)
                 .build();

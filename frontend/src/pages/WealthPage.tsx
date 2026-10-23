@@ -9,70 +9,23 @@ import {
     Wallet,
     X,
     Landmark,
-    PiggyBank,
-    Banknote,
-    CreditCard,
     TrendingUp,
     Pencil,
-
-
     GripVertical,
-
 } from 'lucide-react';
 import { accountService, accountTransferService, investmentService } from '../services/services';
 import { adjustedInitialBalance } from '../utils/accountBalance';
+import { accountTypes, getAccountIcon, getAccountColor } from '../constants/accountMeta';
+import { extractApiError } from '../utils/error';
+import TransferFormModal, { type TransferFormInitialData } from '../components/transfers/TransferFormModal';
 import type { Account, AccountTransfer, AccountType, Investment } from '../types';
-
-const accountTypes: { value: AccountType; label: string }[] = [
-    { value: 'CHECKING', label: 'Conto corrente' },
-    { value: 'SAVINGS', label: 'Risparmio' },
-    { value: 'CASH', label: 'Contanti' },
-    { value: 'CARD', label: 'Carta' },
-    { value: 'INVESTMENT', label: 'Investimenti' },
-    { value: 'OTHER', label: 'Altro' },
-];
 
 const ORDER_STORAGE_KEY = 'sossoldi_account_order';
 
-const emptyAccountForm = { name: '', type: 'CHECKING' as AccountType, initialBalance: '0', archived: false };
-const emptyTransferForm = { fromAccountId: '', toAccountId: '', amount: '', date: new Date().toISOString().slice(0, 10), description: '' };
+const emptyAccountForm = { name: '', type: 'CHECKING' as AccountType, initialBalance: '0' };
 const inputClass = 'w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent transition-all';
 
 type Modal = 'account' | 'transfer' | null;
-
-const getAccountIcon = (type: AccountType) => {
-    switch (type) {
-        case 'CHECKING':
-            return Landmark;
-        case 'SAVINGS':
-            return PiggyBank;
-        case 'CASH':
-            return Banknote;
-        case 'CARD':
-            return CreditCard;
-        case 'INVESTMENT':
-            return TrendingUp;
-        default:
-            return Wallet;
-    }
-};
-
-const getAccountColor = (type: AccountType): string => {
-    switch (type) {
-        case 'CHECKING':
-            return '#111827';
-        case 'SAVINGS':
-            return '#06b6d4';
-        case 'CASH':
-            return '#10b981';
-        case 'CARD':
-            return '#8b5cf6';
-        case 'INVESTMENT':
-            return '#f59e0b';
-        default:
-            return '#64748b';
-    }
-};
 
 const sortAccountsBySavedOrder = (accountsList: Account[]): Account[] => {
     try {
@@ -97,24 +50,17 @@ export default function WealthPage() {
     const [investments, setInvestments] = useState<Investment[]>([]);
     const [editing, setEditing] = useState<Account | null>(null);
     const [accountForm, setAccountForm] = useState(emptyAccountForm);
-    const [transferForm, setTransferForm] = useState(emptyTransferForm);
+    const [transferInitial, setTransferInitial] = useState<TransferFormInitialData | undefined>(undefined);
     const [modal, setModal] = useState<Modal>(null);
     const [loading, setLoading] = useState(true);
     const [savingAccount, setSavingAccount] = useState(false);
-    const [savingTransfer, setSavingTransfer] = useState(false);
     const [error, setError] = useState('');
-
 
     // Drag and Drop state
     const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
     const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
     const activeAccounts = useMemo(() => accounts.filter(account => !account.archived), [accounts]);
-
-
-    const displayedAccounts = activeAccounts;
-
-
 
     const accountTotal = useMemo(() => activeAccounts.reduce((sum, account) => sum + account.currentBalance, 0), [activeAccounts]);
     const investmentTotal = useMemo(() => investments.reduce((sum, item) => sum + item.currentValue, 0), [investments]);
@@ -150,16 +96,6 @@ export default function WealthPage() {
         loadData();
     }, []);
 
-    useEffect(() => {
-        if (!transferForm.fromAccountId && activeAccounts[0]) {
-            setTransferForm(form => ({
-                ...form,
-                fromAccountId: String(activeAccounts[0].id),
-                toAccountId: String(activeAccounts[1]?.id ?? ''),
-            }));
-        }
-    }, [activeAccounts, transferForm.fromAccountId]);
-
     // Drag & Drop Handlers
     const handleDragStart = (e: React.DragEvent, index: number) => {
         setDraggedIndex(index);
@@ -183,7 +119,7 @@ export default function WealthPage() {
             return;
         }
 
-        const currentList = [...displayedAccounts];
+        const currentList = [...activeAccounts];
         const [movedAccount] = currentList.splice(draggedIndex, 1);
         currentList.splice(targetIndex, 0, movedAccount);
 
@@ -219,7 +155,6 @@ export default function WealthPage() {
             name: account.name,
             type: account.type,
             initialBalance: String(Math.round(account.currentBalance * 100) / 100),
-            archived: account.archived,
         });
         setModal('account');
     };
@@ -232,14 +167,10 @@ export default function WealthPage() {
 
     const moveAccount = (account: Account) => {
         const destination = activeAccounts.find(item => item.id !== account.id);
-        setTransferForm(form => ({
-            ...form,
+        setTransferInitial({
             fromAccountId: String(account.id),
             toAccountId: destination ? String(destination.id) : '',
-            amount: '',
-            date: new Date().toISOString().slice(0, 10),
-            description: '',
-        }));
+        });
         setModal('transfer');
     };
 
@@ -251,6 +182,7 @@ export default function WealthPage() {
             const enteredBalance = Number.parseFloat(accountForm.initialBalance) || 0;
             const payload = {
                 ...accountForm,
+                archived: false,
                 initialBalance: editing
                     ? adjustedInitialBalance(editing.initialBalance, editing.currentBalance, enteredBalance)
                     : enteredBalance,
@@ -260,35 +192,9 @@ export default function WealthPage() {
             resetAccountForm();
             await loadData();
         } catch (err: unknown) {
-            showError(err, 'Errore durante il salvataggio del conto.');
+            setError(extractApiError(err, 'Errore durante il salvataggio del conto.'));
         } finally {
             setSavingAccount(false);
-        }
-    };
-
-    const saveTransfer = async (event: FormEvent) => {
-        event.preventDefault();
-        if (transferForm.fromAccountId === transferForm.toAccountId) {
-            setError('I conti di origine e destinazione devono essere diversi.');
-            return;
-        }
-        setSavingTransfer(true);
-        setError('');
-        try {
-            await accountTransferService.create({
-                fromAccountId: Number(transferForm.fromAccountId),
-                toAccountId: Number(transferForm.toAccountId),
-                amount: Number.parseFloat(transferForm.amount),
-                date: transferForm.date,
-                description: transferForm.description || undefined,
-            });
-            setTransferForm(form => ({ ...emptyTransferForm, fromAccountId: form.fromAccountId, toAccountId: form.toAccountId }));
-            setModal(null);
-            await loadData();
-        } catch (err: unknown) {
-            showError(err, 'Errore durante il trasferimento.');
-        } finally {
-            setSavingTransfer(false);
         }
     };
 
@@ -300,7 +206,7 @@ export default function WealthPage() {
             if (editing?.id === account.id) resetAccountForm();
             await loadData();
         } catch (err: unknown) {
-            showError(err, 'Errore durante eliminazione del conto.');
+            setError(extractApiError(err, 'Errore durante eliminazione del conto.'));
         }
     };
 
@@ -311,15 +217,8 @@ export default function WealthPage() {
             await accountTransferService.remove(transfer.id);
             await loadData();
         } catch (err: unknown) {
-            showError(err, 'Errore durante eliminazione del trasferimento.');
+            setError(extractApiError(err, 'Errore durante eliminazione del trasferimento.'));
         }
-    };
-
-    const showError = (err: unknown, fallback: string) => {
-        const data = (err as { response?: { data?: Record<string, string> | string } })?.response?.data;
-        if (typeof data === 'string') setError(data);
-        else if (data) setError(Object.values(data).join('. '));
-        else setError(fallback);
     };
 
     if (loading) {
@@ -385,7 +284,7 @@ export default function WealthPage() {
                 </div>
             </div>
 
-            {/* Header Sezione Conti con Drag & Drop Info e Filtro Archiviati */}
+            {/* Header Sezione Conti con Drag & Drop Info */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 pt-2">
                 <div>
                     <h2 className="text-sm font-semibold text-gray-900 tracking-tight">
@@ -399,7 +298,7 @@ export default function WealthPage() {
 
             {/* Grid delle Card dei Conti con Drag and Drop */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                {displayedAccounts.map((account, index) => {
+                {activeAccounts.map((account, index) => {
                     const Icon = getAccountIcon(account.type);
                     const color = getAccountColor(account.type);
                     const typeLabel = accountTypes.find(t => t.value === account.type)?.label || account.type;
@@ -419,8 +318,6 @@ export default function WealthPage() {
                                     ? 'opacity-40 scale-95 border-dashed border-gray-400 shadow-none'
                                     : isDragOver
                                     ? 'ring-2 ring-gray-900 ring-offset-2 scale-[1.02] shadow-md'
-                                    : account.archived
-                                    ? 'opacity-60 bg-gray-50 border-dashed'
                                     : 'hover:shadow-md'
                             }`}
                         >
@@ -448,11 +345,6 @@ export default function WealthPage() {
                                                 <span className="text-[11px] text-gray-500 font-medium">
                                                     {typeLabel}
                                                 </span>
-                                                {account.archived && (
-                                                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-gray-200 text-gray-600">
-                                                        Archiviato
-                                                    </span>
-                                                )}
                                             </div>
                                         </div>
                                     </div>
@@ -495,18 +387,14 @@ export default function WealthPage() {
                                 className="pt-3 border-t border-gray-100 mt-2"
                                 onMouseDown={(e) => e.stopPropagation()}
                             >
-                                {!account.archived ? (
-                                    <button
-                                        type="button"
-                                        onClick={(e) => { e.stopPropagation(); moveAccount(account); }}
-                                        className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold text-gray-700 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors cursor-pointer"
-                                    >
-                                        <ArrowRightLeft size={13} />
-                                        <span>Giroconto</span>
-                                    </button>
-                                ) : (
-                                    <span className="text-xs text-gray-400 italic block text-center py-1">Conto archiviato</span>
-                                )}
+                                <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); moveAccount(account); }}
+                                    className="w-full flex items-center justify-center gap-1.5 py-2 px-3 text-xs font-semibold text-gray-700 hover:text-gray-900 bg-gray-50 hover:bg-gray-100 border border-gray-200 rounded-xl transition-colors cursor-pointer"
+                                >
+                                    <ArrowRightLeft size={13} />
+                                    <span>Giroconto</span>
+                                </button>
                             </div>
                         </div>
                     );
@@ -578,17 +466,17 @@ export default function WealthPage() {
                 </div>
             )}
 
-            {/* Modali */}
-            {modal && (
+            {/* Modale Conto */}
+            {modal === 'account' && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-2xs px-4 py-8">
                     <div className="w-full max-w-md bg-white border border-gray-200 rounded-2xl shadow-xl p-6">
                         <div className="flex items-center justify-between mb-4">
                             <h2 className="text-base font-semibold text-gray-900">
-                                {modal === 'account' ? (editing ? 'Modifica conto' : 'Nuovo conto') : 'Muovi denaro (Giroconto)'}
+                                {editing ? 'Modifica conto' : 'Nuovo conto'}
                             </h2>
                             <button
                                 type="button"
-                                onClick={() => (modal === 'account' ? resetAccountForm() : setModal(null))}
+                                onClick={resetAccountForm}
                                 className="p-2 text-gray-400 hover:text-gray-700 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer"
                                 title="Chiudi"
                             >
@@ -596,150 +484,76 @@ export default function WealthPage() {
                             </button>
                         </div>
 
-                        {modal === 'account' ? (
-                            <form onSubmit={saveAccount} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Nome del conto</label>
-                                    <input
-                                        value={accountForm.name}
-                                        onChange={e => setAccountForm({ ...accountForm, name: e.target.value })}
-                                        required
-                                        className={inputClass}
-                                        placeholder="Es. Intesa Sanpaolo, Revolut, Contanti"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Tipologia</label>
-                                    <select
-                                        value={accountForm.type}
-                                        onChange={e => setAccountForm({ ...accountForm, type: e.target.value as AccountType })}
-                                        className={inputClass}
-                                    >
-                                        {accountTypes.map(type => (
-                                            <option key={type.value} value={type.value}>{type.label}</option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">
-                                        {editing ? 'Rettifica saldo attuale (€)' : 'Saldo iniziale (€)'}
-                                    </label>
-                                    <input
-                                        type="number"
-                                        step="0.01"
-                                        value={accountForm.initialBalance}
-                                        onChange={e => setAccountForm({ ...accountForm, initialBalance: e.target.value })}
-                                        required
-                                        className={inputClass}
-                                    />
-                                    {editing && (
-                                        <p className="text-[11px] text-gray-400 mt-1">
-                                            Aggiornando il saldo qui verrà ricalcolato il punto di partenza conservando la cronologia transazioni.
-                                        </p>
-                                    )}
-                                </div>
-                                <label className="flex items-center gap-2 text-xs font-medium text-gray-700 cursor-pointer pt-1">
-                                    <input
-                                        type="checkbox"
-                                        checked={accountForm.archived}
-                                        onChange={e => setAccountForm({ ...accountForm, archived: e.target.checked })}
-                                        className="rounded text-gray-900 focus:ring-gray-900"
-                                    />
-                                    Conto archiviato (chiuso o non più utilizzato)
+                        <form onSubmit={saveAccount} className="space-y-4">
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Nome del conto</label>
+                                <input
+                                    value={accountForm.name}
+                                    onChange={e => setAccountForm({ ...accountForm, name: e.target.value })}
+                                    required
+                                    className={inputClass}
+                                    placeholder="Es. Intesa Sanpaolo, Revolut, Contanti"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">Tipologia</label>
+                                <select
+                                    value={accountForm.type}
+                                    onChange={e => setAccountForm({ ...accountForm, type: e.target.value as AccountType })}
+                                    className={inputClass}
+                                >
+                                    {accountTypes.map(type => (
+                                        <option key={type.value} value={type.value}>{type.label}</option>
+                                    ))}
+                                </select>
+                            </div>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                    {editing ? 'Rettifica saldo attuale (€)' : 'Saldo iniziale (€)'}
                                 </label>
-                                <div className="pt-2">
-                                    <button
-                                        type="submit"
-                                        disabled={savingAccount}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
-                                    >
-                                        {savingAccount ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
-                                        {editing ? 'Salva modifiche' : 'Aggiungi conto'}
-                                    </button>
-                                </div>
-                            </form>
-                        ) : (
-                            <form onSubmit={saveTransfer} className="space-y-4">
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Dal conto (origine)</label>
-                                    <select
-                                        value={transferForm.fromAccountId}
-                                        onChange={e => setTransferForm({ ...transferForm, fromAccountId: e.target.value })}
-                                        required
-                                        className={inputClass}
-                                    >
-                                        <option value="">Seleziona conto</option>
-                                        {activeAccounts.map(account => (
-                                            <option key={account.id} value={account.id}>
-                                                {account.name} ({fmt(account.currentBalance)})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Al conto (destinazione)</label>
-                                    <select
-                                        value={transferForm.toAccountId}
-                                        onChange={e => setTransferForm({ ...transferForm, toAccountId: e.target.value })}
-                                        required
-                                        className={inputClass}
-                                    >
-                                        <option value="">Seleziona conto</option>
-                                        {activeAccounts.map(account => (
-                                            <option key={account.id} value={account.id}>
-                                                {account.name} ({fmt(account.currentBalance)})
-                                            </option>
-                                        ))}
-                                    </select>
-                                </div>
-                                <div className="grid grid-cols-2 gap-3">
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Importo (€)</label>
-                                        <input
-                                            type="number"
-                                            min="0.01"
-                                            step="0.01"
-                                            value={transferForm.amount}
-                                            onChange={e => setTransferForm({ ...transferForm, amount: e.target.value })}
-                                            required
-                                            placeholder="0.00"
-                                            className={inputClass}
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-medium text-gray-700 mb-1.5">Data</label>
-                                        <input
-                                            type="date"
-                                            value={transferForm.date}
-                                            onChange={e => setTransferForm({ ...transferForm, date: e.target.value })}
-                                            required
-                                            className={inputClass}
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-xs font-medium text-gray-700 mb-1.5">Causale / Nota (opzionale)</label>
-                                    <input
-                                        value={transferForm.description}
-                                        onChange={e => setTransferForm({ ...transferForm, description: e.target.value })}
-                                        className={inputClass}
-                                        placeholder="Es. Spostamento su conto deposito"
-                                    />
-                                </div>
-                                <div className="pt-2">
-                                    <button
-                                        type="submit"
-                                        disabled={savingTransfer || activeAccounts.length < 2}
-                                        className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
-                                    >
-                                        {savingTransfer ? <Loader2 size={15} className="animate-spin" /> : <ArrowRightLeft size={15} />}
-                                        Registra trasferimento
-                                    </button>
-                                </div>
-                            </form>
-                        )}
+                                <input
+                                    type="number"
+                                    step="0.01"
+                                    value={accountForm.initialBalance}
+                                    onChange={e => setAccountForm({ ...accountForm, initialBalance: e.target.value })}
+                                    required
+                                    className={inputClass}
+                                />
+                                {editing && (
+                                    <p className="text-[11px] text-gray-400 mt-1">
+                                        Aggiornando il saldo qui verrà ricalcolato il punto di partenza conservando la cronologia transazioni.
+                                    </p>
+                                )}
+                            </div>
+                            <div className="pt-2">
+                                <button
+                                    type="submit"
+                                    disabled={savingAccount}
+                                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-gray-900 hover:bg-black disabled:opacity-60 text-white text-sm font-semibold rounded-xl transition-colors cursor-pointer"
+                                >
+                                    {savingAccount ? <Loader2 size={15} className="animate-spin" /> : <Plus size={15} />}
+                                    {editing ? 'Salva modifiche' : 'Aggiungi conto'}
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
+            )}
+
+            {/* Modale Giroconto */}
+            {modal === 'transfer' && (
+                <TransferFormModal
+                    accounts={activeAccounts}
+                    initialData={transferInitial}
+                    title="Muovi denaro (Giroconto)"
+                    submitLabel="Registra trasferimento"
+                    placeholderDescription="Es. Spostamento su conto deposito"
+                    onClose={() => setModal(null)}
+                    onSuccess={async () => {
+                        setModal(null);
+                        await loadData();
+                    }}
+                />
             )}
         </div>
     );

@@ -2,25 +2,24 @@ package com.financeapp.controller;
 
 import com.financeapp.dto.AuthResponse;
 import com.financeapp.dto.GoogleConfigResponse;
-import com.financeapp.dto.GoogleLoginRequest;
+import com.financeapp.mapper.UserMapper;
+import com.financeapp.model.User;
 import com.financeapp.service.AuthenticationService;
 import com.financeapp.service.GoogleAuthService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseCookie;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.financeapp.mapper.UserMapper;
-import com.financeapp.model.User;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.security.core.Authentication;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
@@ -69,8 +68,8 @@ public class AuthController {
 
     @GetMapping("/google/callback")
     public void handleGoogleCallback(
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String code,
-            @org.springframework.web.bind.annotation.RequestParam(required = false) String error,
+            @RequestParam(required = false) String code,
+            @RequestParam(required = false) String error,
             HttpServletRequest request,
             HttpServletResponse response) throws java.io.IOException {
 
@@ -88,8 +87,7 @@ public class AuthController {
                     userInfo.name(),
                     userInfo.givenName(),
                     userInfo.familyName(),
-                    userInfo.picture(),
-                    userInfo.sub()
+                    userInfo.picture()
             );
             setJwtCookie(request, response, authResponse.getToken());
             response.sendRedirect("/");
@@ -112,69 +110,38 @@ public class AuthController {
         return scheme + "://" + host + "/api/v1/auth/google/callback";
     }
 
-    @PostMapping("/google")
-    public ResponseEntity<AuthResponse> loginWithGoogle(
-            @RequestBody GoogleLoginRequest request,
-            HttpServletRequest httpRequest,
-            HttpServletResponse response) {
-
-        String email;
-        String name;
-        String givenName = null;
-        String familyName = null;
-        String picture = null;
-        String sub;
-
-        if (request.getIdToken() != null && !request.getIdToken().isBlank()) {
-            var userInfo = googleAuthService.verifyToken(request.getIdToken());
-            email = userInfo.email();
-            name = userInfo.name();
-            givenName = userInfo.givenName();
-            familyName = userInfo.familyName();
-            picture = userInfo.picture();
-            sub = userInfo.sub();
-        } else if (request.getEmail() != null && !request.getEmail().isBlank()) {
-            email = request.getEmail().trim().toLowerCase();
-            name = request.getName() != null && !request.getName().isBlank() ? request.getName() : "Utente Google";
-            givenName = request.getGivenName();
-            familyName = request.getFamilyName();
-            picture = request.getPicture();
-            sub = "local-google-" + email.hashCode();
-        } else {
-            throw new IllegalArgumentException("Token Google mancante o configurazione incompleta.");
-        }
-
-        AuthResponse authResponse = service.authenticateWithGoogle(email, name, givenName, familyName, picture, sub);
-        setJwtCookie(httpRequest, response, authResponse.getToken());
-        authResponse.setToken(null);
-        return ResponseEntity.ok(authResponse);
-    }
-
     private void setJwtCookie(HttpServletRequest request, HttpServletResponse response, String token) {
         ResponseCookie cookie = ResponseCookie.from("jwt", token)
                 .httpOnly(true)
                 .secure(isSecureRequest(request))
                 .path("/")
-                .maxAge(7 * 24 * 60 * 60) // 7 days
-                .sameSite("Lax") // Helps with CSRF while allowing API usage
+                .maxAge(7 * 24 * 60 * 60)
+                .sameSite("Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
     }
 
     @PostMapping("/logout")
     public ResponseEntity<Void> logout(HttpServletRequest request, HttpServletResponse response) {
+        clearJwtCookie(request, response);
+        return ResponseEntity.ok().build();
+    }
+
+    public static void clearJwtCookie(HttpServletRequest request, HttpServletResponse response) {
         ResponseCookie cookie = ResponseCookie.from("jwt", "")
                 .httpOnly(true)
                 .secure(isSecureRequest(request))
                 .path("/")
-                .maxAge(0) // Expire immediately
+                .maxAge(0)
                 .sameSite("Lax")
                 .build();
         response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
-        return ResponseEntity.ok().build();
     }
 
-    private boolean isSecureRequest(HttpServletRequest request) {
+    private static boolean isSecureRequest(HttpServletRequest request) {
+        if (request == null) {
+            return false;
+        }
         String forwardedProto = request.getHeader("X-Forwarded-Proto");
         if (forwardedProto != null && !forwardedProto.isBlank()) {
             return "https".equalsIgnoreCase(forwardedProto);

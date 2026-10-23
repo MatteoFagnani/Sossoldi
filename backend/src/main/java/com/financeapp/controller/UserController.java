@@ -3,10 +3,9 @@ package com.financeapp.controller;
 import com.financeapp.dto.ProfileUpdateRequest;
 import com.financeapp.dto.UserDto;
 import com.financeapp.service.UserService;
-import lombok.RequiredArgsConstructor;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.ResponseCookie;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -31,15 +30,12 @@ public class UserController extends BaseController {
     }
 
     @DeleteMapping("/me")
-    public ResponseEntity<Void> deleteAccount(Authentication authentication, HttpServletResponse response) {
+    public ResponseEntity<Void> deleteAccount(
+            Authentication authentication,
+            HttpServletRequest request,
+            HttpServletResponse response) {
         userService.deleteAccount(getCurrentUser(authentication));
-        ResponseCookie cookie = ResponseCookie.from("jwt", "")
-                .httpOnly(true)
-                .path("/")
-                .maxAge(0)
-                .sameSite("Lax")
-                .build();
-        response.addHeader(HttpHeaders.SET_COOKIE, cookie.toString());
+        AuthController.clearJwtCookie(request, response);
         return ResponseEntity.ok().build();
     }
 }

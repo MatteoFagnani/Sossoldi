@@ -1,4 +1,4 @@
-package com.financeapp.service.pattern.strategy;
+package com.financeapp.service.report;
 
 import com.financeapp.dto.ReportDto;
 import com.financeapp.model.Transaction;
@@ -27,16 +27,12 @@ public class MonthlyReportStrategy implements ReportStrategy {
         double totalIncome = 0.0;
         double totalExpense = 0.0;
 
-        // DataPoints: Map "Day" -> "Net Balance", "Cumulative Income", "Cumulative Expense"
-        Map<String, Double> dailyBalances = new LinkedHashMap<>();
         Map<String, Double> incomeDataPoints = new LinkedHashMap<>();
         Map<String, Double> expenseDataPoints = new LinkedHashMap<>();
 
-        // Initialize maps
         LocalDate currentDate = startDate;
         while (!currentDate.isAfter(endDate)) {
             String day = currentDate.toString();
-            dailyBalances.put(day, 0.0);
             incomeDataPoints.put(day, 0.0);
             expenseDataPoints.put(day, 0.0);
             currentDate = currentDate.plusDays(1);
@@ -46,27 +42,20 @@ public class MonthlyReportStrategy implements ReportStrategy {
             String day = t.getDate().toString();
             double amount = t.getAmount();
 
-            if (dailyBalances.containsKey(day)) {
+            if (incomeDataPoints.containsKey(day)) {
                 if (t.getType() == TransactionType.INCOME) {
                     totalIncome += amount;
-                    dailyBalances.put(day, dailyBalances.get(day) + amount);
                     incomeDataPoints.put(day, incomeDataPoints.get(day) + amount);
                 } else {
                     totalExpense += amount;
-                    dailyBalances.put(day, dailyBalances.get(day) - amount);
-                    expenseDataPoints.put(day, expenseDataPoints.get(day) + amount); // absolute values
+                    expenseDataPoints.put(day, expenseDataPoints.get(day) + amount);
                 }
             }
         }
 
-        // Apply cumulative logic
-        double runningBalance = 0.0;
         double runningIncome = 0.0;
         double runningExpense = 0.0;
-        for (String day : dailyBalances.keySet()) {
-            runningBalance += dailyBalances.get(day);
-            dailyBalances.put(day, runningBalance);
-
+        for (String day : incomeDataPoints.keySet()) {
             runningIncome += incomeDataPoints.get(day);
             incomeDataPoints.put(day, runningIncome);
 
@@ -75,11 +64,9 @@ public class MonthlyReportStrategy implements ReportStrategy {
         }
 
         return ReportDto.builder()
-                .title("Monthly Financial Report")
                 .totalIncome(totalIncome)
                 .totalExpense(totalExpense)
-                .netBalance(totalIncome - totalExpense)
-                .dataPoints(dailyBalances)
+                .dataPoints(incomeDataPoints)
                 .incomeDataPoints(incomeDataPoints)
                 .expenseDataPoints(expenseDataPoints)
                 .build();

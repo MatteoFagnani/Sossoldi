@@ -1,6 +1,5 @@
 import api from './api';
 import type {
-    AuthResponse,
     Account,
     AccountPayload,
     AccountMovement,
@@ -8,7 +7,6 @@ import type {
     AccountTransferPayload,
     Category,
     CategoryPayload,
-    CashFlowData,
     AdvancedAnalyticsData,
     AiFinancialInsights,
     Investment,
@@ -24,6 +22,8 @@ import type {
     DashboardOverview,
     AiStatus,
     CategorizeMerchantResponse,
+    User,
+    UpdateProfilePayload,
 } from '../types';
 
 export const authService = {
@@ -31,18 +31,21 @@ export const authService = {
         const response = await api.get<{ clientId: string; configured: boolean }>('/auth/google/config');
         return response.data;
     },
-    async loginWithGoogle(payload: { idToken?: string; email?: string; name?: string }): Promise<AuthResponse> {
-        const response = await api.post<AuthResponse>('/auth/google', payload);
-        return response.data;
+};
+
+export const userService = {
+    async getMe(): Promise<User> {
+        return (await api.get<User>('/users/me')).data;
+    },
+    async updateProfile(data: UpdateProfilePayload): Promise<User> {
+        return (await api.put<User>('/users/profile', data)).data;
+    },
+    async deleteAccount(): Promise<void> {
+        await api.delete('/users/me');
     },
 };
 
 export const analyticsService = {
-    async getCashFlow(year: number, month?: number): Promise<CashFlowData> {
-        const params = new URLSearchParams({ year: String(year) });
-        if (month !== undefined) params.append('month', String(month));
-        return (await api.get(`/analytics/cash-flow?${params.toString()}`)).data;
-    },
     async getAdvanced(year: number, month?: number): Promise<AdvancedAnalyticsData> {
         const params = new URLSearchParams({ year: String(year) });
         if (month !== undefined) params.append('month', String(month));
@@ -79,11 +82,9 @@ export const investmentService = {
 
 export const categoryService = {
     async getAll(): Promise<Category[]> { return (await api.get('/categories')).data; },
-    async getByType(type: string): Promise<Category[]> { return (await api.get(`/categories/type/${type}`)).data; },
     async create(data: CategoryPayload): Promise<Category> { return (await api.post('/categories', data)).data; },
     async update(id: number, data: Partial<CategoryPayload>): Promise<Category> { return (await api.put(`/categories/${id}`, data)).data; },
     async remove(id: number): Promise<void> { return (await api.delete(`/categories/${id}`)).data; },
-    async seedDefaults(): Promise<Category[]> { return (await api.post('/categories/seed-defaults')).data; },
 };
 
 export const transactionService = {

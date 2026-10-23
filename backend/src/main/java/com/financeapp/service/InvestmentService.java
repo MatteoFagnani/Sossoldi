@@ -1,5 +1,6 @@
 package com.financeapp.service;
 
+import com.financeapp.dto.AccountDto;
 import com.financeapp.dto.InvestmentDto;
 import com.financeapp.dto.TransactionDto;
 import com.financeapp.exception.ResourceNotFoundException;
@@ -27,6 +28,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -51,8 +53,12 @@ public class InvestmentService {
         double total = investments.stream()
                 .mapToDouble(inv -> effectiveCurrentValue(inv, sortedSnapshotsMap.get(inv.getId())))
                 .sum();
+
+        Map<Long, Double> accountBalances = accountService.getAccounts(user).stream()
+                .collect(Collectors.toMap(AccountDto::getId, AccountDto::getCurrentBalance, (a, b) -> a));
+
         return investments.stream()
-                .map(inv -> toDto(inv, total, sortedSnapshotsMap.get(inv.getId())))
+                .map(inv -> toDto(inv, total, sortedSnapshotsMap.get(inv.getId()), accountBalances))
                 .toList();
     }
 
@@ -62,28 +68,10 @@ public class InvestmentService {
                 ? accountService.getAccountAndVerifyOwner(dto.getAccountId(), user)
                 : null;
 
-        Investment investment = Investment.builder()
-                .name(dto.getName())
-                .type(dto.getType())
-                .ticker(dto.getTicker())
-                .currentValue(dto.getCurrentValue())
-                .investedCapital(dto.getInvestedCapital())
-                .recurringAmount(dto.getRecurringAmount())
-                .recurringDay(dto.getRecurringDay())
-                .pacActive(dto.isPacActive())
-                .trackingFrequency(dto.getTrackingFrequency() != null ? dto.getTrackingFrequency() : "MONTHLY")
-                .stocksPercent(dto.getStocksPercent())
-                .bondsPercent(dto.getBondsPercent())
-                .governmentBondsPercent(dto.getGovernmentBondsPercent())
-                .cashPercent(dto.getCashPercent())
-                .otherPercent(dto.getOtherPercent())
-                .components(dto.getComponents() == null ? new ArrayList<>() : dto.getComponents())
-                .snapshots(dto.getSnapshots() == null ? new ArrayList<>() : dto.getSnapshots())
-                .lastUpdateDate(dto.getLastUpdateDate() == null ? LocalDate.now() : dto.getLastUpdateDate())
-                .account(account)
-                .lastPacExecutionMonth(dto.getLastPacExecutionMonth())
-                .user(user)
-                .build();
+        Investment investment = new Investment();
+        investment.setUser(user);
+        applyDtoToInvestment(investment, dto, account);
+        investment.setLastPacExecutionMonth(dto.getLastPacExecutionMonth());
         return toDto(investmentRepository.save(investment), investment.getCurrentValue());
     }
 
@@ -94,6 +82,14 @@ public class InvestmentService {
                 ? accountService.getAccountAndVerifyOwner(dto.getAccountId(), user)
                 : null;
 
+        applyDtoToInvestment(investment, dto, account);
+        if (dto.getLastPacExecutionMonth() != null) {
+            investment.setLastPacExecutionMonth(dto.getLastPacExecutionMonth());
+        }
+        return toDto(investmentRepository.save(investment), investment.getCurrentValue());
+    }
+
+    private void applyDtoToInvestment(Investment investment, InvestmentDto dto, Account account) {
         investment.setName(dto.getName());
         investment.setType(dto.getType());
         investment.setTicker(dto.getTicker());
@@ -112,10 +108,6 @@ public class InvestmentService {
         investment.setSnapshots(dto.getSnapshots() == null ? new ArrayList<>() : dto.getSnapshots());
         investment.setLastUpdateDate(dto.getLastUpdateDate() == null ? LocalDate.now() : dto.getLastUpdateDate());
         investment.setAccount(account);
-        if (dto.getLastPacExecutionMonth() != null) {
-            investment.setLastPacExecutionMonth(dto.getLastPacExecutionMonth());
-        }
-        return toDto(investmentRepository.save(investment), investment.getCurrentValue());
     }
 
     @Transactional
@@ -159,101 +151,97 @@ public class InvestmentService {
     public void processDuePacs(User user) {
         List<Investment> activePacs = investmentRepository.findByUserIdAndPacActiveTrue(user.getId());
         LocalDate today = LocalDate.now();
-        YearMonth currentYm = YearMonth.from(today);
-        String currentYmStr = currentYm.toString();
-
         for (Investment inv : activePacs) {
-            if (inv.getAccount() == null || inv.getRecurringAmount() == null || inv.getRecurringAmount() <= 0) {
-                continue;
-            }
-            if (currentYmStr.equals(inv.getLastPacExecutionMonth())) {
-                continue;
-            }
-
-            int day = (inv.getRecurringDay() != null && inv.getRecurringDay() >= 1)
-                    ? Math.min(inv.getRecurringDay(), currentYm.lengthOfMonth())
-                    : 1;
-            LocalDate scheduledDate = currentYm.atDay(day);
-
-            if (!today.isBefore(scheduledDate)) {
-                executePacForInvestment(inv, scheduledDate, false);
-            }
+            executePacForInvestment(inv, today, true);
         }
     }
 
-    public synchronized boolean executePacForInvestment(Investment investment, LocalDate executionDate, boolean force) {
-        if (!investment.isPacActive()
-                || investment.getAccount() == null
-                || investment.getRecurringAmount() == null
-                || investment.getRecurringAmount() <= 0) {
+    private boolean executePacForInvestment(Investment inv, LocalDate today, boolean checkDueDay) {
+        if (!inv.isPacActive()) return false;
+        if (inv.getRecurringAmount() == null || inv.getRecurringAmount() <= 0) return false;
+        if (inv.getAccount() == null) return false;
+
+        int recDay = inv.getRecurringDay() != null && inv.getRecurringDay() >= 1 && inv.getRecurringDay() <= 31
+                ? inv.getRecurringDay()
+                : 1;
+        int effectiveDueDay = Math.min(recDay, today.lengthOfMonth());
+
+        if (checkDueDay && today.getDayOfMonth() < effectiveDueDay) {
             return false;
         }
 
-        YearMonth ym = YearMonth.from(executionDate);
-        String ymStr = ym.toString();
-
-        if (!force && ymStr.equals(investment.getLastPacExecutionMonth())) {
+        YearMonth currentYm = YearMonth.from(today);
+        String ymStr = currentYm.toString();
+        if (ymStr.equals(inv.getLastPacExecutionMonth())) {
             return false;
         }
 
-        Category pacCategory = resolvePacCategory(investment.getUser());
+        double amount = inv.getRecurringAmount();
+        LocalDate txDate = checkDueDay ? today.withDayOfMonth(effectiveDueDay) : today;
+
+        Category pacCategory = resolvePacCategory(inv.getUser());
 
         Transaction tx = Transaction.builder()
-                .amount(investment.getRecurringAmount())
+                .amount(amount)
                 .type(TransactionType.EXPENSE)
-                .date(executionDate)
-                .description("Versamento PAC " + investment.getName())
+                .date(txDate)
+                .description("PAC mensile - " + inv.getName() + " (" + ymStr + ")")
                 .category(pacCategory)
-                .account(investment.getAccount())
-                .investment(investment)
-                .user(investment.getUser())
+                .account(inv.getAccount())
+                .investment(inv)
+                .user(inv.getUser())
                 .build();
         transactionRepository.save(tx);
 
-        applyPacToSnapshots(investment, ym, investment.getRecurringAmount());
+        inv.setInvestedCapital((inv.getInvestedCapital() != null ? inv.getInvestedCapital() : 0.0) + amount);
+        inv.setCurrentValue((inv.getCurrentValue() != null ? inv.getCurrentValue() : 0.0) + amount);
+        inv.setLastUpdateDate(today);
+        inv.setLastPacExecutionMonth(ymStr);
 
-        investment.setInvestedCapital(investment.getInvestedCapital() + investment.getRecurringAmount());
-        investment.setCurrentValue(investment.getCurrentValue() + investment.getRecurringAmount());
-        investment.setLastUpdateDate(executionDate);
-        investment.setLastPacExecutionMonth(ymStr);
+        applyPacToSnapshots(inv, ymStr, today.getYear(), amount);
 
-        investmentRepository.save(investment);
+        investmentRepository.save(inv);
         return true;
     }
 
-    private void applyPacToSnapshots(Investment investment, YearMonth ym, double recurringAmount) {
-        boolean isYearly = "YEARLY".equalsIgnoreCase(investment.getTrackingFrequency());
-        String period = isYearly ? String.valueOf(ym.getYear()) : ym.toString();
-
-        if (investment.getSnapshots() == null) {
-            investment.setSnapshots(new ArrayList<>());
+    private void applyPacToSnapshots(Investment inv, String ymStr, int year, double amount) {
+        if (inv.getSnapshots() == null || inv.getSnapshots().isEmpty()) {
+            return;
         }
 
-        Optional<InvestmentSnapshot> existing = investment.getSnapshots().stream()
-                .filter(s -> period.equalsIgnoreCase(s.getMonth()))
+        String periodKey = "YEARLY".equalsIgnoreCase(inv.getTrackingFrequency())
+                ? String.valueOf(year)
+                : ymStr;
+
+        List<InvestmentSnapshot> snaps = new ArrayList<>(inv.getSnapshots());
+        Optional<InvestmentSnapshot> existingOpt = snaps.stream()
+                .filter(s -> periodKey.equals(s.getMonth()))
                 .findFirst();
 
-        if (existing.isPresent()) {
-            InvestmentSnapshot snap = existing.get();
-            double prevInvested = snap.getInvestedCapital() != null ? snap.getInvestedCapital() : 0.0;
-            snap.setInvestedCapital(prevInvested + recurringAmount);
+        if (existingOpt.isPresent()) {
+            InvestmentSnapshot snap = existingOpt.get();
+            double prevInv = snap.getInvestedCapital() != null ? snap.getInvestedCapital() : 0.0;
+            Double prevValObj = snap.getCurrentValue() != null ? snap.getCurrentValue() : snap.getValue();
+            double prevVal = prevValObj != null ? prevValObj : 0.0;
 
-            Double curr = snap.getCurrentValue() != null ? snap.getCurrentValue() : snap.getValue();
-            double newVal = (curr == null ? 0.0 : curr) + recurringAmount;
-            snap.setCurrentValue(newVal);
-            snap.setValue(newVal);
+            snap.setInvestedCapital(prevInv + amount);
+            snap.setCurrentValue(prevVal + amount);
+            snap.setValue(prevVal + amount);
         } else {
-            double baselineCapital = investment.getSnapshots().isEmpty()
-                    ? (investment.getInvestedCapital() != null ? investment.getInvestedCapital() : 0.0)
-                    : 0.0;
-            double currentInvVal = investment.getCurrentValue() != null ? investment.getCurrentValue() : 0.0;
-            InvestmentSnapshot newSnap = InvestmentSnapshot.builder()
-                    .month(period)
-                    .investedCapital(baselineCapital + recurringAmount)
-                    .value(currentInvVal + recurringAmount)
-                    .currentValue(currentInvVal + recurringAmount)
-                    .build();
-            investment.getSnapshots().add(newSnap);
+            List<InvestmentSnapshot> sorted = sortedSnapshots(inv);
+            double prevVal = 0.0;
+            if (!sorted.isEmpty()) {
+                InvestmentSnapshot last = sorted.getLast();
+                Double lastVal = last.getCurrentValue() != null ? last.getCurrentValue() : last.getValue();
+                prevVal = lastVal != null ? lastVal : 0.0;
+            }
+            snaps.add(InvestmentSnapshot.builder()
+                    .month(periodKey)
+                    .investedCapital(amount)
+                    .currentValue(prevVal + amount)
+                    .value(prevVal + amount)
+                    .build());
+            inv.setSnapshots(snaps);
         }
     }
 
@@ -285,10 +273,14 @@ public class InvestmentService {
     }
 
     private InvestmentDto toDto(Investment investment, double total) {
-        return toDto(investment, total, sortedSnapshots(investment));
+        return toDto(investment, total, sortedSnapshots(investment), null);
     }
 
-    private InvestmentDto toDto(Investment investment, double total, List<InvestmentSnapshot> snapshots) {
+    private InvestmentDto toDto(
+            Investment investment,
+            double total,
+            List<InvestmentSnapshot> snapshots,
+            Map<Long, Double> preloadedAccountBalances) {
         InvestmentDto dto = new InvestmentDto();
         dto.setId(investment.getId());
         dto.setName(investment.getName());
@@ -310,9 +302,13 @@ public class InvestmentService {
         dto.setLastUpdateDate(investment.getLastUpdateDate());
 
         if (investment.getAccount() != null) {
-            dto.setAccountId(investment.getAccount().getId());
+            Long accId = investment.getAccount().getId();
+            dto.setAccountId(accId);
             dto.setAccountName(investment.getAccount().getName());
-            dto.setAccountBalance(accountService.currentBalance(investment.getAccount()));
+            double balance = preloadedAccountBalances != null && preloadedAccountBalances.containsKey(accId)
+                    ? preloadedAccountBalances.get(accId)
+                    : accountService.currentBalance(investment.getAccount());
+            dto.setAccountBalance(balance);
         }
         dto.setLastPacExecutionMonth(investment.getLastPacExecutionMonth());
 
@@ -335,10 +331,6 @@ public class InvestmentService {
                 .toList();
     }
 
-    private double effectiveCurrentValue(Investment investment) {
-        return effectiveCurrentValue(investment, sortedSnapshots(investment));
-    }
-
     private double effectiveCurrentValue(Investment investment, List<InvestmentSnapshot> snapshots) {
         if (snapshots == null || snapshots.isEmpty()) return investment.getCurrentValue();
         InvestmentSnapshot last = snapshots.getLast();
@@ -346,17 +338,9 @@ public class InvestmentService {
         return value == null ? investment.getCurrentValue() : value;
     }
 
-    private double effectiveInvestedCapital(Investment investment) {
-        return effectiveInvestedCapital(investment, sortedSnapshots(investment));
-    }
-
     private double effectiveInvestedCapital(Investment investment, List<InvestmentSnapshot> snapshots) {
         if (snapshots == null || snapshots.isEmpty()) return investment.getInvestedCapital();
         return snapshots.stream().mapToDouble(snapshot -> snapshot.getInvestedCapital() == null ? 0 : snapshot.getInvestedCapital()).sum();
-    }
-
-    private double compoundReturnPercent(Investment investment) {
-        return compoundReturnPercent(investment, sortedSnapshots(investment));
     }
 
     private double compoundReturnPercent(Investment investment, List<InvestmentSnapshot> snapshots) {

@@ -10,36 +10,41 @@ export function useDashboard(month?: number, year?: number) {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
 
-    const fetchData = useCallback(async () => {
+    const fetchStaticResources = useCallback(async () => {
+        const [accsRes, invsRes, catsRes] = await Promise.allSettled([
+            accountService.getAll(),
+            investmentService.getAll(),
+            categoryService.getAll(),
+        ]);
+        if (accsRes.status === 'fulfilled') setAccounts(accsRes.value);
+        if (invsRes.status === 'fulfilled') setInvestments(invsRes.value);
+        if (catsRes.status === 'fulfilled') setCategories(catsRes.value);
+    }, []);
+
+    const fetchOverview = useCallback(async () => {
         setLoading(true);
         setError('');
         try {
-            const [dashRes, accsRes, invsRes, catsRes] = await Promise.allSettled([
-                dashboardService.getOverview(month, year),
-                accountService.getAll(),
-                investmentService.getAll(),
-                categoryService.getAll(),
-            ]);
-
-            if (dashRes.status === 'fulfilled') {
-                setData(dashRes.value);
-            } else {
-                setError('Errore nel caricamento della dashboard.');
-            }
-
-            if (accsRes.status === 'fulfilled') setAccounts(accsRes.value);
-            if (invsRes.status === 'fulfilled') setInvestments(invsRes.value);
-            if (catsRes.status === 'fulfilled') setCategories(catsRes.value);
+            const overview = await dashboardService.getOverview(month, year);
+            setData(overview);
         } catch {
-            setError('Errore imprevisto nel caricamento dei dati.');
+            setError('Errore nel caricamento della dashboard.');
         } finally {
             setLoading(false);
         }
     }, [month, year]);
 
+    const refetch = useCallback(async () => {
+        await Promise.all([fetchOverview(), fetchStaticResources()]);
+    }, [fetchOverview, fetchStaticResources]);
+
     useEffect(() => {
-        fetchData();
-    }, [fetchData]);
+        fetchStaticResources();
+    }, [fetchStaticResources]);
+
+    useEffect(() => {
+        fetchOverview();
+    }, [fetchOverview]);
 
     const activeAccounts = accounts.filter(a => !a.archived);
     const accountTotal = activeAccounts.reduce((sum, a) => sum + (a.currentBalance || 0), 0);
@@ -51,16 +56,13 @@ export function useDashboard(month?: number, year?: number) {
 
     return {
         data,
-        accounts,
         activeAccounts,
-        investments,
         categories,
-        accountTotal,
         investmentTotal,
         netWorth,
         liquidTotal,
         loading,
         error,
-        refetch: fetchData,
+        refetch,
     };
 }

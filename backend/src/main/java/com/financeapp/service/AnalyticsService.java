@@ -30,26 +30,6 @@ public class AnalyticsService {
     private final GeminiService geminiService;
 
     /**
-     * Returns monthly cash flow for a full year.
-     */
-    public CashFlowDto getYearlyCashFlow(User user, int year) {
-        LocalDate start = LocalDate.of(year, 1, 1);
-        LocalDate end = LocalDate.of(year, 12, 31);
-        List<Transaction> transactions = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(user.getId(), start, end);
-        return buildCashFlowDto(transactions, year, null);
-    }
-
-    /**
-     * Returns cash flow for a single month.
-     */
-    public CashFlowDto getMonthlyCashFlow(User user, int year, int month) {
-        LocalDate start = LocalDate.of(year, month, 1);
-        LocalDate end = start.withDayOfMonth(start.lengthOfMonth());
-        List<Transaction> transactions = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(user.getId(), start, end);
-        return buildCashFlowDto(transactions, year, month);
-    }
-
-    /**
      * Computes deep advanced financial analytics (KPIs, 50/30/20, MoM variations, Fixed vs Variable, Runway).
      */
     public AdvancedAnalyticsDto getAdvancedAnalytics(User user, int year, Integer month) {

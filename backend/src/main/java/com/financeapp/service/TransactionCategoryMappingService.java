@@ -137,12 +137,12 @@ public class TransactionCategoryMappingService {
                     .collect(Collectors.toMap(Category::getId, c -> c, (a, b) -> a));
 
             Category defaultExpenseCat = allCategories.stream()
-                    .filter(c -> c.getType() == TransactionType.EXPENSE && "Da classificare".equalsIgnoreCase(c.getName()))
+                    .filter(c -> c.getType() == TransactionType.EXPENSE && "Spese Varie".equalsIgnoreCase(c.getName()))
                     .findFirst()
                     .orElse(allCategories.stream().filter(c -> c.getType() == TransactionType.EXPENSE).findFirst().orElse(null));
 
             Category defaultIncomeCat = allCategories.stream()
-                    .filter(c -> c.getType() == TransactionType.INCOME && "Entrate varie".equalsIgnoreCase(c.getName()))
+                    .filter(c -> c.getType() == TransactionType.INCOME && "Regali Ricevuti & Altro".equalsIgnoreCase(c.getName()))
                     .findFirst()
                     .orElse(allCategories.stream().filter(c -> c.getType() == TransactionType.INCOME).findFirst().orElse(null));
 

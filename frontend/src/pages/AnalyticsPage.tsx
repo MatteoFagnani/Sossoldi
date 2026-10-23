@@ -1,5 +1,5 @@
 import { formatCurrency } from '../utils/formatters';
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import {
     BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell, Legend,
     AreaChart, Area, CartesianGrid,
@@ -10,18 +10,17 @@ import {
     Percent, Flame, ArrowUpRight, ArrowDownRight, RefreshCw, Info
 } from 'lucide-react';
 import { analyticsService } from '../services/services';
+import { MONTHS, getSelectableYears } from '../constants/dateConstants';
+import { extractApiError } from '../utils/error';
 import type {
     AdvancedAnalyticsData,
     AiFinancialInsights,
     CategoryMoMChange,
 } from '../types';
 
-const MONTHS = [
-    'Gennaio', 'Febbraio', 'Marzo', 'Aprile', 'Maggio', 'Giugno',
-    'Luglio', 'Agosto', 'Settembre', 'Ottobre', 'Novembre', 'Dicembre'
-];
 const CURRENT_YEAR = new Date().getFullYear();
 const CURRENT_MONTH = new Date().getMonth() + 1;
+const YEARS = getSelectableYears(2020, 0);
 
 const fmt = formatCurrency;
 
@@ -37,8 +36,6 @@ export default function AnalyticsPage() {
     const [aiInsights, setAiInsights] = useState<AiFinancialInsights | null>(null);
     const [loadingAi, setLoadingAi] = useState(false);
     const [aiError, setAiError] = useState('');
-
-    const YEARS = useMemo(() => Array.from({ length: CURRENT_YEAR - 2019 }, (_, i) => 2020 + i), []);
 
     useEffect(() => {
         let active = true;
@@ -75,8 +72,7 @@ export default function AnalyticsPage() {
             const insights = await analyticsService.getAiInsights(yearVal, monthVal);
             setAiInsights(insights);
         } catch (err: unknown) {
-            const errorObj = err as { response?: { data?: { message?: string } }; message?: string };
-            setAiError(errorObj?.response?.data?.message || errorObj?.message || 'Impossibile generare i consigli AI. Verifica la configurazione della chiave Gemini nel tuo Profilo.');
+            setAiError(extractApiError(err, 'Impossibile generare i consigli AI. Verifica la configurazione della chiave Gemini nel tuo Profilo.'));
         } finally {
             setLoadingAi(false);
         }

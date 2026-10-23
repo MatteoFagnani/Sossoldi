@@ -4,8 +4,14 @@ import com.financeapp.dto.BudgetStatusDto;
 import com.financeapp.dto.DashboardOverviewDto;
 import com.financeapp.dto.ReportDto;
 import com.financeapp.dto.TransactionDto;
+import com.financeapp.model.Budget;
+import com.financeapp.model.BudgetOverride;
+import com.financeapp.model.Transaction;
 import com.financeapp.model.User;
-import com.financeapp.service.pattern.strategy.ReportContext;
+import com.financeapp.repository.BudgetOverrideRepository;
+import com.financeapp.repository.BudgetRepository;
+import com.financeapp.repository.TransactionRepository;
+import com.financeapp.service.report.ReportContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -23,26 +29,21 @@ public class DashboardService {
 
     private final TransactionService transactionService;
     private final BudgetService budgetService;
+    private final BudgetRepository budgetRepository;
+    private final BudgetOverrideRepository budgetOverrideRepository;
+    private final TransactionRepository transactionRepository;
     private final ReportContext reportContext;
 
     public DashboardOverviewDto getDashboardOverview(User user, Integer month, Integer year) {
         LocalDate now = LocalDate.now();
-
-        // Resolve effective year (default: current year)
         int effectiveYear = (year != null) ? year : now.getYear();
-        // month == null means annual view
         boolean isAnnualView = (month == null);
 
         LocalDate startOfYear = LocalDate.of(effectiveYear, 1, 1);
         LocalDate endOfYear = LocalDate.of(effectiveYear, 12, 31);
 
-        // 1. Get recent transactions (top 5, not filtered by period so the widget always shows latest)
-        List<TransactionDto> allTransactions = transactionService.getAllTransactions(user);
-        List<TransactionDto> recentTransactions = allTransactions.stream()
-                .limit(5)
-                .collect(Collectors.toList());
+        List<TransactionDto> recentTransactions = transactionService.getRecentTransactions(user);
 
-        // 2. Generate Yearly Report
         ReportDto yearlyReport = reportContext.getStrategy("YEARLY")
                 .generateReport(user, startOfYear, endOfYear);
 
@@ -53,22 +54,15 @@ public class DashboardService {
         List<BudgetStatusDto> budgetStatuses;
 
         if (isAnnualView) {
-            // Annual view: KPIs come from yearly totals
             totalIncome = yearlyReport.getTotalIncome();
             totalExpense = yearlyReport.getTotalExpense();
 
-            // Category report for the full year
             categoryReport = reportContext.getStrategy("CATEGORY")
                     .generateReport(user, startOfYear, endOfYear);
 
-            // Monthly report is null in annual view (no specific month selected)
             monthlyReport = null;
-
-            // Budget: compute average across all months of the selected year
-            budgetStatuses = computeAverageBudgetStatusesForYear(user, effectiveYear);
-
+            budgetStatuses = computeAverageBudgetStatusesForYear(user, effectiveYear, startOfYear, endOfYear);
         } else {
-            // Monthly view
             int effectiveMonth = month;
             LocalDate startOfMonth = LocalDate.of(effectiveYear, effectiveMonth, 1);
             LocalDate endOfMonth = YearMonth.of(effectiveYear, effectiveMonth).atEndOfMonth();
@@ -97,21 +91,45 @@ public class DashboardService {
     }
 
     /**
-     * Computes the average BudgetStatus across all 12 months of a given year.
-     * Only months that have data contribute to the average.
+     * Computes the average BudgetStatus across all 12 months of a given year using pre-loaded year data (3 queries instead of 36).
      */
-    private List<BudgetStatusDto> computeAverageBudgetStatusesForYear(User user, int year) {
-        // Accumulate per-category totals across all months
+    private List<BudgetStatusDto> computeAverageBudgetStatusesForYear(
+            User user, int year, LocalDate startOfYear, LocalDate endOfYear) {
+
+        List<Budget> budgets = budgetRepository.findByUserId(user.getId());
+        if (budgets.isEmpty()) {
+            budgetService.seedDefaultBudgets(user);
+            budgets = budgetRepository.findByUserId(user.getId());
+        }
+        budgets = budgets.stream().filter(b -> b.getCategory() != null).collect(Collectors.toList());
+
+        List<Long> budgetIds = budgets.stream().map(Budget::getId).collect(Collectors.toList());
+        List<BudgetOverride> yearOverrides = budgetOverrideRepository.findByBudgetIdInAndYear(budgetIds, year);
+        List<Transaction> yearTransactions = transactionRepository.findByUserIdAndDateBetweenOrderByDateDesc(
+                user.getId(), startOfYear, endOfYear);
+
+        Map<Integer, List<BudgetOverride>> overridesByMonth = yearOverrides.stream()
+                .filter(o -> o.getMonth() != null)
+                .collect(Collectors.groupingBy(BudgetOverride::getMonth));
+
+        Map<Integer, List<Transaction>> txByMonth = yearTransactions.stream()
+                .collect(Collectors.groupingBy(t -> t.getDate().getMonthValue()));
+
         Map<Long, BudgetStatusDto> template = new HashMap<>();
-        Map<Long, double[]> spendingAccumulator = new HashMap<>();  // [totalSpending, totalLimit, count]
+        Map<Long, double[]> spendingAccumulator = new HashMap<>();
 
         for (int m = 1; m <= 12; m++) {
-            List<BudgetStatusDto> monthStatuses = budgetService.getBudgetStatusesByMonthAndYear(user, m, year);
+            List<BudgetStatusDto> monthStatuses = budgetService.computeBudgetStatuses(
+                    budgets,
+                    overridesByMonth.getOrDefault(m, List.of()),
+                    txByMonth.getOrDefault(m, List.of()),
+                    m,
+                    year
+            );
             for (BudgetStatusDto status : monthStatuses) {
                 Long catId = status.getCategoryId();
                 template.putIfAbsent(catId, status);
-                spendingAccumulator.computeIfAbsent(catId, k -> new double[]{0.0, 0.0, 0.0});
-                double[] acc = spendingAccumulator.get(catId);
+                double[] acc = spendingAccumulator.computeIfAbsent(catId, k -> new double[]{0.0, 0.0, 0.0});
                 acc[0] += (status.getCurrentSpending() != null ? status.getCurrentSpending() : 0.0);
                 acc[1] += (status.getLimitAmount() != null ? status.getLimitAmount() : 0.0);
                 acc[2] += 1.0;
@@ -142,7 +160,7 @@ public class DashboardService {
                     .remainingAmount(avgLimit - avgSpending)
                     .percentageUsed(pctUsed)
                     .overridden(false)
-                    .status(pctUsed >= 100 ? "EXCEEDED" : pctUsed >= 80 ? "WARNING" : "OK")
+                    .status(BudgetService.resolveStatus(pctUsed))
                     .build();
             result.add(avg);
         }

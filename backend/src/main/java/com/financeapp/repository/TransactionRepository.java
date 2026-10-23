@@ -11,6 +11,8 @@ import java.util.List;
 public interface TransactionRepository extends JpaRepository<Transaction, Long> {
     List<Transaction> findByUserIdOrderByDateDesc(Long userId);
 
+    List<Transaction> findTop5ByUserIdOrderByDateDescIdDesc(Long userId);
+
     List<Transaction> findByUserIdAndAccountIdOrderByDateDesc(Long userId, Long accountId);
 
     List<Transaction> findByUserIdAndDateBetweenOrderByDateDesc(Long userId, LocalDate startDate, LocalDate endDate);
@@ -22,6 +24,4 @@ public interface TransactionRepository extends JpaRepository<Transaction, Long> 
     List<Transaction> findByUserIdAndAccountIsNull(Long userId);
 
     List<Transaction> findByInvestmentIdOrderByDateDesc(Long investmentId);
-
-    boolean existsByInvestmentId(Long investmentId);
 }

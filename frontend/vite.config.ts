@@ -4,7 +4,7 @@ import tailwindcss from '@tailwindcss/vite'
 
 // https://vite.dev/config/
 export default defineConfig({
-  base: '/', 
+  base: '/',
   server: {
     proxy: {
       '/api': {
@@ -17,4 +17,14 @@ export default defineConfig({
     react(),
     tailwindcss(),
   ],
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          recharts: ['recharts'],
+          xlsx: ['xlsx'],
+        },
+      },
+    },
+  },
 })

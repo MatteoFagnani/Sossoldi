@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import { categoryService } from '../services/services';
+import { extractApiError } from '../utils/error';
 import type { Category, TransactionType } from '../types';
 
 export function useCategories() {
@@ -33,8 +34,7 @@ export function useCategories() {
             await loadCategories();
             return true;
         } catch (err: unknown) {
-            const resData = (err as { response?: { data?: Record<string, string> } })?.response?.data;
-            setError(resData ? Object.values(resData).join('. ') : 'Errore durante il salvataggio della categoria');
+            setError(extractApiError(err, 'Errore durante il salvataggio della categoria'));
             return false;
         } finally {
             setSaving(false);
@@ -52,23 +52,7 @@ export function useCategories() {
         }
     };
 
-    const seedDefaults = async () => {
-        setSaving(true);
-        setError('');
-        try {
-            const data = await categoryService.seedDefaults();
-            setCategories(data);
-            return true;
-        } catch {
-            setError('Errore durante l\'aggiornamento delle categorie predefinite.');
-            return false;
-        } finally {
-            setSaving(false);
-        }
-    };
-
     return {
-        seedDefaults,
         categories,
         loading,
         saving,
@@ -79,4 +63,3 @@ export function useCategories() {
         deleteCategory,
     };
 }
-

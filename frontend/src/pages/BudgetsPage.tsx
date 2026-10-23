@@ -7,8 +7,9 @@ import BudgetForm from '../components/budgets/BudgetForm';
 import { useBudgets } from '../hooks/useBudgets';
 import { useAuthStore } from '../store/authStore';
 import { budgetService } from '../services/services';
+import { SHORT_MONTHS, getSelectableYears } from '../constants/dateConstants';
 
-const SHORT_MONTHS = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic'];
+const YEARS = getSelectableYears(2024, 1);
 
 const PROFILE_LABELS: Record<string, { label: string; badge: string }> = {
     STUDENT: { label: 'Studente / Fuorisede', badge: 'Regola 70/15/15' },
@@ -63,12 +64,12 @@ export default function BudgetsPage() {
     const openEdit = (b: BudgetStatus) => {
         setEditing(b);
         setFormData({
-            categoryId: String(b.categoryId), 
+            categoryId: String(b.categoryId),
             limitAmount: b.limitAmount ? String(b.limitAmount) : '',
             percentageOfIncome: b.percentageOfIncome ? String(b.percentageOfIncome) : '',
-            month: String(b.month), 
-            year: String(b.year), 
-            automatic: b.automatic, 
+            month: String(b.month),
+            year: String(b.year),
+            automatic: b.automatic,
             type: b.overridden ? 'TEMPORARY' : 'PERMANENT'
         });
         setError('');
@@ -113,7 +114,7 @@ export default function BudgetsPage() {
                             onChange={(e) => setYear(Number(e.target.value))}
                             className="appearance-none bg-white border border-gray-300 rounded-xl pl-3.5 pr-8 py-2.5 text-sm font-medium text-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-900 focus:border-transparent cursor-pointer"
                         >
-                            {[2024, 2025, 2026, 2027].map(y => (
+                            {YEARS.map(y => (
                                 <option key={y} value={y}>{y}</option>
                             ))}
                         </select>

@@ -71,7 +71,7 @@ class AuthenticationServiceTest {
         when(jwtService.generateToken(existingUser)).thenReturn("jwt-token-123");
         when(userMapper.toDto(existingUser)).thenReturn(userDto);
 
-        AuthResponse response = authenticationService.authenticateWithGoogle(email, "Mario Rossi", "sub-123");
+        AuthResponse response = authenticationService.authenticateWithGoogle(email, "Mario Rossi", null, null, null);
 
         assertNotNull(response);
         assertEquals("jwt-token-123", response.getToken());
@@ -102,7 +102,7 @@ class AuthenticationServiceTest {
         when(jwtService.generateToken(savedUser)).thenReturn("jwt-token-456");
         when(userMapper.toDto(savedUser)).thenReturn(userDto);
 
-        AuthResponse response = authenticationService.authenticateWithGoogle(email, "Nuovo Utente", "sub-456");
+        AuthResponse response = authenticationService.authenticateWithGoogle(email, "Nuovo Utente", null, null, null);
 
         assertNotNull(response);
         assertEquals("jwt-token-456", response.getToken());

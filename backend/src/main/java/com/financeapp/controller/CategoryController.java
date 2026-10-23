@@ -1,7 +1,6 @@
 package com.financeapp.controller;
 
 import com.financeapp.dto.CategoryDto;
-import com.financeapp.model.TransactionType;
 import com.financeapp.service.CategoryService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -22,19 +21,6 @@ public class CategoryController extends BaseController {
     @GetMapping
     public ResponseEntity<List<CategoryDto>> getAllCategories(Authentication authentication) {
         return ResponseEntity.ok(categoryService.getAllCategories(getCurrentUser(authentication)));
-    }
-
-    @PostMapping("/seed-defaults")
-    public ResponseEntity<List<CategoryDto>> seedDefaults(Authentication authentication) {
-        categoryService.seedDefaultCategories(getCurrentUser(authentication));
-        return ResponseEntity.ok(categoryService.getAllCategories(getCurrentUser(authentication)));
-    }
-
-    @GetMapping("/type/{type}")
-    public ResponseEntity<List<CategoryDto>> getCategoriesByType(
-            Authentication authentication,
-            @PathVariable TransactionType type) {
-        return ResponseEntity.ok(categoryService.getCategoriesByType(getCurrentUser(authentication), type));
     }
 
     @PostMapping
